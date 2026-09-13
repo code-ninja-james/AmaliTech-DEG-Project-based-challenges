@@ -2,8 +2,8 @@
  * Renders a compact overview of the complete SupportFlow graph.
  *
  * The minimap uses the same authoritative x/y coordinates as the main canvas
- * but intentionally simplifies node and connector rendering. This gives users
- * spatial orientation without introducing a second graph-layout system.
+ * and mirrors X-Ray reachability coloring without introducing a second layout
+ * system or a graph dependency.
  */
 
 import { useMemo, useState } from 'react'
@@ -20,8 +20,14 @@ function getNodeDimensions(node) {
   return NODE_DIMENSIONS[node.type] ?? { width: 180, height: 80 }
 }
 
-export default function Minimap({ flow, selectedNodeId }) {
+export default function Minimap({
+  flow,
+  selectedNodeId,
+  mode = 'Build',
+  reachableIds = new Set(),
+}) {
   const [isOpen, setIsOpen] = useState(true)
+  const isXray = mode === 'X-Ray'
 
   const connections = useMemo(
     () => getConnections(flow.nodes),
@@ -48,7 +54,7 @@ export default function Minimap({ flow, selectedNodeId }) {
   return (
     <aside className="minimap" aria-label="Flow minimap">
       <header className="minimap__header">
-        <span>Minimap</span>
+        <span>{isXray ? 'X-Ray Map' : 'Minimap'}</span>
         <button
           type="button"
           aria-label="Close minimap"
@@ -82,10 +88,22 @@ export default function Minimap({ flow, selectedNodeId }) {
           const sourceY = sourceNode.position.y + sourceSize.height
           const targetX = targetNode.position.x + targetSize.width / 2
           const targetY = targetNode.position.y
+          const isReachable =
+            reachableIds.has(connection.sourceId) &&
+            reachableIds.has(connection.targetId)
 
           return (
             <line
-              className="minimap__connection"
+              className={[
+                'minimap__connection',
+                isXray
+                  ? isReachable
+                    ? 'minimap__connection--reachable'
+                    : 'minimap__connection--error'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
               key={connection.id}
               x1={sourceX}
               y1={sourceY}
@@ -98,6 +116,7 @@ export default function Minimap({ flow, selectedNodeId }) {
         {flow.nodes.map((node) => {
           const { width, height } = getNodeDimensions(node)
           const isSelected = node.id === selectedNodeId
+          const isReachable = reachableIds.has(node.id)
 
           return (
             <rect
@@ -105,6 +124,7 @@ export default function Minimap({ flow, selectedNodeId }) {
                 'minimap__node',
                 `minimap__node--${node.type}`,
                 isSelected ? 'minimap__node--selected' : '',
+                isXray && !isReachable ? 'minimap__node--error' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}

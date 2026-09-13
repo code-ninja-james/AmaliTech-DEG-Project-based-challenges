@@ -6,7 +6,7 @@
  * and ensures canvas, preview and diagnostics all observe the same data.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import analyzeFlow from '../../domain/analyzeFlow.js'
 
@@ -63,11 +63,7 @@ function PropertiesTab({ node, analysis, onTextChange }) {
       <SectionLabel>Node Info</SectionLabel>
 
       <PropertyRow label="Depth" value={String(analysis.depthById.get(node.id) ?? 0)} />
-      <PropertyRow
-        label="Position"
-        value={`${node.position.x}, ${node.position.y}`}
-        mono
-      />
+      <PropertyRow label="Position" value={`${node.position.x}, ${node.position.y}`} mono />
       <PropertyRow label="Size" value={`${size.width} × ${size.height}`} mono />
       <PropertyRow label="Routes" value={String(node.options.length)} />
       <PropertyRow label="Storage" value="In-memory session" />
@@ -92,9 +88,7 @@ function RoutesTab({ node, flow }) {
         <div className="studio-inspector__routes">
           {node.options.map((option, index) => {
             const target = nodeMap.get(option.nextId)
-            const targetMeta = target
-              ? NODE_META[target.type] ?? NODE_META.question
-              : null
+            const targetMeta = target ? NODE_META[target.type] ?? NODE_META.question : null
 
             return (
               <article
@@ -228,10 +222,6 @@ export default function NodeInspector({
   const [tab, setTab] = useState('Properties')
   const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
 
-  useEffect(() => {
-    setTab('Properties')
-  }, [node?.id])
-
   if (!node) {
     return (
       <aside className="node-inspector" aria-label="Node inspector">
@@ -275,9 +265,7 @@ export default function NodeInspector({
           <PropertiesTab node={node} analysis={analysis} onTextChange={onTextChange} />
         )}
         {tab === 'Routes' && <RoutesTab node={node} flow={flow} />}
-        {tab === 'Health' && (
-          <HealthTab node={node} flow={flow} analysis={analysis} />
-        )}
+        {tab === 'Health' && <HealthTab node={node} flow={flow} analysis={analysis} />}
       </div>
     </aside>
   )

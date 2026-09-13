@@ -13,11 +13,12 @@ const NODE_LABELS = {
   end: 'Terminal',
 }
 
-export default function FlowNode({ node }) {
+export default function FlowNode({ node, nodeRef }) {
   const nodeType = NODE_LABELS[node.type] ?? node.type
 
   return (
     <article
+      ref={nodeRef}
       className={`flow-node flow-node--${node.type}`}
       data-testid={`flow-node-${node.id}`}
       style={{

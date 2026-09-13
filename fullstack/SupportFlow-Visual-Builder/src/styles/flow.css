@@ -154,3 +154,51 @@
   font-family: var(--sf-font-mono);
   font-size: 10px;
 }
+
+/* SVG connections --------------------------------------------------------- */
+
+.connector-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.connector-path {
+  fill: none;
+  stroke: var(--sf-text-faint);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.connector-arrow {
+  fill: var(--sf-text-faint);
+}
+
+.connector-port {
+  fill: var(--sf-surface-canvas);
+  stroke: var(--sf-text-muted);
+  stroke-width: 1.25;
+}
+
+.connector-label__background {
+  fill: var(--sf-surface-canvas);
+  stroke: var(--sf-border-subtle);
+  stroke-width: 1;
+}
+
+.connector-label__text {
+  fill: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.01em;
+}
+
+/*
+ * Nodes sit above the SVG connection layer so paths visually terminate at
+ * card boundaries instead of appearing to run through card content.
+ */
+.flow-node {
+  z-index: 2;
+}

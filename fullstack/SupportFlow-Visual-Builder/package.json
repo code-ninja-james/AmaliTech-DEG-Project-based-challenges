@@ -45,9 +45,15 @@
       "prettier --check"
     ]
   },
-  "description": "This challenge is designed to test your ability to bridge Computer Science fundamentals with Modern Frontend Engineering.",
+  "description": "A visual decision-tree editor and preview runner for customer-support flows.",
   "main": "eslint.config.js",
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "react",
+    "decision-tree",
+    "visual-editor",
+    "svg",
+    "customer-support"
+  ],
+  "author": "Jameson Githinji",
   "license": "ISC"
 }

@@ -1,0 +1,156 @@
+/* Application shell ------------------------------------------------------- */
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--sf-surface-canvas);
+}
+
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+  background: var(--sf-surface-toolbar);
+}
+
+.app-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.app-subtitle {
+  margin: 3px 0 0;
+  color: var(--sf-text-muted);
+  font-size: 12px;
+}
+
+.app-toolbar__meta {
+  display: flex;
+  gap: 16px;
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 11px;
+}
+
+/* Flow canvas ------------------------------------------------------------- */
+
+.flow-workspace {
+  min-height: calc(100vh - 64px);
+  overflow: auto;
+  padding: 40px;
+}
+
+.flow-canvas {
+  /*
+   * All nodes and future SVG connectors share this fixed coordinate space.
+   * This is important because flow_data.json positions must remain exact.
+   */
+  position: relative;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--sf-border-subtle);
+  background-color: var(--sf-surface-canvas);
+  background-image:
+    linear-gradient(var(--sf-border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--sf-border-subtle) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Graph nodes ------------------------------------------------------------- */
+
+.flow-node {
+  position: absolute;
+  width: 196px;
+  min-height: 120px;
+  overflow: hidden;
+  border: 1px solid var(--sf-border-default);
+  border-top-width: 2px;
+  border-radius: var(--sf-radius-node);
+  background: var(--sf-surface-node);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.flow-node--start {
+  border-top-color: var(--sf-node-start);
+}
+
+.flow-node--question {
+  border-top-color: var(--sf-node-question);
+}
+
+.flow-node--end {
+  /*
+   * Terminal nodes intentionally use the smaller card footprint defined
+   * by the SupportFlow design system.
+   */
+  width: 180px;
+  min-height: 76px;
+  border-top-color: var(--sf-node-terminal);
+}
+
+.flow-node__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.flow-node__type,
+.flow-node__id {
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.flow-node__type {
+  color: var(--sf-text-secondary);
+}
+
+.flow-node__id {
+  color: var(--sf-text-faint);
+}
+
+.flow-node__text {
+  margin: 0;
+  padding: 12px;
+  color: var(--sf-text-body);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Routes ------------------------------------------------------------------ */
+
+.flow-node__routes {
+  border-top: 1px solid var(--sf-border-subtle);
+}
+
+.flow-node__route {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
+  color: var(--sf-text-secondary);
+  font-size: 11px;
+}
+
+.flow-node__route + .flow-node__route {
+  border-top: 1px solid var(--sf-border-subtle);
+}
+
+.flow-node__route-target {
+  flex: 0 0 auto;
+  color: var(--sf-text-faint);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+}

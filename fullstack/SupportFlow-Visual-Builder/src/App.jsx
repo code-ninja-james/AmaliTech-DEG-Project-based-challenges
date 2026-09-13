@@ -1,9 +1,9 @@
 /**
  * Application entry component for SupportFlow Studio.
  *
- * The shell ports the complete Make interaction model onto the challenge's
- * tested data-driven architecture: Build, X-Ray, Spatial and Preview all share
- * one editable in-memory copy of flow_data.json.
+ * The shell coordinates the complete studio interaction model on top of the
+ * challenge's tested data-driven architecture: Build, X-Ray, Spatial and
+ * Preview all share one editable in-memory copy of flow_data.json.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -22,7 +22,7 @@ import PreviewRunner from './components/preview/PreviewRunner.jsx'
 import validateFlow from './domain/validateFlow.js'
 import './styles/flow.css'
 import './styles/studio.css'
-import './styles/make-port.css'
+import './styles/studio-interactions.css'
 import './styles/command-palette.css'
 
 export default function App() {

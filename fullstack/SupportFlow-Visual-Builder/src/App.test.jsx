@@ -1,8 +1,8 @@
 /**
  * Covers the primary editor behaviours that cross component boundaries.
  *
- * These tests verify that node selection opens the inspector and that editing
- * local flow state immediately updates the corresponding node on the canvas.
+ * These tests verify node selection, in-memory editing, product mode switching,
+ * Flow Health, and the Figma-inspired node navigator.
  */
 
 import { render, screen, within } from '@testing-library/react'
@@ -82,6 +82,7 @@ describe('SupportFlow application', () => {
 
     expect(screen.getByLabelText('Node inspector')).toBeInTheDocument()
   })
+
   it('opens Flow Health and reports the challenge flow as healthy', async () => {
     const user = userEvent.setup()
 
@@ -94,7 +95,17 @@ describe('SupportFlow application', () => {
     )
 
     expect(screen.getByLabelText('Flow health')).toBeInTheDocument()
-
     expect(screen.getByText('No structural issues detected')).toBeInTheDocument()
+  })
+
+  it('selects a node from the navigator and opens its inspector', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('navigator-node-3'))
+
+    expect(screen.getByText('Node #3')).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-3')).toHaveClass('flow-node--selected')
   })
 })

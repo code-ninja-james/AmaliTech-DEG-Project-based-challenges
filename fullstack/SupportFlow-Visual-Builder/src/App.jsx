@@ -144,6 +144,7 @@ export default function App() {
 
         {(mode === 'Build' || mode === 'Spatial') && (
           <NodeInspector
+            key={selectedNodeId ?? 'no-selection'}
             node={selectedNode}
             flow={flow}
             onTextChange={handleNodeTextChange}

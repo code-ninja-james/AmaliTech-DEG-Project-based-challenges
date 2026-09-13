@@ -1,12 +1,12 @@
 /**
- * Runs the current SupportFlow configuration as a lightweight chat simulation.
+ * Runs the current SupportFlow configuration as the Make-style chat preview.
  *
- * The runner starts at the configured Start node, records the user's selected
- * answers, and follows each option's nextId through the flow until it reaches
- * a terminal node. Restart resets only the simulation, never the editor state.
+ * The runner maintains a real traversal path, auto-scrolls as the conversation
+ * grows, updates shared selection when embedded in the studio, and exposes the
+ * terminal restart experience required by the challenge.
  */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { getNextNode, getStartNode } from '../../domain/traverseFlow.js'
 
@@ -20,19 +20,33 @@ function createInitialConversation(startNode) {
       id: `node-${startNode.id}`,
       role: 'assistant',
       text: startNode.text,
+      nodeId: startNode.id,
     },
   ]
 }
 
-export default function PreviewRunner({ flow }) {
+export default function PreviewRunner({
+  flow,
+  onBack = null,
+  onNodeSelect = () => {},
+}) {
   const startNode = getStartNode(flow.nodes)
-
+  const scrollRef = useRef(null)
   const [currentNodeId, setCurrentNodeId] = useState(startNode?.id ?? null)
-  const [conversation, setConversation] = useState(() => createInitialConversation(startNode))
+  const [conversation, setConversation] = useState(() =>
+    createInitialConversation(startNode),
+  )
 
-  const currentNode = flow.nodes.find((node) => node.id === currentNodeId) ?? null
+  const currentNode =
+    flow.nodes.find((node) => node.id === currentNodeId) ?? null
+  const isTerminal =
+    currentNode?.type === 'end' || currentNode?.options.length === 0
 
-  const isTerminal = currentNode?.type === 'end' || currentNode?.options.length === 0
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [conversation.length])
 
   const handleOptionSelect = (option) => {
     const nextNode = getNextNode(flow.nodes, option)
@@ -52,20 +66,26 @@ export default function PreviewRunner({ flow }) {
         id: `node-${nextNode.id}-${currentConversation.length}`,
         role: 'assistant',
         text: nextNode.text,
+        nodeId: nextNode.id,
       },
     ])
 
     setCurrentNodeId(nextNode.id)
+    onNodeSelect(nextNode.id)
   }
 
   const handleRestart = () => {
     setCurrentNodeId(startNode?.id ?? null)
     setConversation(createInitialConversation(startNode))
+
+    if (startNode) {
+      onNodeSelect(startNode.id)
+    }
   }
 
   if (!startNode) {
     return (
-      <section className="preview-runner" aria-label="Flow preview">
+      <section className="preview-runner studio-preview" aria-label="Flow preview">
         <div className="preview-runner__state">
           <p className="preview-runner__eyebrow">Preview unavailable</p>
           <h2>No Start node found</h2>
@@ -76,49 +96,96 @@ export default function PreviewRunner({ flow }) {
   }
 
   return (
-    <section className="preview-runner" aria-label="Flow preview">
-      <div className="preview-runner__frame">
-        <header className="preview-runner__header">
-          <div>
-            <p className="preview-runner__eyebrow">Live simulation</p>
-            <h2 className="preview-runner__title">Support conversation</h2>
-          </div>
+    <section className="preview-runner studio-preview" aria-label="Flow preview">
+      <header className="studio-preview__header">
+        {onBack ? (
+          <button
+            type="button"
+            className="studio-preview__back"
+            aria-label="Back to editor"
+            onClick={onBack}
+          >
+            ← Back to editor
+          </button>
+        ) : (
+          <span />
+        )}
 
-          <span className="preview-runner__status">Node #{currentNode?.id}</span>
-        </header>
-
-        <div className="preview-runner__conversation" aria-live="polite">
-          {conversation.map((message) => (
-            <div className={`preview-message preview-message--${message.role}`} key={message.id}>
-              <span className="preview-message__role">
-                {message.role === 'assistant' ? 'Support' : 'You'}
-              </span>
-
-              <p>{message.text}</p>
-            </div>
-          ))}
+        <div className="studio-preview__title">
+          <span className="studio-blink" />
+          <strong>PREVIEW · Support Flow</strong>
         </div>
 
-        <footer className="preview-runner__actions">
-          {!isTerminal &&
-            currentNode?.options.map((option) => (
-              <button
-                className="preview-option"
-                key={`${currentNode.id}-${option.label}-${option.nextId}`}
-                type="button"
-                onClick={() => handleOptionSelect(option)}
-              >
-                <span>{option.label}</span>
-                <span aria-hidden="true">→</span>
-              </button>
-            ))}
-
+        <div className="studio-preview__meta">
+          <span>
+            {Math.ceil(conversation.length / 2)} step
+            {conversation.length > 2 ? 's' : ''}
+          </span>
           {isTerminal && (
-            <button className="preview-restart" type="button" onClick={handleRestart}>
-              Restart conversation
+            <button type="button" onClick={handleRestart}>
+              ↺ Restart
             </button>
           )}
-        </footer>
+        </div>
+      </header>
+
+      <div
+        ref={scrollRef}
+        className="studio-preview__conversation"
+        aria-live="polite"
+      >
+        <div className="studio-preview__thread">
+          {conversation.map((message, index) => (
+            <div
+              className={[
+                'studio-preview__row',
+                `studio-preview__row--${message.role}`,
+                index === conversation.length - 1 &&
+                message.role === 'assistant'
+                  ? 'studio-message-arrive'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              key={message.id}
+            >
+              {message.role === 'assistant' ? (
+                <div className="studio-preview__assistant">
+                  <span className="studio-preview__avatar">◈</span>
+                  <p>{message.text}</p>
+                </div>
+              ) : (
+                <p className="studio-preview__user-message">{message.text}</p>
+              )}
+            </div>
+          ))}
+
+          {!isTerminal && currentNode?.options.length > 0 && (
+            <div className="studio-preview__answers">
+              {currentNode.options.map((option) => (
+                <button
+                  key={`${currentNode.id}-${option.label}-${option.nextId}`}
+                  type="button"
+                  onClick={() => handleOptionSelect(option)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {isTerminal && (
+            <div className="studio-preview__terminal-actions">
+              <button
+                type="button"
+                aria-label="Restart conversation"
+                onClick={handleRestart}
+              >
+                ↺ Restart conversation
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   )

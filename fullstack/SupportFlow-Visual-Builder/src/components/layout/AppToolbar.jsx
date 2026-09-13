@@ -1,22 +1,24 @@
 /**
- * Renders SupportFlow Studio's primary product toolbar.
+ * Renders the complete SupportFlow Studio toolbar from the Make prototype.
  *
- * Build and X-Ray map onto the editor's existing inspector and Flow Health
- * states. Preview remains a separate execution mode, so the toolbar reflects
- * real application behaviour rather than presenting decorative controls.
+ * Build, X-Ray and Spatial are real application modes, while Preview is an
+ * execution state layered on top of Build. The controls intentionally reflect
+ * actual behavior rather than decorative prototype-only actions.
  */
 
-export default function AppToolbar({
-  activePanel,
-  healthIssueCount,
-  isPreviewMode,
-  onBuild,
-  onXray,
-  onPreviewToggle,
-}) {
-  const isBuildActive = !isPreviewMode && activePanel !== 'health'
-  const isXrayActive = !isPreviewMode && activePanel === 'health'
+const MODE_CLASS = {
+  Build: 'build',
+  'X-Ray': 'xray',
+  Spatial: 'spatial',
+}
 
+export default function AppToolbar({
+  mode,
+  isPreviewMode,
+  healthIssueCount,
+  onModeChange,
+  onPreviewStart,
+}) {
   return (
     <header className="app-toolbar">
       <div className="app-brand">
@@ -45,56 +47,55 @@ export default function AppToolbar({
       <div className="app-toolbar__spacer" />
 
       <div className="app-mode-switch" role="group" aria-label="Editor mode">
-        <button
-          className={
-            isBuildActive
-              ? 'app-mode-switch__button app-mode-switch__button--build app-mode-switch__button--active'
-              : 'app-mode-switch__button'
-          }
-          type="button"
-          onClick={onBuild}
-        >
-          Build
-        </button>
-
-        <button
-          className={
-            isXrayActive
-              ? 'app-mode-switch__button app-mode-switch__button--xray app-mode-switch__button--active'
-              : 'app-mode-switch__button'
-          }
-          type="button"
-          aria-label={`Flow Health, ${healthIssueCount} issues`}
-          onClick={onXray}
-        >
-          X-Ray
-          <span className="app-mode-switch__count" aria-hidden="true">
-            {healthIssueCount}
-          </span>
-        </button>
+        {['Build', 'X-Ray', 'Spatial'].map((item) => (
+          <button
+            key={item}
+            className={[
+              'app-mode-switch__button',
+              `app-mode-switch__button--${MODE_CLASS[item]}`,
+              mode === item && !isPreviewMode
+                ? 'app-mode-switch__button--active'
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            type="button"
+            aria-label={
+              item === 'X-Ray'
+                ? `Flow Health, ${healthIssueCount} issues`
+                : item
+            }
+            onClick={() => onModeChange(item)}
+          >
+            {item}
+            {item === 'X-Ray' && (
+              <span className="app-mode-switch__count" aria-hidden="true">
+                {healthIssueCount}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       <div className="app-toolbar__spacer" />
 
+      {mode === 'Build' && !isPreviewMode && (
+        <button
+          className="app-preview-button"
+          type="button"
+          aria-label="Play preview"
+          onClick={onPreviewStart}
+        >
+          ▶ Preview
+        </button>
+      )}
+
       {isPreviewMode && (
         <span className="app-preview-indicator">
-          <span aria-hidden="true" />
+          <span className="studio-blink" aria-hidden="true" />
           Preview
         </span>
       )}
-
-      <button
-        className={
-          isPreviewMode
-            ? 'app-preview-button app-preview-button--secondary'
-            : 'app-preview-button'
-        }
-        type="button"
-        aria-label={isPreviewMode ? 'Back to editor' : 'Play preview'}
-        onClick={onPreviewToggle}
-      >
-        {isPreviewMode ? 'Back to editor' : '▶ Play preview'}
-      </button>
     </header>
   )
 }

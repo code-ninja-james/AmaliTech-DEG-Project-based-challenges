@@ -1,0 +1,40 @@
+:root {
+  /* Surfaces */
+  --sf-surface-canvas: #0c0d0f;
+  --sf-surface-panel: #101216;
+  --sf-surface-toolbar: #14171c;
+  --sf-surface-node: #1c2026;
+  --sf-surface-hover: #232830;
+
+  /* Typography */
+  --sf-text-primary: rgba(255, 255, 255, 0.92);
+  --sf-text-selected: rgba(255, 255, 255, 0.84);
+  --sf-text-body: rgba(255, 255, 255, 0.68);
+  --sf-text-secondary: rgba(255, 255, 255, 0.52);
+  --sf-text-muted: rgba(255, 255, 255, 0.38);
+  --sf-text-faint: rgba(255, 255, 255, 0.2);
+
+  /* Borders */
+  --sf-border-subtle: rgba(255, 255, 255, 0.08);
+  --sf-border-default: rgba(255, 255, 255, 0.12);
+
+  /* Graph semantics */
+  --sf-node-start: #5e9f8f;
+  --sf-node-question: #6f8fae;
+  --sf-node-terminal: #b78a4a;
+  --sf-status-error: #b56565;
+
+  /* Selected surfaces */
+  --sf-selection-start: #12231f;
+  --sf-selection-question: #151e28;
+  --sf-selection-terminal: #282016;
+
+  /* Radius */
+  --sf-radius-node: 3px;
+  --sf-radius-control: 4px;
+  --sf-radius-panel: 6px;
+
+  /* Typography families */
+  --sf-font-ui: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sf-font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+}

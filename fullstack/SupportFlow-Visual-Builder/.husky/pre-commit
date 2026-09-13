@@ -1,0 +1,2 @@
+cd fullstack/SupportFlow-Visual-Builder
+npx lint-staged

@@ -1,9 +1,9 @@
 /**
  * Application entry component for SupportFlow Studio.
  *
- * The shell coordinates Build, X-Ray and Preview modes around one shared
- * in-memory flow model. The visual structure follows the product design while
- * retaining the tested domain, editor, validation and preview implementation.
+ * The shell ports the complete Make interaction model onto the challenge's
+ * tested data-driven architecture: Build, X-Ray, Spatial and Preview all share
+ * one editable in-memory copy of flow_data.json.
  */
 
 import { useMemo, useState } from 'react'
@@ -14,21 +14,20 @@ import FlowHealthPanel from './components/editor/FlowHealthPanel.jsx'
 import NodeInspector from './components/editor/NodeInspector.jsx'
 import NodeNavigator from './components/editor/NodeNavigator.jsx'
 import FlowCanvas from './components/flow/FlowCanvas.jsx'
+import SpatialView from './components/flow/SpatialView.jsx'
 import AppToolbar from './components/layout/AppToolbar.jsx'
 import StatusBar from './components/layout/StatusBar.jsx'
 import PreviewRunner from './components/preview/PreviewRunner.jsx'
 import validateFlow from './domain/validateFlow.js'
 import './styles/flow.css'
 import './styles/studio.css'
+import './styles/make-port.css'
 
 export default function App() {
   const [flow, setFlow] = useState(flowData)
-
-  // Starting with a selected question mirrors a realistic authoring session
-  // and makes the initial editor view informative instead of showing an empty rail.
   const [selectedNodeId, setSelectedNodeId] = useState('2')
-  const [mode, setMode] = useState('editor')
-  const [sidePanel, setSidePanel] = useState('inspector')
+  const [mode, setMode] = useState('Build')
+  const [isPreviewing, setIsPreviewing] = useState(false)
 
   const selectedNode =
     flow.nodes.find((node) => node.id === selectedNodeId) ?? null
@@ -54,65 +53,84 @@ export default function App() {
 
   const handleNodeSelect = (nodeId) => {
     setSelectedNodeId(nodeId)
-    setSidePanel('inspector')
   }
 
-  const handleBuildMode = () => {
-    setMode('editor')
-    setSidePanel('inspector')
+  const handleModeChange = (nextMode) => {
+    setMode(nextMode)
+    setIsPreviewing(false)
   }
 
-  const handleXrayMode = () => {
-    setMode('editor')
-    setSidePanel('health')
+  const handlePreviewStart = () => {
+    const startNode = flow.nodes.find((node) => node.type === 'start')
+
+    if (startNode) {
+      setSelectedNodeId(startNode.id)
+    }
+
+    setMode('Build')
+    setIsPreviewing(true)
   }
 
-  const isPreviewMode = mode === 'preview'
-  const displayMode = isPreviewMode
-    ? 'Preview'
-    : sidePanel === 'health'
-      ? 'X-Ray'
-      : 'Build'
+  const handlePreviewExit = () => {
+    setIsPreviewing(false)
+  }
+
+  const displayMode = isPreviewing ? 'Preview' : mode
 
   return (
     <main className="app-shell">
       <AppToolbar
-        activePanel={sidePanel}
+        mode={mode}
+        isPreviewMode={isPreviewing}
         healthIssueCount={healthIssues.length}
-        isPreviewMode={isPreviewMode}
-        onBuild={handleBuildMode}
-        onXray={handleXrayMode}
-        onPreviewToggle={() =>
-          setMode(isPreviewMode ? 'editor' : 'preview')
-        }
+        onModeChange={handleModeChange}
+        onPreviewStart={handlePreviewStart}
       />
 
-      {isPreviewMode ? (
-        <PreviewRunner flow={flow} />
-      ) : (
-        <div className="editor-layout">
-          <NodeNavigator
+      <div className="editor-layout">
+        <NodeNavigator
+          flow={flow}
+          selectedNodeId={selectedNodeId}
+          onNodeSelect={handleNodeSelect}
+        />
+
+        {mode === 'Spatial' && !isPreviewing && (
+          <SpatialView
             flow={flow}
             selectedNodeId={selectedNodeId}
             onNodeSelect={handleNodeSelect}
           />
+        )}
 
+        {mode !== 'Spatial' && !isPreviewing && (
           <FlowCanvas
             flow={flow}
+            mode={mode}
             selectedNodeId={selectedNodeId}
             onNodeSelect={handleNodeSelect}
           />
+        )}
 
-          {sidePanel === 'health' ? (
-            <FlowHealthPanel issues={healthIssues} />
-          ) : (
-            <NodeInspector
-              node={selectedNode}
-              onTextChange={handleNodeTextChange}
-            />
-          )}
-        </div>
-      )}
+        {mode === 'Build' && isPreviewing && (
+          <PreviewRunner
+            flow={flow}
+            onBack={handlePreviewExit}
+            onNodeSelect={handleNodeSelect}
+          />
+        )}
+
+        {(mode === 'Build' || mode === 'Spatial') && (
+          <NodeInspector
+            node={selectedNode}
+            flow={flow}
+            onTextChange={handleNodeTextChange}
+          />
+        )}
+
+        {mode === 'X-Ray' && !isPreviewing && (
+          <FlowHealthPanel flow={flow} issues={healthIssues} />
+        )}
+      </div>
 
       <StatusBar
         flow={flow}

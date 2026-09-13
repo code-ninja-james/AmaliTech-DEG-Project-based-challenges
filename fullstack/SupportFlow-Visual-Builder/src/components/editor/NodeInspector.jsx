@@ -1,5 +1,5 @@
 /**
- * Renders the detailed inspector used by the Make design.
+ * Renders the detailed SupportFlow node inspector.
  *
  * The panel exposes Properties, Routes and Health tabs while keeping edits in
  * the parent-owned flow state. That preserves the challenge's in-memory model

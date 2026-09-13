@@ -1,0 +1,272 @@
+/**
+ * Renders the detailed SupportFlow node inspector.
+ *
+ * The panel exposes Properties, Routes and Health tabs while keeping edits in
+ * the parent-owned flow state. That preserves the challenge's in-memory model
+ * and ensures canvas, preview and diagnostics all observe the same data.
+ */
+
+import { useMemo, useState } from 'react'
+
+import analyzeFlow from '../../domain/analyzeFlow.js'
+
+const NODE_META = {
+  start: { label: 'START', glyph: '▶', color: '#10b981' },
+  question: { label: 'QUESTION', glyph: '◇', color: '#4f8ff7' },
+  end: { label: 'TERMINAL', glyph: '■', color: '#f59e0b' },
+}
+
+const NODE_SIZE = {
+  start: { width: 196, height: 88 },
+  question: { width: 196, height: 88 },
+  end: { width: 180, height: 64 },
+}
+
+function SectionLabel({ children }) {
+  return <p className="studio-inspector__section-label">{children}</p>
+}
+
+function PropertyRow({ label, value, mono = false }) {
+  return (
+    <div className="studio-inspector__property-row">
+      <span>{label}</span>
+      <strong className={mono ? 'studio-inspector__mono' : ''}>{value}</strong>
+    </div>
+  )
+}
+
+function PropertiesTab({ node, analysis, onTextChange }) {
+  const size = NODE_SIZE[node.type] ?? { width: 180, height: 80 }
+  const textFieldLabel = node.type === 'end' ? 'Message Text' : 'Question Text'
+
+  return (
+    <div className="studio-inspector__tab-content">
+      <SectionLabel>{textFieldLabel}</SectionLabel>
+
+      <label className="studio-inspector__sr-label" htmlFor={`node-text-${node.id}`}>
+        {textFieldLabel}
+      </label>
+      <textarea
+        id={`node-text-${node.id}`}
+        className="studio-inspector__textarea"
+        value={node.text}
+        rows="3"
+        onChange={(event) => onTextChange(node.id, event.target.value)}
+      />
+
+      <div className="studio-inspector__textarea-meta">
+        <span>Supports {'{'}variables{'}'}</span>
+        <span>{node.text.length} chars</span>
+      </div>
+
+      <div className="studio-inspector__separator" />
+      <SectionLabel>Node Info</SectionLabel>
+
+      <PropertyRow label="Depth" value={String(analysis.depthById.get(node.id) ?? 0)} />
+      <PropertyRow label="Position" value={`${node.position.x}, ${node.position.y}`} mono />
+      <PropertyRow label="Size" value={`${size.width} × ${size.height}`} mono />
+      <PropertyRow label="Routes" value={String(node.options.length)} />
+      <PropertyRow label="Storage" value="In-memory session" />
+    </div>
+  )
+}
+
+function RoutesTab({ node, flow }) {
+  const meta = NODE_META[node.type] ?? NODE_META.question
+  const nodeMap = new Map(flow.nodes.map((candidate) => [candidate.id, candidate]))
+
+  return (
+    <div className="studio-inspector__tab-content">
+      <SectionLabel>Routes · {node.options.length}</SectionLabel>
+
+      {node.options.length === 0 ? (
+        <div className="studio-inspector__empty-routes">
+          <span className="studio-inspector__empty-glyph">{meta.glyph}</span>
+          <p>Terminal — no outbound routes</p>
+        </div>
+      ) : (
+        <div className="studio-inspector__routes">
+          {node.options.map((option, index) => {
+            const target = nodeMap.get(option.nextId)
+            const targetMeta = target ? NODE_META[target.type] ?? NODE_META.question : null
+
+            return (
+              <article
+                className="studio-inspector__route-card"
+                key={`${node.id}-${index}-${option.nextId}`}
+              >
+                <header>
+                  <span
+                    className="studio-inspector__route-accent"
+                    style={{ background: meta.color }}
+                  />
+                  <strong>{option.label}</strong>
+                  <code>route_{index}</code>
+                </header>
+
+                <div className="studio-inspector__route-target">
+                  <span>→</span>
+                  {targetMeta ? (
+                    <>
+                      <span style={{ color: targetMeta.color }}>{targetMeta.glyph}</span>
+                      <code style={{ color: targetMeta.color }}>#{target.id}</code>
+                      <span>{target.text}</span>
+                    </>
+                  ) : (
+                    <span className="studio-inspector__route-missing">
+                      Missing target #{option.nextId}
+                    </span>
+                  )}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HealthTab({ node, flow, analysis }) {
+  const incoming = flow.nodes.reduce(
+    (count, candidate) =>
+      count + candidate.options.filter((option) => option.nextId === node.id).length,
+    0,
+  )
+  const size = NODE_SIZE[node.type] ?? { width: 180, height: 80 }
+  const checks = [
+    {
+      label: 'Connected to flow',
+      ok: incoming > 0 || node.type === 'start',
+    },
+    {
+      label: 'All routes have targets',
+      ok: node.options.every((option) => analysis.nodeMap.has(option.nextId)),
+    },
+    {
+      label: 'Reachable from entry',
+      ok: analysis.reachable.has(node.id),
+    },
+    {
+      label: 'No cycle involvement',
+      ok: !analysis.cycleParticipants.has(node.id),
+    },
+    {
+      label: 'Message text present',
+      ok: node.text.trim().length > 0,
+    },
+  ]
+  const score = checks.filter((check) => check.ok).length
+
+  return (
+    <div className="studio-inspector__tab-content">
+      <SectionLabel>Node Metrics</SectionLabel>
+
+      <div className="studio-inspector__metrics">
+        {[
+          ['Incoming', incoming],
+          ['Outgoing', node.options.length],
+          ['Depth', analysis.depthById.get(node.id) ?? 0],
+          ['Position', `${node.position.x}, ${node.position.y}`],
+          ['Width', `${size.width}px`],
+          ['Height', `${size.height}px`],
+        ].map(([label, value]) => (
+          <div key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </div>
+
+      <div className="studio-inspector__separator" />
+      <SectionLabel>Health Checks</SectionLabel>
+
+      <div className="studio-inspector__checks">
+        {checks.map((check) => (
+          <div key={check.label}>
+            <span
+              className={
+                check.ok
+                  ? 'studio-inspector__check-dot studio-inspector__check-dot--ok'
+                  : 'studio-inspector__check-dot studio-inspector__check-dot--warn'
+              }
+            />
+            <span>{check.label}</span>
+            <strong>{check.ok ? 'OK' : 'WARN'}</strong>
+          </div>
+        ))}
+      </div>
+
+      <div
+        className={
+          score === checks.length
+            ? 'studio-inspector__health-summary studio-inspector__health-summary--ok'
+            : 'studio-inspector__health-summary studio-inspector__health-summary--warn'
+        }
+      >
+        <span />
+        <p>
+          {score}/{checks.length} checks passing ·{' '}
+          {score === checks.length ? 'Node is healthy.' : 'Review warnings.'}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default function NodeInspector({
+  node,
+  flow,
+  onTextChange = () => {},
+}) {
+  const [tab, setTab] = useState('Properties')
+  const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
+
+  if (!node) {
+    return (
+      <aside className="node-inspector" aria-label="Node inspector">
+        <div className="node-inspector__empty">
+          <p className="node-inspector__eyebrow">Inspector</p>
+          <h2 className="node-inspector__title">No node selected</h2>
+          <p className="node-inspector__description">
+            Select a node on the canvas to inspect and edit its content.
+          </p>
+        </div>
+      </aside>
+    )
+  }
+
+  const meta = NODE_META[node.type] ?? NODE_META.question
+
+  return (
+    <aside className="node-inspector studio-inspector" aria-label="Node inspector">
+      <header className="studio-inspector__header">
+        <span style={{ color: meta.color }}>{meta.glyph}</span>
+        <strong style={{ color: meta.color }}>{meta.label}</strong>
+        <code style={{ color: meta.color }}>#{node.id}</code>
+      </header>
+
+      <nav className="studio-inspector__tabs" aria-label="Inspector sections">
+        {['Properties', 'Routes', 'Health'].map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={tab === item ? 'studio-inspector__tab--active' : ''}
+            style={{ '--studio-node-color': meta.color }}
+            onClick={() => setTab(item)}
+          >
+            {item}
+          </button>
+        ))}
+      </nav>
+
+      <div key={`${node.id}-${tab}`} className="studio-inspector__content">
+        {tab === 'Properties' && (
+          <PropertiesTab node={node} analysis={analysis} onTextChange={onTextChange} />
+        )}
+        {tab === 'Routes' && <RoutesTab node={node} flow={flow} />}
+        {tab === 'Health' && <HealthTab node={node} flow={flow} analysis={analysis} />}
+      </div>
+    </aside>
+  )
+}

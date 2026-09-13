@@ -1,0 +1,814 @@
+/* Application shell ------------------------------------------------------- */
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--sf-surface-canvas);
+}
+
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+  background: var(--sf-surface-toolbar);
+}
+
+.app-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.app-subtitle {
+  margin: 3px 0 0;
+  color: var(--sf-text-muted);
+  font-size: 12px;
+}
+
+.app-toolbar__meta {
+  display: flex;
+  gap: 16px;
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 11px;
+}
+
+/* Flow canvas ------------------------------------------------------------- */
+
+.flow-workspace {
+  min-height: calc(100vh - 64px);
+  overflow: auto;
+  padding: 40px;
+}
+
+.flow-canvas {
+  /*
+   * All nodes and future SVG connectors share this fixed coordinate space.
+   * This is important because flow_data.json positions must remain exact.
+   */
+  position: relative;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--sf-border-subtle);
+  background-color: var(--sf-surface-canvas);
+  background-image:
+    linear-gradient(var(--sf-border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--sf-border-subtle) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Graph nodes ------------------------------------------------------------- */
+
+.flow-node {
+  position: absolute;
+  width: 196px;
+  min-height: 120px;
+  overflow: hidden;
+  border: 1px solid var(--sf-border-default);
+  border-top-width: 2px;
+  border-radius: var(--sf-radius-node);
+  background: var(--sf-surface-node);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.flow-node--start {
+  border-top-color: var(--sf-node-start);
+}
+
+.flow-node--question {
+  border-top-color: var(--sf-node-question);
+}
+
+.flow-node--end {
+  /*
+   * Terminal nodes intentionally use the smaller card footprint defined
+   * by the SupportFlow design system.
+   */
+  width: 180px;
+  min-height: 76px;
+  border-top-color: var(--sf-node-terminal);
+}
+
+.flow-node__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.flow-node__type,
+.flow-node__id {
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.flow-node__type {
+  color: var(--sf-text-secondary);
+}
+
+.flow-node__id {
+  color: var(--sf-text-faint);
+}
+
+.flow-node__text {
+  margin: 0;
+  padding: 12px;
+  color: var(--sf-text-body);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Routes ------------------------------------------------------------------ */
+
+.flow-node__routes {
+  border-top: 1px solid var(--sf-border-subtle);
+}
+
+.flow-node__route {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
+  color: var(--sf-text-secondary);
+  font-size: 11px;
+}
+
+.flow-node__route + .flow-node__route {
+  border-top: 1px solid var(--sf-border-subtle);
+}
+
+.flow-node__route-target {
+  flex: 0 0 auto;
+  color: var(--sf-text-faint);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+}
+
+/* SVG connections --------------------------------------------------------- */
+
+.connector-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.connector-path {
+  fill: none;
+  stroke: var(--sf-text-faint);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.connector-arrow {
+  fill: var(--sf-text-faint);
+}
+
+.connector-port {
+  fill: var(--sf-surface-canvas);
+  stroke: var(--sf-text-muted);
+  stroke-width: 1.25;
+}
+
+.connector-label__background {
+  fill: var(--sf-surface-canvas);
+  stroke: var(--sf-border-subtle);
+  stroke-width: 1;
+}
+
+.connector-label__text {
+  fill: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.01em;
+}
+
+/*
+ * Nodes sit above the SVG connection layer so paths visually terminate at
+ * card boundaries instead of appearing to run through card content.
+ */
+.flow-node {
+  z-index: 2;
+}
+/* Editor layout ----------------------------------------------------------- */
+
+/*
+ * The canvas owns the flexible workspace while the inspector keeps a stable
+ * width. minmax(0, 1fr) is intentional: it allows the canvas column to shrink
+ * without forcing the entire browser viewport wider than the available space.
+ */
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  height: calc(100vh - 64px);
+}
+
+.editor-layout .flow-workspace {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Node interaction -------------------------------------------------------- */
+
+.flow-node[role='button'] {
+  cursor: pointer;
+}
+
+.flow-node:focus-visible {
+  outline: 2px solid var(--sf-node-question);
+  outline-offset: 3px;
+}
+
+.flow-node--selected {
+  box-shadow:
+    0 0 0 1px var(--sf-border-default),
+    0 14px 32px rgba(0, 0, 0, 0.32);
+}
+
+.flow-node--start.flow-node--selected {
+  background: var(--sf-selection-start);
+  border-color: var(--sf-node-start);
+}
+
+.flow-node--question.flow-node--selected {
+  background: var(--sf-selection-question);
+  border-color: var(--sf-node-question);
+}
+
+.flow-node--end.flow-node--selected {
+  background: var(--sf-selection-terminal);
+  border-color: var(--sf-node-terminal);
+}
+
+/* Node inspector ---------------------------------------------------------- */
+
+/*
+ * The inspector uses the same restrained surfaces and tight geometry as the
+ * graph itself so editing feels like part of the tool rather than a separate
+ * dashboard-style panel.
+ */
+.node-inspector {
+  position: relative;
+  z-index: 5;
+  overflow-y: auto;
+  border-left: 1px solid var(--sf-border-subtle);
+  background: var(--sf-surface-panel);
+}
+
+.node-inspector__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.node-inspector__empty {
+  padding: 20px;
+}
+
+.node-inspector__eyebrow {
+  margin: 0 0 6px;
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.node-inspector__title {
+  margin: 0;
+  color: var(--sf-text-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.node-inspector__description,
+.node-inspector__hint {
+  color: var(--sf-text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.node-inspector__description {
+  max-width: 240px;
+  margin: 10px 0 0;
+}
+
+.node-inspector__type {
+  padding: 4px 6px;
+  border: 1px solid var(--sf-border-default);
+  border-radius: var(--sf-radius-control);
+  color: var(--sf-text-secondary);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.node-inspector__type--start {
+  border-color: var(--sf-node-start);
+}
+
+.node-inspector__type--question {
+  border-color: var(--sf-node-question);
+}
+
+.node-inspector__type--end {
+  border-color: var(--sf-node-terminal);
+}
+
+.node-inspector__section {
+  padding: 20px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.node-inspector__label,
+.node-inspector__section-title {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--sf-text-secondary);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.node-inspector__textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--sf-border-default);
+  border-radius: var(--sf-radius-control);
+  outline: none;
+  background: var(--sf-surface-canvas);
+  color: var(--sf-text-body);
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.node-inspector__textarea:focus {
+  border-color: var(--sf-node-question);
+}
+
+.node-inspector__hint {
+  margin: 8px 0 0;
+}
+
+.node-inspector__metadata {
+  margin: 0;
+}
+
+.node-inspector__metadata div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 30px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.node-inspector__metadata div:last-child {
+  border-bottom: 0;
+}
+
+.node-inspector__metadata dt {
+  color: var(--sf-text-muted);
+  font-size: 11px;
+}
+
+.node-inspector__metadata dd {
+  margin: 0;
+  color: var(--sf-text-secondary);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+}
+
+@media (max-width: 900px) {
+  .editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .node-inspector {
+    min-height: 260px;
+    border-top: 1px solid var(--sf-border-subtle);
+    border-left: 0;
+  }
+}
+
+/* Toolbar actions --------------------------------------------------------- */
+
+.app-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.app-mode-button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--sf-node-start);
+  border-radius: var(--sf-radius-control);
+  background: var(--sf-selection-start);
+  color: var(--sf-text-primary);
+  cursor: pointer;
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+}
+
+.app-mode-button:hover {
+  background: var(--sf-surface-hover);
+}
+
+.app-mode-button:focus-visible {
+  outline: 2px solid var(--sf-node-start);
+  outline-offset: 2px;
+}
+
+.app-mode-button--secondary {
+  border-color: var(--sf-border-default);
+  background: transparent;
+  color: var(--sf-text-secondary);
+}
+
+/* Preview runner ---------------------------------------------------------- */
+
+/*
+ * Preview intentionally replaces the graph instead of appearing as another
+ * dashboard panel. This creates a clear mode switch between authoring the flow
+ * and experiencing it as an end user.
+ */
+.preview-runner {
+  display: grid;
+  min-height: calc(100vh - 64px);
+  place-items: center;
+  padding: 40px 20px;
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.025), transparent 50%),
+    var(--sf-surface-canvas);
+}
+
+.preview-runner__frame {
+  display: flex;
+  width: min(100%, 680px);
+  min-height: 620px;
+  max-height: calc(100vh - 120px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--sf-border-default);
+  border-radius: var(--sf-radius-panel);
+  background: var(--sf-surface-panel);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+}
+
+.preview-runner__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.preview-runner__eyebrow {
+  margin: 0 0 5px;
+  color: var(--sf-node-start);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.preview-runner__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.preview-runner__status {
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+}
+
+.preview-runner__conversation {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  padding: 24px 20px;
+}
+
+.preview-message {
+  max-width: 76%;
+}
+
+.preview-message--assistant {
+  align-self: flex-start;
+}
+
+.preview-message--user {
+  align-self: flex-end;
+  text-align: right;
+}
+
+.preview-message__role {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.preview-message p {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--sf-border-subtle);
+  border-radius: var(--sf-radius-control);
+  color: var(--sf-text-body);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.preview-message--assistant p {
+  background: var(--sf-surface-node);
+}
+
+.preview-message--user p {
+  border-color: rgba(94, 159, 143, 0.35);
+  background: var(--sf-selection-start);
+  color: var(--sf-text-selected);
+}
+
+.preview-runner__actions {
+  display: grid;
+  gap: 8px;
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--sf-border-subtle);
+}
+
+.preview-option,
+.preview-restart {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 13px;
+  border: 1px solid var(--sf-border-default);
+  border-radius: var(--sf-radius-control);
+  background: var(--sf-surface-node);
+  color: var(--sf-text-body);
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+}
+
+.preview-option:hover,
+.preview-restart:hover {
+  border-color: var(--sf-node-question);
+  background: var(--sf-surface-hover);
+}
+
+.preview-option:focus-visible,
+.preview-restart:focus-visible {
+  outline: 2px solid var(--sf-node-question);
+  outline-offset: 2px;
+}
+
+.preview-restart {
+  justify-content: center;
+  border-color: var(--sf-node-start);
+  background: var(--sf-selection-start);
+  color: var(--sf-text-primary);
+}
+
+.preview-runner__state {
+  max-width: 420px;
+  text-align: center;
+}
+
+.preview-runner__state h2 {
+  margin: 0 0 8px;
+}
+
+.preview-runner__state p:last-child {
+  color: var(--sf-text-muted);
+  line-height: 1.5;
+}
+/* Flow Health toolbar control --------------------------------------------- */
+
+.app-health-button {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--sf-border-default);
+  border-radius: var(--sf-radius-control);
+  background: transparent;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+}
+
+.app-health-button:hover,
+.app-health-button--active {
+  background: var(--sf-surface-hover);
+  color: var(--sf-text-primary);
+}
+
+.app-health-button:focus-visible {
+  outline: 2px solid var(--sf-node-question);
+  outline-offset: 2px;
+}
+
+.app-health-button__count {
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 9px;
+  font-size: 9px;
+}
+
+.app-health-button__count--healthy {
+  background: var(--sf-selection-start);
+  color: var(--sf-node-start);
+}
+
+.app-health-button__count--issues {
+  background: rgba(181, 101, 101, 0.12);
+  color: var(--sf-status-error);
+}
+
+/* Flow Health panel ------------------------------------------------------- */
+
+/*
+ * Flow Health shares the editor's right-hand rail instead of introducing a
+ * modal. Authors can therefore inspect graph structure without losing spatial
+ * context or leaving the editing workflow.
+ */
+.flow-health {
+  overflow-y: auto;
+  border-left: 1px solid var(--sf-border-subtle);
+  background: var(--sf-surface-panel);
+}
+
+.flow-health__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.flow-health__eyebrow {
+  margin: 0 0 6px;
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.flow-health__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.flow-health__status {
+  padding: 4px 7px;
+  border: 1px solid var(--sf-border-default);
+  border-radius: var(--sf-radius-control);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.flow-health__status--healthy {
+  border-color: rgba(94, 159, 143, 0.4);
+  color: var(--sf-node-start);
+}
+
+.flow-health__status--issues {
+  border-color: rgba(181, 101, 101, 0.4);
+  color: var(--sf-status-error);
+}
+
+.flow-health__summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.flow-health__summary div {
+  padding: 14px 20px;
+}
+
+.flow-health__summary div + div {
+  border-left: 1px solid var(--sf-border-subtle);
+}
+
+.flow-health__summary span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.flow-health__summary strong {
+  color: var(--sf-text-primary);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.flow-health__empty {
+  padding: 32px 20px;
+}
+
+.flow-health__check {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 16px;
+  place-items: center;
+  border: 1px solid rgba(94, 159, 143, 0.4);
+  border-radius: 50%;
+  color: var(--sf-node-start);
+}
+
+.flow-health__empty h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.flow-health__empty p {
+  margin: 0;
+  color: var(--sf-text-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.flow-health__issues {
+  display: grid;
+}
+
+.flow-health__issue {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.flow-health__issue--error {
+  border-left: 2px solid var(--sf-status-error);
+}
+
+.flow-health__issue--warning {
+  border-left: 2px solid var(--sf-node-terminal);
+}
+
+.flow-health__issue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.flow-health__issue-header span,
+.flow-health__issue-header code {
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.flow-health__issue p {
+  margin: 0;
+  color: var(--sf-text-body);
+  font-size: 11px;
+  line-height: 1.5;
+}

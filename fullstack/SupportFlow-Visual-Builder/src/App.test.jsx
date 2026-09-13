@@ -82,4 +82,19 @@ describe('SupportFlow application', () => {
 
     expect(screen.getByLabelText('Node inspector')).toBeInTheDocument()
   })
+  it('opens Flow Health and reports the challenge flow as healthy', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /Flow Health/,
+      }),
+    )
+
+    expect(screen.getByLabelText('Flow health')).toBeInTheDocument()
+
+    expect(screen.getByText('No structural issues detected')).toBeInTheDocument()
+  })
 })

@@ -7,13 +7,15 @@
  * challenge JSON.
  */
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import flowData from '../flow_data.json'
 
 import NodeInspector from './components/editor/NodeInspector.jsx'
 import FlowCanvas from './components/flow/FlowCanvas.jsx'
 import PreviewRunner from './components/preview/PreviewRunner.jsx'
+import FlowHealthPanel from './components/editor/FlowHealthPanel.jsx'
+import validateFlow from './domain/validateFlow.js'
 import './styles/flow.css'
 
 export default function App() {
@@ -37,6 +39,15 @@ export default function App() {
     }))
   }
 
+  const [sidePanel, setSidePanel] = useState('inspector')
+
+  const healthIssues = useMemo(() => validateFlow(flow.nodes), [flow.nodes])
+
+  const handleNodeSelect = (nodeId) => {
+    setSelectedNodeId(nodeId)
+    setSidePanel('inspector')
+  }
+
   const isPreviewMode = mode === 'preview'
 
   return (
@@ -50,6 +61,32 @@ export default function App() {
         </div>
 
         <div className="app-toolbar__actions">
+          {!isPreviewMode && (
+            <button
+              className={[
+                'app-health-button',
+                sidePanel === 'health' ? 'app-health-button--active' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              type="button"
+              aria-pressed={sidePanel === 'health'}
+              onClick={() => setSidePanel('health')}
+            >
+              <span>Flow Health</span>
+
+              <span
+                className={
+                  healthIssues.length === 0
+                    ? 'app-health-button__count app-health-button__count--healthy'
+                    : 'app-health-button__count app-health-button__count--issues'
+                }
+              >
+                {healthIssues.length}
+              </span>
+            </button>
+          )}
+
           {!isPreviewMode && (
             <div className="app-toolbar__meta">
               <span>{flow.nodes.length} nodes</span>
@@ -75,13 +112,13 @@ export default function App() {
         <PreviewRunner flow={flow} />
       ) : (
         <div className="editor-layout">
-          <FlowCanvas
-            flow={flow}
-            selectedNodeId={selectedNodeId}
-            onNodeSelect={setSelectedNodeId}
-          />
+          <FlowCanvas flow={flow} selectedNodeId={selectedNodeId} onNodeSelect={handleNodeSelect} />
 
-          <NodeInspector node={selectedNode} onTextChange={handleNodeTextChange} />
+          {sidePanel === 'health' ? (
+            <FlowHealthPanel issues={healthIssues} />
+          ) : (
+            <NodeInspector node={selectedNode} onTextChange={handleNodeTextChange} />
+          )}
         </div>
       )}
     </main>

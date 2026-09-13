@@ -1,29 +1,42 @@
 /**
  * Application entry component for SupportFlow Studio.
  *
- * It owns the editable in-memory flow state, node selection, and product mode.
- * Editor mode renders the visual graph and inspector, while Preview mode runs
- * the same live flow data as a chat simulation without mutating the source
- * challenge JSON.
+ * The shell coordinates Build, X-Ray and Preview modes around one shared
+ * in-memory flow model. The visual structure follows the product design while
+ * retaining the tested domain, editor, validation and preview implementation.
  */
 
 import { useMemo, useState } from 'react'
 
 import flowData from '../flow_data.json'
 
-import NodeInspector from './components/editor/NodeInspector.jsx'
-import FlowCanvas from './components/flow/FlowCanvas.jsx'
-import PreviewRunner from './components/preview/PreviewRunner.jsx'
 import FlowHealthPanel from './components/editor/FlowHealthPanel.jsx'
+import NodeInspector from './components/editor/NodeInspector.jsx'
+import NodeNavigator from './components/editor/NodeNavigator.jsx'
+import FlowCanvas from './components/flow/FlowCanvas.jsx'
+import AppToolbar from './components/layout/AppToolbar.jsx'
+import StatusBar from './components/layout/StatusBar.jsx'
+import PreviewRunner from './components/preview/PreviewRunner.jsx'
 import validateFlow from './domain/validateFlow.js'
 import './styles/flow.css'
+import './styles/studio.css'
 
 export default function App() {
   const [flow, setFlow] = useState(flowData)
-  const [selectedNodeId, setSelectedNodeId] = useState(null)
-  const [mode, setMode] = useState('editor')
 
-  const selectedNode = flow.nodes.find((node) => node.id === selectedNodeId) ?? null
+  // Starting with a selected question mirrors a realistic authoring session
+  // and makes the initial editor view informative instead of showing an empty rail.
+  const [selectedNodeId, setSelectedNodeId] = useState('2')
+  const [mode, setMode] = useState('editor')
+  const [sidePanel, setSidePanel] = useState('inspector')
+
+  const selectedNode =
+    flow.nodes.find((node) => node.id === selectedNodeId) ?? null
+
+  const healthIssues = useMemo(
+    () => validateFlow(flow.nodes),
+    [flow.nodes],
+  )
 
   const handleNodeTextChange = (nodeId, nextText) => {
     setFlow((currentFlow) => ({
@@ -39,88 +52,73 @@ export default function App() {
     }))
   }
 
-  const [sidePanel, setSidePanel] = useState('inspector')
-
-  const healthIssues = useMemo(() => validateFlow(flow.nodes), [flow.nodes])
-
   const handleNodeSelect = (nodeId) => {
     setSelectedNodeId(nodeId)
     setSidePanel('inspector')
   }
 
+  const handleBuildMode = () => {
+    setMode('editor')
+    setSidePanel('inspector')
+  }
+
+  const handleXrayMode = () => {
+    setMode('editor')
+    setSidePanel('health')
+  }
+
   const isPreviewMode = mode === 'preview'
+  const displayMode = isPreviewMode
+    ? 'Preview'
+    : sidePanel === 'health'
+      ? 'X-Ray'
+      : 'Build'
 
   return (
     <main className="app-shell">
-      <header className="app-toolbar">
-        <div>
-          <h1 className="app-title">SupportFlow Studio</h1>
-          <p className="app-subtitle">
-            {isPreviewMode ? 'Previewing support conversation' : 'Visual decision-tree editor'}
-          </p>
-        </div>
-
-        <div className="app-toolbar__actions">
-          {!isPreviewMode && (
-            <button
-              className={[
-                'app-health-button',
-                sidePanel === 'health' ? 'app-health-button--active' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              type="button"
-              aria-pressed={sidePanel === 'health'}
-              onClick={() => setSidePanel('health')}
-            >
-              <span>Flow Health</span>
-
-              <span
-                className={
-                  healthIssues.length === 0
-                    ? 'app-health-button__count app-health-button__count--healthy'
-                    : 'app-health-button__count app-health-button__count--issues'
-                }
-              >
-                {healthIssues.length}
-              </span>
-            </button>
-          )}
-
-          {!isPreviewMode && (
-            <div className="app-toolbar__meta">
-              <span>{flow.nodes.length} nodes</span>
-              <span>
-                {flow.meta.canvas_size.w} × {flow.meta.canvas_size.h}
-              </span>
-            </div>
-          )}
-
-          <button
-            className={
-              isPreviewMode ? 'app-mode-button app-mode-button--secondary' : 'app-mode-button'
-            }
-            type="button"
-            onClick={() => setMode(isPreviewMode ? 'editor' : 'preview')}
-          >
-            {isPreviewMode ? 'Back to editor' : 'Play preview'}
-          </button>
-        </div>
-      </header>
+      <AppToolbar
+        activePanel={sidePanel}
+        healthIssueCount={healthIssues.length}
+        isPreviewMode={isPreviewMode}
+        onBuild={handleBuildMode}
+        onXray={handleXrayMode}
+        onPreviewToggle={() =>
+          setMode(isPreviewMode ? 'editor' : 'preview')
+        }
+      />
 
       {isPreviewMode ? (
         <PreviewRunner flow={flow} />
       ) : (
         <div className="editor-layout">
-          <FlowCanvas flow={flow} selectedNodeId={selectedNodeId} onNodeSelect={handleNodeSelect} />
+          <NodeNavigator
+            flow={flow}
+            selectedNodeId={selectedNodeId}
+            onNodeSelect={handleNodeSelect}
+          />
+
+          <FlowCanvas
+            flow={flow}
+            selectedNodeId={selectedNodeId}
+            onNodeSelect={handleNodeSelect}
+          />
 
           {sidePanel === 'health' ? (
             <FlowHealthPanel issues={healthIssues} />
           ) : (
-            <NodeInspector node={selectedNode} onTextChange={handleNodeTextChange} />
+            <NodeInspector
+              node={selectedNode}
+              onTextChange={handleNodeTextChange}
+            />
           )}
         </div>
       )}
+
+      <StatusBar
+        flow={flow}
+        selectedNodeId={selectedNodeId}
+        mode={displayMode}
+      />
     </main>
   )
 }

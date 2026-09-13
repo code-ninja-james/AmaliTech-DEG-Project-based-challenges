@@ -1,0 +1,109 @@
+/**
+ * Minimap and scroll-viewport presentation for the SupportFlow graph.
+ *
+ * The minimap is pinned to the workspace while the 1200×800 authoring canvas
+ * remains independently scrollable, preserving the challenge coordinate model.
+ */
+
+.flow-workspace {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+}
+
+.flow-scroll-area {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 28px;
+}
+
+.minimap,
+.minimap-toggle {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 20;
+}
+
+.minimap {
+  width: 166px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  background: rgba(6, 6, 10, 0.96);
+  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.85);
+}
+
+.minimap__header {
+  display: flex;
+  height: 24px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.22);
+  font-family: var(--sf-font-mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.minimap__header button {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+}
+
+.minimap__graph {
+  display: block;
+  width: 100%;
+  height: 108px;
+  padding: 6px;
+}
+
+.minimap__connection {
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 5;
+  vector-effect: non-scaling-stroke;
+}
+
+.minimap__node {
+  fill: rgba(255, 255, 255, 0.08);
+  stroke-width: 5;
+  vector-effect: non-scaling-stroke;
+}
+
+.minimap__node--start {
+  fill: rgba(16, 185, 129, 0.24);
+}
+
+.minimap__node--question {
+  fill: rgba(79, 143, 247, 0.24);
+}
+
+.minimap__node--end {
+  fill: rgba(245, 158, 11, 0.24);
+}
+
+.minimap__node--selected {
+  stroke: rgba(255, 255, 255, 0.88);
+}
+
+.minimap-toggle {
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 3px;
+  background: rgba(6, 6, 10, 0.9);
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  font-family: var(--sf-font-mono);
+  font-size: 8px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}

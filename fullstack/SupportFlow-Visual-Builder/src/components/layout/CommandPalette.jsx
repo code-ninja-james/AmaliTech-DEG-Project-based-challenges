@@ -1,9 +1,9 @@
 /**
- * Provides the command palette advertised by the Make status bar.
+ * Provides a keyboard-driven command palette for SupportFlow Studio.
  *
- * The original prototype only displayed the keyboard hint. This implementation
- * makes the affordance real by exposing mode switching and Preview through the
- * same handlers used by the primary toolbar.
+ * It exposes the same mode switching and Preview actions as the primary toolbar
+ * so keyboard users can navigate the editor without duplicating application
+ * state or maintaining a second command model.
  */
 
 export default function CommandPalette({

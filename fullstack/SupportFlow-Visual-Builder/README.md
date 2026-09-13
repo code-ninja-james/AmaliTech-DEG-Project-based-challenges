@@ -1,111 +1,231 @@
-# SupportFlow-Visual-Builder
+# SupportFlow Studio
 
-This challenge is designed to test your ability to bridge Computer Science fundamentals with Modern Frontend Engineering.
+SupportFlow Studio is a visual decision-tree editor for customer-support flows. It turns the supplied `flow_data.json` into an interactive graph that support teams can inspect, edit, validate, and run as a chat simulation.
 
-## 1. Business Scenario & Context
+The implementation is deliberately built without graph or component libraries. Node positions come directly from the provided JSON, while relationships are measured from the DOM and rendered with native SVG.
 
-**Client:** SupportFlow AI
-**Industry:** Customer Support Automation (Chatbots)
+## Design
 
-**The Problem:** SupportFlow helps companies build automated "Help Bots" (e.g., "Press 1 for Billing, 2 for Tech Support"). Currently, their configuration is done via a messy Excel spreadsheet. It is error-prone, hard to visualize, and frustrating for non-technical managers.
+**Figma design system and product design**  
+https://www.figma.com/design/h6kKHcwHrkwz2CKxqu7CGh/SupportFlow-Studio---Design-System---Product
 
-**Your Role:** You are the new Frontend Engineer. The Product Manager wants a **Visual Decision Tree Editor** where users can see their conversation flow as a flowchart, edit the questions in real-time, and "test drive" the bot instantly.
+The design uses a restrained dark workspace with semantic states:
 
----
+- **Start** — green
+- **Question** — blue
+- **Terminal** — amber
+- **Error** — muted red
 
-## 2. The Assignment Stages
+The product shell includes a searchable node navigator, visual graph, inspector rail, minimap, mode controls, and compact status information.
 
-This is a **hybrid design/engineering challenge**. You are expected to demonstrate competence in both visual design logic and complex DOM manipulation.
+## Features
 
-### Phase 1: The Design System
+### Build mode
 
-**Before writing code, you must design the visual language of the tool.**
+- Renders all six nodes from `flow_data.json`.
+- Preserves the supplied `1200 × 800` canvas and exact node `x/y` coordinates.
+- Converts node options into directed graph connections.
+- Measures rendered node boundaries with DOM geometry and `ResizeObserver`.
+- Draws custom cubic Bézier connectors with native SVG.
+- Supports route labels, selection states, execution packets, minimap navigation, and canvas zoom controls.
+- Includes a searchable/collapsible node navigator.
 
-- **Deliverable:** A link to your design file (Figma, Penpot, or Sketch) or a PDF export of your design frames.
-- **Requirement:** Your design file must include a dedicated **"Design System" page** that defines:
-  - **Canvas**
-  - **Node Cards**
-  - **Connectors**
-  - **Color Semantics**
+### Node inspector
 
-### Phase 2: The Implementation
+Selecting a node opens a detailed inspector with **Properties**, **Routes**, and **Health** tabs.
 
-**Build the "Flow Builder" using your design system.**
+Question or terminal text is edited against a single shared in-memory flow model, so changes update the canvas and Preview immediately. The imported challenge fixture is never mutated directly.
 
-- **Constraint 1 (Critical):** You **cannot** use Flowchart/Graph libraries like `react-flow`, `jsPlumb`, or `mermaid.js`. You must build the node rendering and line connection logic yourself to prove you understand DOM coordinates and SVG/Canvas drawing.
-- **Constraint 2:** Do not use component libraries like Material UI or Bootstrap. (Tailwind is allowed only if you use it to build custom components).
+### Preview runner
 
----
+Preview mode runs the same live flow as a customer conversation:
 
-## 3. User Stories & Acceptance Criteria
+- starts at the Start node;
+- displays the current support message;
+- follows the selected option's `nextId`;
+- keeps conversation history;
+- detects terminal nodes; and
+- provides a Restart action at the end of the journey.
 
-### Core Features (Required)
+### X-Ray / Flow Health
 
-#### Story 1: The Visual Graph
+**Flow Health is the required wildcard feature.**
 
-> "As a user, I want to see my conversation logic as a connected flowchart, not a list."
+A flow can look visually correct while still containing structural mistakes that only surface during execution. Flow Health therefore validates the graph and detects:
 
-- **AC 1:** The app renders "Nodes" (questions) based on the provided JSON data.
-- **AC 2:** The Nodes are positioned absolutely on the canvas (using the x/y coordinates provided in the JSON).
-- **AC 3:** Visual lines (SVG or HTML Canvas) connect a Parent Node to its Child Nodes based on the flow logic.
+- duplicate node IDs;
+- missing route targets;
+- unreachable nodes;
+- invalid Start-node counts;
+- unexpected dead ends;
+- Terminal nodes with outgoing routes; and
+- cycles that can trap a customer in an endless journey.
 
-#### Story 2: The Editor
+**Business value:** Flow Health acts as an editor-side quality gate before publish. It reduces broken customer journeys, configuration mistakes, and avoidable support tickets that are difficult for non-technical authors to spot visually.
 
-> "As a user, I need to update the text when our support policies change."
+### Spatial mode
 
-- **AC 1:** Clicking a Node opens an "Edit Panel" or turns the card into an editable form.
-- **AC 2:** Users can edit the "Question Text" and the changes reflect immediately on the canvas.
-- **AC 3:** (Constraint) You do not need to save changes to a permanent database. Managing local state (in-memory) is sufficient.
+Spatial mode provides an alternate topology view of the same six challenge nodes. It derives from the existing flow model rather than maintaining duplicate graph data and includes working zoom/reset controls plus relationship highlighting.
 
-#### Story 3: The "Preview" Mode (The Runner)
+### Command palette
 
-> "As a manager, I want to test the bot experience as if I were a real customer."
+`⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, and Preview modes.
 
-- **AC 1:** A "Play" button toggles the UI from "Editor View" (Flowchart) to "Preview Mode" (Chat Interface).
-- **AC 2:** In Preview Mode, the app displays the Start Node's question.
-- **AC 3:** When the user selects an answer, the app traverses the graph to show the next node.
-- **AC 4:** Show a "Restart" button when a leaf node (end of conversation) is reached.
+## Architecture
 
-### The "Wildcard" Feature (Required)
+```text
+flow_data.json
+      |
+      +--> App.jsx --------------------> shared editable state
+      |
+      +--> getConnections.js ----------> ConnectorLayer.jsx
+      |                                      |
+      |                                  native SVG
+      |
+      +--> FlowCanvas.jsx --------------> FlowNode.jsx
+      |
+      +--> analyzeFlow.js / validateFlow.js --> X-Ray + Flow Health
+      |
+      +--> traverseFlow.js -------------> PreviewRunner.jsx
+```
 
-#### Story 4: The Innovation Clause
+Key decisions:
 
-> "As a developer, I want to add one feature that makes this tool indispensable."
+- `App.jsx` owns the editable flow so all modes observe the same data.
+- Graph traversal, validation, analysis, and path geometry live in pure domain functions.
+- DOM measurement keeps connector anchors aligned when node dimensions change.
+- Broken `nextId` references do not crash rendering; diagnostics surface them instead.
+- Coordinates from `flow_data.json` remain authoritative.
+- Reduced-motion preferences disable continuous execution animations.
 
-- **Task:** Identify a missing feature that improves the _Editor_ experience.
-- **AC 1:** Implement **one** additional feature of your choice.
-- **AC 2:** In your README, explain _why_ you chose this feature and how it adds value to the business.
+## Technology
 
----
+- React 19
+- JavaScript / JSX
+- Vite
+- Native SVG
+- Custom CSS and CSS variables
+- Vitest
+- React Testing Library
+- ESLint
+- Prettier
+- Husky + lint-staged
 
-## 4. Technical Requirements
+No React Flow, jsPlumb, Mermaid, Material UI, Bootstrap, Chakra UI, or other graph/component library is used.
 
-- **Data:** Use the `flow_data.json` file provided in this repo.
-- **Tech Stack:** React, Vue, Svelte, or Vanilla JS.
+## Project structure
 
----
+```text
+src/
+├── components/
+│   ├── editor/
+│   │   ├── FlowHealthPanel.jsx
+│   │   ├── NodeInspector.jsx
+│   │   └── NodeNavigator.jsx
+│   ├── flow/
+│   │   ├── ConnectorLayer.jsx
+│   │   ├── FlowCanvas.jsx
+│   │   ├── FlowNode.jsx
+│   │   ├── Minimap.jsx
+│   │   └── SpatialView.jsx
+│   ├── layout/
+│   │   ├── AppToolbar.jsx
+│   │   ├── CommandPalette.jsx
+│   │   └── StatusBar.jsx
+│   └── preview/
+│       └── PreviewRunner.jsx
+├── domain/
+│   ├── analyzeFlow.js
+│   ├── createBezierPath.js
+│   ├── getConnections.js
+│   ├── traverseFlow.js
+│   └── validateFlow.js
+├── hooks/
+│   └── useNodeMeasurements.js
+├── styles/
+│   ├── command-palette.css
+│   ├── flow.css
+│   ├── global.css
+│   ├── studio.css
+│   ├── studio-interactions.css
+│   └── tokens.css
+├── App.jsx
+└── main.jsx
+```
 
-## 5. Submission Instructions
+## Running locally
 
-1.  **Fork** this repository.
-2.  Complete the code in your fork.
-3.  **Update the README:**
-    - **Delete** all the instructions in this file (the text you are reading now).
-    - **Replace** them with your own documentation.
-    - _Note: Do not append your docs to the end. The final README should look like a professional project documentation, not a homework assignment._
-4.  Submit your repo link via the [online](https://forms.cloud.microsoft/e/PrfSgKKQ0k) form.
+From `fullstack/SupportFlow-Visual-Builder`:
 
-### ⚠️ CRITICAL: Pre-Submission Checklist
+```bash
+npm install
+npm run dev
+```
 
-**STOP and review your work.** To be eligible for the Solution Defense interview, your submission **MUST** pass the following "Gatekeeper" checks.
+## Quality gate
 
-If any of the following are incorrect, your submission will be flagged as incomplete and you will **NOT** be invited for an interview.
+```bash
+npm run verify
+```
 
-1.  **Public Repository:** Is your GitHub repository set to **Public**? (Private links will be auto-rejected).
-2.  **Audit-Ready History:** Does your Git commit history show your progress over time? (Repositories with a single "Initial Commit" or "Upload files" containing the entire project will be **rejected as unverifiable**).
-3.  **Working Deployment:** Have you tested your live link in an **Incognito/Private** window to ensure it loads without errors?
-4.  **No Restricted Libraries:** Did you build your own components? (Submissions using **Bootstrap, Material UI, or Chakra UI** will be disqualified).
-5.  **Design File Access:** Is your Figma/Penpot link included and set to **"Anyone with the link can view"**?
-6.  **Documentation:** Have you deleted the original assignment text from the `README.md` and replaced it with your own project documentation?
+This runs:
 
-> **By submitting your work, you acknowledge that failure to meet these criteria effectively ends your application process.**
+```text
+Prettier format check
+        ↓
+ESLint
+        ↓
+Vitest
+        ↓
+Vite production build
+```
+
+Git hooks also enforce quality locally:
+
+- **pre-commit** — lint-staged checks
+- **pre-push** — complete `npm run verify`
+
+## Tests
+
+The suite covers node rendering, exact challenge coordinates, connector extraction, Bézier geometry, selection and editing, mode switching, Preview traversal/restart, Flow Health rules, and navigator interactions.
+
+Run tests independently with:
+
+```bash
+npm test
+```
+
+## Deployment
+
+SupportFlow Studio is a static Vite application.
+
+Recommended monorepo deployment settings:
+
+```text
+Root directory: fullstack/SupportFlow-Visual-Builder
+Build command: npm run build
+Output directory: dist
+Install command: npm install
+```
+
+The production URL should be tested in an Incognito/Private window before submission.
+
+## Challenge data
+
+The supplied fixture remains the source of truth:
+
+```text
+#1 Start
+├── Internet is down → #2
+│   ├── Yes, didn't work → #4
+│   └── No, let me try → #5
+└── Billing Question → #3
+    ├── Personal → #6
+    └── Business → #6
+```
+
+## Author
+
+**Jameson Githinji**  
+GitHub: https://github.com/code-ninja-james  
+LinkedIn: https://www.linkedin.com/in/jameson-githinji/

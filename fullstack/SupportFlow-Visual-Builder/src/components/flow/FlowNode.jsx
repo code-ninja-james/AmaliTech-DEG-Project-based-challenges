@@ -1,10 +1,10 @@
 /**
- * Renders a single SupportFlow node at the exact position supplied by
+ * Renders an interactive SupportFlow node at the exact position supplied by
  * flow_data.json.
  *
- * The component is intentionally presentation-focused. Graph traversal,
- * validation, and connector geometry live outside this component so those
- * responsibilities remain independently testable and maintainable.
+ * The node remains presentation-focused but exposes selection through a small
+ * callback API. Mouse and keyboard interactions are both supported so the
+ * custom graph does not depend on inaccessible click-only behaviour.
  */
 
 const NODE_LABELS = {
@@ -13,14 +13,30 @@ const NODE_LABELS = {
   end: 'Terminal',
 }
 
-export default function FlowNode({ node, nodeRef }) {
+export default function FlowNode({ node, nodeRef, isSelected = false, onSelect = () => {} }) {
   const nodeType = NODE_LABELS[node.type] ?? node.type
+
+  const handleKeyDown = (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return
+    }
+
+    event.preventDefault()
+    onSelect(node.id)
+  }
 
   return (
     <article
       ref={nodeRef}
-      className={`flow-node flow-node--${node.type}`}
+      className={['flow-node', `flow-node--${node.type}`, isSelected ? 'flow-node--selected' : '']
+        .filter(Boolean)
+        .join(' ')}
       data-testid={`flow-node-${node.id}`}
+      role="button"
+      tabIndex="0"
+      aria-pressed={isSelected}
+      onClick={() => onSelect(node.id)}
+      onKeyDown={handleKeyDown}
       style={{
         // Preserve the exact x/y values supplied by the challenge data.
         left: `${node.position.x}px`,
@@ -41,8 +57,8 @@ export default function FlowNode({ node, nodeRef }) {
               <span>{option.label}</span>
 
               {/*
-                Route targets are shown as lightweight metadata here.
-                The SVG connector layer will visualize these same relationships.
+                Route targets are lightweight metadata. The SVG layer renders
+                the actual directed connection between these node boundaries.
               */}
               <span className="flow-node__route-target">→ #{option.nextId}</span>
             </div>

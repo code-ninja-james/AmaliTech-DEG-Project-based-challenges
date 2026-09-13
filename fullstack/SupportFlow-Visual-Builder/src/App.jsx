@@ -23,6 +23,7 @@ import validateFlow from './domain/validateFlow.js'
 import './styles/flow.css'
 import './styles/studio.css'
 import './styles/make-port.css'
+import './styles/command-palette.css'
 
 export default function App() {
   const [flow, setFlow] = useState(flowData)

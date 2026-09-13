@@ -131,7 +131,6 @@ export default function ConnectorLayer({
         const sourceRect = nodeRects[connection.sourceId]
         const targetRect = nodeRects[connection.targetId]
         const sourceNode = nodeMap.get(connection.sourceId)
-        const targetNode = nodeMap.get(connection.targetId)
 
         if (!sourceRect || !targetRect) {
           return null

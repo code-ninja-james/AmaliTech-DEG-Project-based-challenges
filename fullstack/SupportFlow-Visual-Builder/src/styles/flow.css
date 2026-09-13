@@ -409,3 +409,208 @@
     border-left: 0;
   }
 }
+
+/* Toolbar actions --------------------------------------------------------- */
+
+.app-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.app-mode-button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--sf-node-start);
+  border-radius: var(--sf-radius-control);
+  background: var(--sf-selection-start);
+  color: var(--sf-text-primary);
+  cursor: pointer;
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+}
+
+.app-mode-button:hover {
+  background: var(--sf-surface-hover);
+}
+
+.app-mode-button:focus-visible {
+  outline: 2px solid var(--sf-node-start);
+  outline-offset: 2px;
+}
+
+.app-mode-button--secondary {
+  border-color: var(--sf-border-default);
+  background: transparent;
+  color: var(--sf-text-secondary);
+}
+
+/* Preview runner ---------------------------------------------------------- */
+
+/*
+ * Preview intentionally replaces the graph instead of appearing as another
+ * dashboard panel. This creates a clear mode switch between authoring the flow
+ * and experiencing it as an end user.
+ */
+.preview-runner {
+  display: grid;
+  min-height: calc(100vh - 64px);
+  place-items: center;
+  padding: 40px 20px;
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.025), transparent 50%),
+    var(--sf-surface-canvas);
+}
+
+.preview-runner__frame {
+  display: flex;
+  width: min(100%, 680px);
+  min-height: 620px;
+  max-height: calc(100vh - 120px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--sf-border-default);
+  border-radius: var(--sf-radius-panel);
+  background: var(--sf-surface-panel);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+}
+
+.preview-runner__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.preview-runner__eyebrow {
+  margin: 0 0 5px;
+  color: var(--sf-node-start);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.preview-runner__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.preview-runner__status {
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+}
+
+.preview-runner__conversation {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  padding: 24px 20px;
+}
+
+.preview-message {
+  max-width: 76%;
+}
+
+.preview-message--assistant {
+  align-self: flex-start;
+}
+
+.preview-message--user {
+  align-self: flex-end;
+  text-align: right;
+}
+
+.preview-message__role {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.preview-message p {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--sf-border-subtle);
+  border-radius: var(--sf-radius-control);
+  color: var(--sf-text-body);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.preview-message--assistant p {
+  background: var(--sf-surface-node);
+}
+
+.preview-message--user p {
+  border-color: rgba(94, 159, 143, 0.35);
+  background: var(--sf-selection-start);
+  color: var(--sf-text-selected);
+}
+
+.preview-runner__actions {
+  display: grid;
+  gap: 8px;
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--sf-border-subtle);
+}
+
+.preview-option,
+.preview-restart {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 13px;
+  border: 1px solid var(--sf-border-default);
+  border-radius: var(--sf-radius-control);
+  background: var(--sf-surface-node);
+  color: var(--sf-text-body);
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+}
+
+.preview-option:hover,
+.preview-restart:hover {
+  border-color: var(--sf-node-question);
+  background: var(--sf-surface-hover);
+}
+
+.preview-option:focus-visible,
+.preview-restart:focus-visible {
+  outline: 2px solid var(--sf-node-question);
+  outline-offset: 2px;
+}
+
+.preview-restart {
+  justify-content: center;
+  border-color: var(--sf-node-start);
+  background: var(--sf-selection-start);
+  color: var(--sf-text-primary);
+}
+
+.preview-runner__state {
+  max-width: 420px;
+  text-align: center;
+}
+
+.preview-runner__state h2 {
+  margin: 0 0 8px;
+}
+
+.preview-runner__state p:last-child {
+  color: var(--sf-text-muted);
+  line-height: 1.5;
+}

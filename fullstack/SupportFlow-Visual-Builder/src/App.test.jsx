@@ -54,4 +54,32 @@ describe('SupportFlow application', () => {
       within(screen.getByTestId('flow-node-2')).getByText('Is your router still offline?'),
     ).toBeInTheDocument()
   })
+
+  it('switches between editor and preview modes', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Play preview',
+      }),
+    )
+
+    expect(
+      screen.getByRole('region', {
+        name: 'Flow preview',
+      }),
+    ).toBeInTheDocument()
+
+    expect(screen.queryByLabelText('Node inspector')).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Back to editor',
+      }),
+    )
+
+    expect(screen.getByLabelText('Node inspector')).toBeInTheDocument()
+  })
 })

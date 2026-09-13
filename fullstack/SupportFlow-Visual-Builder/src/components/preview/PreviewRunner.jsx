@@ -99,7 +99,12 @@ export default function PreviewRunner({
     <section className="preview-runner studio-preview" aria-label="Flow preview">
       <header className="studio-preview__header">
         {onBack ? (
-          <button type="button" className="studio-preview__back" onClick={onBack}>
+          <button
+            type="button"
+            className="studio-preview__back"
+            aria-label="Back to editor"
+            onClick={onBack}
+          >
             ← Back to editor
           </button>
         ) : (
@@ -112,7 +117,10 @@ export default function PreviewRunner({
         </div>
 
         <div className="studio-preview__meta">
-          <span>{Math.ceil(conversation.length / 2)} step{conversation.length > 2 ? 's' : ''}</span>
+          <span>
+            {Math.ceil(conversation.length / 2)} step
+            {conversation.length > 2 ? 's' : ''}
+          </span>
           {isTerminal && (
             <button type="button" onClick={handleRestart}>
               ↺ Restart
@@ -121,14 +129,19 @@ export default function PreviewRunner({
         </div>
       </header>
 
-      <div ref={scrollRef} className="studio-preview__conversation" aria-live="polite">
+      <div
+        ref={scrollRef}
+        className="studio-preview__conversation"
+        aria-live="polite"
+      >
         <div className="studio-preview__thread">
           {conversation.map((message, index) => (
             <div
               className={[
                 'studio-preview__row',
                 `studio-preview__row--${message.role}`,
-                index === conversation.length - 1 && message.role === 'assistant'
+                index === conversation.length - 1 &&
+                message.role === 'assistant'
                   ? 'studio-message-arrive'
                   : '',
               ]
@@ -163,7 +176,11 @@ export default function PreviewRunner({
 
           {isTerminal && (
             <div className="studio-preview__terminal-actions">
-              <button type="button" onClick={handleRestart}>
+              <button
+                type="button"
+                aria-label="Restart conversation"
+                onClick={handleRestart}
+              >
                 ↺ Restart conversation
               </button>
             </div>

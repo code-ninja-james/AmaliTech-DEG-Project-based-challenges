@@ -6,7 +6,7 @@
  * one editable in-memory copy of flow_data.json.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import flowData from '../flow_data.json'
 
@@ -16,6 +16,7 @@ import NodeNavigator from './components/editor/NodeNavigator.jsx'
 import FlowCanvas from './components/flow/FlowCanvas.jsx'
 import SpatialView from './components/flow/SpatialView.jsx'
 import AppToolbar from './components/layout/AppToolbar.jsx'
+import CommandPalette from './components/layout/CommandPalette.jsx'
 import StatusBar from './components/layout/StatusBar.jsx'
 import PreviewRunner from './components/preview/PreviewRunner.jsx'
 import validateFlow from './domain/validateFlow.js'
@@ -28,6 +29,7 @@ export default function App() {
   const [selectedNodeId, setSelectedNodeId] = useState('2')
   const [mode, setMode] = useState('Build')
   const [isPreviewing, setIsPreviewing] = useState(false)
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
 
   const selectedNode =
     flow.nodes.find((node) => node.id === selectedNodeId) ?? null
@@ -74,6 +76,26 @@ export default function App() {
   const handlePreviewExit = () => {
     setIsPreviewing(false)
   }
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setIsCommandPaletteOpen((current) => !current)
+        return
+      }
+
+      if (event.key === 'Escape') {
+        setIsCommandPaletteOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
 
   const displayMode = isPreviewing ? 'Preview' : mode
 
@@ -136,6 +158,14 @@ export default function App() {
         flow={flow}
         selectedNodeId={selectedNodeId}
         mode={displayMode}
+        onCommandPalette={() => setIsCommandPaletteOpen(true)}
+      />
+
+      <CommandPalette
+        open={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onModeChange={handleModeChange}
+        onPreviewStart={handlePreviewStart}
       />
     </main>
   )

@@ -3,8 +3,11 @@
  *
  * The view is intentionally derived from the same six challenge nodes rather
  * than maintaining a duplicate graph model. Selecting a topology point updates
- * the shared editor selection and the adjacent inspector immediately.
+ * the shared editor selection, while the viewport controls provide real zoom
+ * behavior instead of decorative prototype-only buttons.
  */
+
+import { useState } from 'react'
 
 const TYPE_COLOR = {
   start: '#10b981',
@@ -36,6 +39,14 @@ const SPATIAL_LABELS = {
   '6': 'Billing agent',
 }
 
+const MIN_ZOOM = 0.7
+const MAX_ZOOM = 1.4
+const ZOOM_STEP = 0.1
+
+function clampZoom(value) {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
+}
+
 function buildEdges(nodes) {
   return nodes.flatMap((node) =>
     node.options.map((option, optionIndex) => ({
@@ -52,6 +63,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
   const focal = 1600
   const centerX = 100
   const centerY = 320
+  const [zoom, setZoom] = useState(1)
   const nodeMap = new Map(flow.nodes.map((node) => [node.id, node]))
   const spatialNodes = flow.nodes.filter((node) => SPATIAL_POSITIONS[node.id])
   const edges = buildEdges(spatialNodes).filter((edge) => nodeMap.has(edge.to))
@@ -108,6 +120,11 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
     (a, b) => SPATIAL_POSITIONS[b.id][2] - SPATIAL_POSITIONS[a.id][2],
   )
 
+  const viewWidth = viewportWidth / zoom
+  const viewHeight = viewportHeight / zoom
+  const viewX = (viewportWidth - viewWidth) / 2
+  const viewY = (viewportHeight - viewHeight) / 2
+
   return (
     <section className="spatial-view" aria-label="Spatial topology">
       <div className="spatial-view__badge">
@@ -116,7 +133,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
       </div>
 
       <svg
-        viewBox={`0 0 ${viewportWidth} ${viewportHeight}`}
+        viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="spatial-view__svg"
       >
@@ -162,8 +179,8 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
           })}
         </defs>
 
-        <rect width={viewportWidth} height={viewportHeight} fill="url(#spatial-bg)" />
-        <rect width={viewportWidth} height={viewportHeight} fill="url(#spatial-vignette)" />
+        <rect x={viewX} y={viewY} width={viewWidth} height={viewHeight} fill="url(#spatial-bg)" />
+        <rect x={viewX} y={viewY} width={viewWidth} height={viewHeight} fill="url(#spatial-vignette)" />
 
         {[0.28, 0.42, 0.58, 0.72].map((ratio) => (
           <line
@@ -270,11 +287,29 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
         })}
       </svg>
 
-      <div className="spatial-view__controls" aria-hidden="true">
-        <button type="button">−</button>
-        <button type="button">+</button>
-        <span>100%</span>
-        <button type="button">⊡</button>
+      <div className="spatial-view__controls">
+        <button
+          type="button"
+          aria-label="Zoom out spatial view"
+          onClick={() => setZoom((current) => clampZoom(current - ZOOM_STEP))}
+        >
+          −
+        </button>
+        <button
+          type="button"
+          aria-label="Zoom in spatial view"
+          onClick={() => setZoom((current) => clampZoom(current + ZOOM_STEP))}
+        >
+          +
+        </button>
+        <span>{Math.round(zoom * 100)}%</span>
+        <button
+          type="button"
+          aria-label="Reset spatial view"
+          onClick={() => setZoom(1)}
+        >
+          ⊡
+        </button>
       </div>
     </section>
   )

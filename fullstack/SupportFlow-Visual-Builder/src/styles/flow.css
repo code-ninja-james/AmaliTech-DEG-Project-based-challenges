@@ -202,3 +202,210 @@
 .flow-node {
   z-index: 2;
 }
+/* Editor layout ----------------------------------------------------------- */
+
+/*
+ * The canvas owns the flexible workspace while the inspector keeps a stable
+ * width. minmax(0, 1fr) is intentional: it allows the canvas column to shrink
+ * without forcing the entire browser viewport wider than the available space.
+ */
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  height: calc(100vh - 64px);
+}
+
+.editor-layout .flow-workspace {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Node interaction -------------------------------------------------------- */
+
+.flow-node[role='button'] {
+  cursor: pointer;
+}
+
+.flow-node:focus-visible {
+  outline: 2px solid var(--sf-node-question);
+  outline-offset: 3px;
+}
+
+.flow-node--selected {
+  box-shadow:
+    0 0 0 1px var(--sf-border-default),
+    0 14px 32px rgba(0, 0, 0, 0.32);
+}
+
+.flow-node--start.flow-node--selected {
+  background: var(--sf-selection-start);
+  border-color: var(--sf-node-start);
+}
+
+.flow-node--question.flow-node--selected {
+  background: var(--sf-selection-question);
+  border-color: var(--sf-node-question);
+}
+
+.flow-node--end.flow-node--selected {
+  background: var(--sf-selection-terminal);
+  border-color: var(--sf-node-terminal);
+}
+
+/* Node inspector ---------------------------------------------------------- */
+
+/*
+ * The inspector uses the same restrained surfaces and tight geometry as the
+ * graph itself so editing feels like part of the tool rather than a separate
+ * dashboard-style panel.
+ */
+.node-inspector {
+  position: relative;
+  z-index: 5;
+  overflow-y: auto;
+  border-left: 1px solid var(--sf-border-subtle);
+  background: var(--sf-surface-panel);
+}
+
+.node-inspector__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.node-inspector__empty {
+  padding: 20px;
+}
+
+.node-inspector__eyebrow {
+  margin: 0 0 6px;
+  color: var(--sf-text-muted);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.node-inspector__title {
+  margin: 0;
+  color: var(--sf-text-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.node-inspector__description,
+.node-inspector__hint {
+  color: var(--sf-text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.node-inspector__description {
+  max-width: 240px;
+  margin: 10px 0 0;
+}
+
+.node-inspector__type {
+  padding: 4px 6px;
+  border: 1px solid var(--sf-border-default);
+  border-radius: var(--sf-radius-control);
+  color: var(--sf-text-secondary);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.node-inspector__type--start {
+  border-color: var(--sf-node-start);
+}
+
+.node-inspector__type--question {
+  border-color: var(--sf-node-question);
+}
+
+.node-inspector__type--end {
+  border-color: var(--sf-node-terminal);
+}
+
+.node-inspector__section {
+  padding: 20px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.node-inspector__label,
+.node-inspector__section-title {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--sf-text-secondary);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.node-inspector__textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--sf-border-default);
+  border-radius: var(--sf-radius-control);
+  outline: none;
+  background: var(--sf-surface-canvas);
+  color: var(--sf-text-body);
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.node-inspector__textarea:focus {
+  border-color: var(--sf-node-question);
+}
+
+.node-inspector__hint {
+  margin: 8px 0 0;
+}
+
+.node-inspector__metadata {
+  margin: 0;
+}
+
+.node-inspector__metadata div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 30px;
+  border-bottom: 1px solid var(--sf-border-subtle);
+}
+
+.node-inspector__metadata div:last-child {
+  border-bottom: 0;
+}
+
+.node-inspector__metadata dt {
+  color: var(--sf-text-muted);
+  font-size: 11px;
+}
+
+.node-inspector__metadata dd {
+  margin: 0;
+  color: var(--sf-text-secondary);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+}
+
+@media (max-width: 900px) {
+  .editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .node-inspector {
+    min-height: 260px;
+    border-top: 1px solid var(--sf-border-subtle);
+    border-left: 0;
+  }
+}

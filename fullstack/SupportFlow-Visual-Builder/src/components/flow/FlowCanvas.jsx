@@ -2,9 +2,10 @@
  * Renders the SupportFlow decision tree inside the fixed canvas defined by
  * flow_data.json.
  *
- * Nodes use the exact challenge coordinates. Their rendered DOM boundaries are
- * then measured and passed to the custom SVG connector layer, giving nodes and
- * paths one deterministic coordinate system without using a graph library.
+ * Besides coordinating nodes and native SVG connectors, the canvas now passes
+ * selection state upward to the editor shell. It intentionally does not own
+ * application editing state, keeping visual rendering separate from editing
+ * behaviour.
  */
 
 import { useMemo } from 'react'
@@ -14,7 +15,7 @@ import useNodeMeasurements from '../../hooks/useNodeMeasurements.js'
 import ConnectorLayer from './ConnectorLayer.jsx'
 import FlowNode from './FlowNode.jsx'
 
-export default function FlowCanvas({ flow }) {
+export default function FlowCanvas({ flow, selectedNodeId = null, onNodeSelect = () => {} }) {
   const { canvas_size: canvasSize } = flow.meta
 
   const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
@@ -45,6 +46,8 @@ export default function FlowCanvas({ flow }) {
             key={node.id}
             node={node}
             nodeRef={(element) => registerNode(node.id, element)}
+            isSelected={node.id === selectedNodeId}
+            onSelect={onNodeSelect}
           />
         ))}
       </div>

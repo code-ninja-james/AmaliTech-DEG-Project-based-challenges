@@ -1,111 +1,266 @@
-# SupportFlow-Visual-Builder
+# SupportFlow Studio
 
-This challenge is designed to test your ability to bridge Computer Science fundamentals with Modern Frontend Engineering.
+SupportFlow Studio is a visual decision-tree editor for customer-support flows. It turns a JSON-defined conversation into an interactive graph that support teams can inspect, edit, validate, and run as a chat simulation.
 
-## 1. Business Scenario & Context
+The implementation is intentionally built without graph or component libraries. Node placement comes directly from the supplied `flow_data.json`, while connections are calculated from node relationships and rendered with native SVG.
 
-**Client:** SupportFlow AI
-**Industry:** Customer Support Automation (Chatbots)
+## Design
 
-**The Problem:** SupportFlow helps companies build automated "Help Bots" (e.g., "Press 1 for Billing, 2 for Tech Support"). Currently, their configuration is done via a messy Excel spreadsheet. It is error-prone, hard to visualize, and frustrating for non-technical managers.
+**Figma design system and product design**  
+https://www.figma.com/design/h6kKHcwHrkwz2CKxqu7CGh/SupportFlow-Studio---Design-System---Product
 
-**Your Role:** You are the new Frontend Engineer. The Product Manager wants a **Visual Decision Tree Editor** where users can see their conversation flow as a flowchart, edit the questions in real-time, and "test drive" the bot instantly.
+The visual language uses a restrained dark workspace with semantic node colours:
 
----
+- **Start** — green
+- **Question** — blue
+- **Terminal** — amber
+- **Error** — muted red
 
-## 2. The Assignment Stages
+The implementation also follows the design system's compact engineering-tool layout, tight corner radii, monospace metadata, node navigator, minimap, inspector rail, and Build/X-Ray/Preview modes.
 
-This is a **hybrid design/engineering challenge**. You are expected to demonstrate competence in both visual design logic and complex DOM manipulation.
+## Features
 
-### Phase 1: The Design System
+### Visual graph
 
-**Before writing code, you must design the visual language of the tool.**
+- Renders the supplied `flow_data.json` directly.
+- Preserves the provided `1200 × 800` canvas dimensions.
+- Positions every node using the exact supplied `x` and `y` coordinates.
+- Converts node options into directed graph edges.
+- Measures rendered node boundaries in the DOM.
+- Draws custom cubic Bézier connectors with native SVG.
+- Keeps parallel routes visually distinct.
+- Includes route labels, connection ports, a searchable node navigator, and a minimap.
 
-- **Deliverable:** A link to your design file (Figma, Penpot, or Sketch) or a PDF export of your design frames.
-- **Requirement:** Your design file must include a dedicated **"Design System" page** that defines:
-  - **Canvas**
-  - **Node Cards**
-  - **Connectors**
-  - **Color Semantics**
+### Node editor
 
-### Phase 2: The Implementation
+Selecting a node opens the inspector. Question or terminal text can be edited directly and changes appear on the graph immediately.
 
-**Build the "Flow Builder" using your design system.**
+Editor state is intentionally local and in-memory. The imported challenge JSON is used as the initial model and is never mutated directly.
 
-- **Constraint 1 (Critical):** You **cannot** use Flowchart/Graph libraries like `react-flow`, `jsPlumb`, or `mermaid.js`. You must build the node rendering and line connection logic yourself to prove you understand DOM coordinates and SVG/Canvas drawing.
-- **Constraint 2:** Do not use component libraries like Material UI or Bootstrap. (Tailwind is allowed only if you use it to build custom components).
+### Preview runner
 
----
+`Play preview` switches from authoring mode to a chat-style simulation.
 
-## 3. User Stories & Acceptance Criteria
+The runner:
 
-### Core Features (Required)
+- starts from the configured Start node;
+- displays the current node's message;
+- follows the selected option's `nextId`;
+- records the conversation history;
+- detects terminal/leaf nodes; and
+- provides a restart action at the end of the journey.
 
-#### Story 1: The Visual Graph
+Because Preview uses the same in-memory flow model as the editor, text changes are reflected immediately when the conversation is tested.
 
-> "As a user, I want to see my conversation logic as a connected flowchart, not a list."
+## Wildcard: Flow Health
 
-- **AC 1:** The app renders "Nodes" (questions) based on the provided JSON data.
-- **AC 2:** The Nodes are positioned absolutely on the canvas (using the x/y coordinates provided in the JSON).
-- **AC 3:** Visual lines (SVG or HTML Canvas) connect a Parent Node to its Child Nodes based on the flow logic.
+I chose **Flow Health** as the wildcard feature because a visual flow can look correct while still containing structural defects that only appear when customers try to use it.
 
-#### Story 2: The Editor
+Flow Health validates the current graph and detects:
 
-> "As a user, I need to update the text when our support policies change."
+- duplicate node IDs;
+- missing route targets;
+- unreachable nodes;
+- an invalid number of Start nodes;
+- unexpected dead ends;
+- Terminal nodes with outgoing routes; and
+- cycles that could trap a customer in an endless journey.
 
-- **AC 1:** Clicking a Node opens an "Edit Panel" or turns the card into an editable form.
-- **AC 2:** Users can edit the "Question Text" and the changes reflect immediately on the canvas.
-- **AC 3:** (Constraint) You do not need to save changes to a permanent database. Managing local state (in-memory) is sufficient.
+### Business value
 
-#### Story 3: The "Preview" Mode (The Runner)
+A broken automated support flow can send customers to the wrong destination, terminate unexpectedly, or make an entire branch unreachable. These mistakes create avoidable support tickets and are difficult for non-technical flow authors to spot by visual inspection alone.
 
-> "As a manager, I want to test the bot experience as if I were a real customer."
+Flow Health acts as an editor-side quality gate. It gives authors immediate feedback before a flow is published, reducing configuration errors and broken customer journeys.
 
-- **AC 1:** A "Play" button toggles the UI from "Editor View" (Flowchart) to "Preview Mode" (Chat Interface).
-- **AC 2:** In Preview Mode, the app displays the Start Node's question.
-- **AC 3:** When the user selects an answer, the app traverses the graph to show the next node.
-- **AC 4:** Show a "Restart" button when a leaf node (end of conversation) is reached.
+## Product workspace
 
-### The "Wildcard" Feature (Required)
+The editor is organised around three working modes:
 
-#### Story 4: The Innovation Clause
+**Build** is the primary authoring surface. It combines the searchable node navigator, visual graph, inspector, minimap, and live flow metadata.
 
-> "As a developer, I want to add one feature that makes this tool indispensable."
+**X-Ray** opens Flow Health so structural problems can be reviewed without leaving the graph context.
 
-- **Task:** Identify a missing feature that improves the _Editor_ experience.
-- **AC 1:** Implement **one** additional feature of your choice.
-- **AC 2:** In your README, explain _why_ you chose this feature and how it adds value to the business.
+**Preview** replaces the graph with the customer-facing conversation runner so the same flow can be tested end-to-end.
 
----
+## Architecture
 
-## 4. Technical Requirements
+The application keeps graph/domain concerns separate from React presentation code.
 
-- **Data:** Use the `flow_data.json` file provided in this repo.
-- **Tech Stack:** React, Vue, Svelte, or Vanilla JS.
+```text
+flow_data.json
+      |
+      +--> getConnections.js ---------> ConnectorLayer.jsx
+      |                                      |
+      |                                native SVG paths
+      |
+      +--> FlowCanvas.jsx ------------> FlowNode.jsx
+      |
+      +--> validateFlow.js -----------> Flow Health
+      |
+      +--> traverseFlow.js -----------> Preview Runner
+      |
+      +--> App.jsx -------------------> shared in-memory state
+```
 
----
+Notable implementation decisions:
 
-## 5. Submission Instructions
+- `App.jsx` owns the editable flow state so Build, X-Ray, and Preview share one model.
+- Graph relationship and validation logic lives in pure domain functions and can be tested independently from React.
+- `ResizeObserver` is used to keep SVG connection anchors aligned with cards whose rendered height changes after editing.
+- Broken `nextId` references do not crash graph rendering; they are surfaced through Flow Health instead.
+- Node coordinates from `flow_data.json` remain authoritative throughout the application.
 
-1.  **Fork** this repository.
-2.  Complete the code in your fork.
-3.  **Update the README:**
-    - **Delete** all the instructions in this file (the text you are reading now).
-    - **Replace** them with your own documentation.
-    - _Note: Do not append your docs to the end. The final README should look like a professional project documentation, not a homework assignment._
-4.  Submit your repo link via the [online](https://forms.cloud.microsoft/e/PrfSgKKQ0k) form.
+## Technology
 
-### ⚠️ CRITICAL: Pre-Submission Checklist
+- React 19
+- JavaScript / JSX
+- Vite
+- Native SVG
+- CSS custom properties and custom components
+- Vitest
+- React Testing Library
+- ESLint
+- Prettier
+- Husky + lint-staged
 
-**STOP and review your work.** To be eligible for the Solution Defense interview, your submission **MUST** pass the following "Gatekeeper" checks.
+No React Flow, jsPlumb, Mermaid, Material UI, Bootstrap, Chakra UI, or other graph/component library is used.
 
-If any of the following are incorrect, your submission will be flagged as incomplete and you will **NOT** be invited for an interview.
+## Project structure
 
-1.  **Public Repository:** Is your GitHub repository set to **Public**? (Private links will be auto-rejected).
-2.  **Audit-Ready History:** Does your Git commit history show your progress over time? (Repositories with a single "Initial Commit" or "Upload files" containing the entire project will be **rejected as unverifiable**).
-3.  **Working Deployment:** Have you tested your live link in an **Incognito/Private** window to ensure it loads without errors?
-4.  **No Restricted Libraries:** Did you build your own components? (Submissions using **Bootstrap, Material UI, or Chakra UI** will be disqualified).
-5.  **Design File Access:** Is your Figma/Penpot link included and set to **"Anyone with the link can view"**?
-6.  **Documentation:** Have you deleted the original assignment text from the `README.md` and replaced it with your own project documentation?
+```text
+src/
+├── components/
+│   ├── editor/
+│   │   ├── FlowHealthPanel.jsx
+│   │   ├── NodeInspector.jsx
+│   │   └── NodeNavigator.jsx
+│   ├── flow/
+│   │   ├── ConnectorLayer.jsx
+│   │   ├── FlowCanvas.jsx
+│   │   ├── FlowNode.jsx
+│   │   └── Minimap.jsx
+│   ├── layout/
+│   │   ├── AppToolbar.jsx
+│   │   └── StatusBar.jsx
+│   └── preview/
+│       └── PreviewRunner.jsx
+├── domain/
+│   ├── createBezierPath.js
+│   ├── getConnections.js
+│   ├── traverseFlow.js
+│   └── validateFlow.js
+├── hooks/
+│   └── useNodeMeasurements.js
+├── styles/
+│   ├── flow.css
+│   ├── global.css
+│   ├── studio.css
+│   └── tokens.css
+├── App.jsx
+└── main.jsx
+```
 
-> **By submitting your work, you acknowledge that failure to meet these criteria effectively ends your application process.**
+## Running locally
+
+From `fullstack/SupportFlow-Visual-Builder`:
+
+```bash
+npm install
+npm run dev
+```
+
+Vite will print the local development URL in the terminal.
+
+## Quality checks
+
+Run the complete local quality gate with:
+
+```bash
+npm run verify
+```
+
+This executes, in order:
+
+```text
+Prettier format check
+        ↓
+ESLint
+        ↓
+Vitest
+        ↓
+Vite production build
+```
+
+The repository also uses local Git hooks:
+
+- **pre-commit** — runs lint-staged checks;
+- **pre-push** — runs the complete `npm run verify` gate.
+
+## Tests
+
+The test suite covers the key behaviours and domain rules, including:
+
+- product rendering;
+- exact node coordinates and canvas dimensions;
+- graph connection extraction;
+- Bézier geometry;
+- node selection and live editing;
+- editor/preview mode switching;
+- preview traversal and restart;
+- Flow Health validation rules; and
+- node selection from the workspace navigator.
+
+Run tests independently with:
+
+```bash
+npm test
+```
+
+## Production build
+
+```bash
+npm run build
+```
+
+The production bundle is generated in `dist/`.
+
+## Deployment
+
+The application is a static Vite/React frontend and can be deployed directly to Vercel, Netlify, or another static hosting provider.
+
+Recommended deployment settings when importing this monorepo:
+
+```text
+Root directory: fullstack/SupportFlow-Visual-Builder
+Build command: npm run build
+Output directory: dist
+Install command: npm install
+```
+
+After deployment, the production URL should be tested in an Incognito/Private browser window to confirm the application is publicly accessible without an authenticated session.
+
+## Data model
+
+The application uses the supplied `flow_data.json` file without replacing its node IDs, route labels, or coordinates. The challenge fixture contains six nodes:
+
+```text
+#1 Start
+├── Internet is down → #2
+│   ├── Yes, didn't work → #4
+│   └── No, let me try → #5
+└── Billing Question → #3
+    ├── Personal → #6
+    └── Business → #6
+```
+
+## Engineering notes
+
+Comments in the source are used deliberately to explain constraints, graph mathematics, trade-offs, and non-obvious behaviour rather than restating ordinary JavaScript syntax.
+
+The project uses an audit-friendly branch and pull-request workflow. Features were developed independently and merged through `develop` before the final release to `main`.
+
+## Author
+
+**Jameson Githinji**  
+GitHub: https://github.com/code-ninja-james  
+LinkedIn: https://www.linkedin.com/in/jameson-githinji/

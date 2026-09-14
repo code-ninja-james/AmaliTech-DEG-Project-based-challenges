@@ -105,7 +105,9 @@ export default function FlowNode({
         )}
       </div>
 
-      {node.type !== 'start' && <span className="flow-node__port flow-node__port--input" aria-hidden="true" />}
+      {node.type !== 'start' && (
+        <span className="flow-node__port flow-node__port--input" aria-hidden="true" />
+      )}
 
       {node.options.map((option, optionIndex) => (
         <span

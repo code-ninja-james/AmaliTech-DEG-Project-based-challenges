@@ -28,35 +28,28 @@ export default function FlowCanvas({
   flow,
   mode = 'Build',
   selectedNodeId = null,
+  selectedConnectionId = null,
   onNodeSelect = () => {},
+  onConnectionSelect = () => {},
 }) {
   const { canvas_size: canvasSize } = flow.meta
   const workspaceRef = useRef(null)
   const [hoveredNodeId, setHoveredNodeId] = useState(null)
   const [zoom, setZoom] = useState(1)
 
-  const connections = useMemo(
-    () => getConnections(flow.nodes),
-    [flow.nodes],
-  )
+  const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
   const analysis = useMemo(() => analyzeFlow(flow.nodes), [flow.nodes])
   const incomingCounts = useMemo(() => {
     const counts = new Map(flow.nodes.map((node) => [node.id, 0]))
 
     connections.forEach((connection) => {
-      counts.set(
-        connection.targetId,
-        (counts.get(connection.targetId) ?? 0) + 1,
-      )
+      counts.set(connection.targetId, (counts.get(connection.targetId) ?? 0) + 1)
     })
 
     return counts
   }, [connections, flow.nodes])
 
-  const { canvasRef, nodeRects, registerNode } = useNodeMeasurements(
-    flow.nodes,
-    zoom,
-  )
+  const { canvasRef, nodeRects, registerNode } = useNodeMeasurements(flow.nodes, zoom)
 
   const handleFitView = () => {
     const workspace = workspaceRef.current
@@ -74,19 +67,14 @@ export default function FlowCanvas({
   const isXray = mode === 'X-Ray'
 
   return (
-    <section
-      ref={workspaceRef}
-      className="flow-workspace"
-      aria-label="Support flow"
-    >
+    <section ref={workspaceRef} className="flow-workspace" aria-label="Support flow">
       {isXray && (
         <div className="flow-xray-banner">
           <span className="studio-blink" aria-hidden="true" />
           <strong>
             X-RAY · {analysis.reachable.size}/{flow.nodes.length} reachable ·{' '}
             {analysis.hasCycle ? 'cycle detected!' : 'no cycles'} ·{' '}
-            {analysis.brokenReferences.length} broken refs · start count:{' '}
-            {analysis.startCount}
+            {analysis.brokenReferences.length} broken refs · start count: {analysis.startCount}
           </strong>
         </div>
       )}
@@ -118,9 +106,15 @@ export default function FlowCanvas({
             >
               <line x1="0" y1="178" x2={canvasSize.w} y2="178" />
               <line x1="0" y1="422" x2={canvasSize.w} y2="422" />
-              <text x="20" y="100">0 · ENTRY</text>
-              <text x="20" y="305">1 · BRANCH</text>
-              <text x="20" y="560">2 · RESOLVE</text>
+              <text x="20" y="100">
+                0 · ENTRY
+              </text>
+              <text x="20" y="305">
+                1 · BRANCH
+              </text>
+              <text x="20" y="560">
+                2 · RESOLVE
+              </text>
             </svg>
 
             <ConnectorLayer
@@ -130,6 +124,8 @@ export default function FlowCanvas({
               width={canvasSize.w}
               height={canvasSize.h}
               selectedNodeId={selectedNodeId}
+              selectedConnectionId={selectedConnectionId}
+              onConnectionSelect={onConnectionSelect}
               mode={mode}
               reachableIds={analysis.reachable}
             />
@@ -177,12 +173,7 @@ export default function FlowCanvas({
           +
         </button>
         <span>{Math.round(zoom * 100)}%</span>
-        <button
-          type="button"
-          title="Fit view"
-          aria-label="Fit view"
-          onClick={handleFitView}
-        >
+        <button type="button" title="Fit view" aria-label="Fit view" onClick={handleFitView}>
           ⊡
         </button>
       </div>

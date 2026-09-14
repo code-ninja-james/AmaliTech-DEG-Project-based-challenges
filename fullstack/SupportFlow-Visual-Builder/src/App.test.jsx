@@ -35,9 +35,7 @@ describe('SupportFlow application', () => {
     expect(screen.getByLabelText('Question Text')).toHaveValue(
       'Have you tried restarting your router?',
     )
-    expect(screen.getByTestId('flow-node-2')).toHaveClass(
-      'flow-node--selected',
-    )
+    expect(screen.getByTestId('flow-node-2')).toHaveClass('flow-node--selected')
   })
 
   it('updates node text on the canvas as the inspector value changes', async () => {
@@ -53,9 +51,7 @@ describe('SupportFlow application', () => {
     await user.type(questionText, 'Is your router still offline?')
 
     expect(
-      within(screen.getByTestId('flow-node-2')).getByText(
-        'Is your router still offline?',
-      ),
+      within(screen.getByTestId('flow-node-2')).getByText('Is your router still offline?'),
     ).toBeInTheDocument()
   })
 
@@ -128,8 +124,6 @@ describe('SupportFlow application', () => {
     const inspector = screen.getByLabelText('Node inspector')
 
     expect(within(inspector).getByText('#3')).toBeInTheDocument()
-    expect(screen.getByTestId('flow-node-3')).toHaveClass(
-      'flow-node--selected',
-    )
+    expect(screen.getByTestId('flow-node-3')).toHaveClass('flow-node--selected')
   })
 })

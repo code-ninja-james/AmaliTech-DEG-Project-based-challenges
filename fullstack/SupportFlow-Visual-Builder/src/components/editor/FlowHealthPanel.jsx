@@ -82,11 +82,11 @@ export default function FlowHealthPanel({ flow, issues = [] }) {
 
         {diagnostics.map((diagnostic) => (
           <div className="studio-xray__diagnostic" key={diagnostic.label}>
-            <span
-              className={diagnostic.ok ? 'studio-xray__dot--ok' : 'studio-xray__dot--error'}
-            />
+            <span className={diagnostic.ok ? 'studio-xray__dot--ok' : 'studio-xray__dot--error'} />
             <p>{diagnostic.label}</p>
-            <strong className={diagnostic.ok ? 'studio-xray__value--ok' : 'studio-xray__value--error'}>
+            <strong
+              className={diagnostic.ok ? 'studio-xray__value--ok' : 'studio-xray__value--error'}
+            >
               {diagnostic.value}
             </strong>
           </div>
@@ -97,7 +97,10 @@ export default function FlowHealthPanel({ flow, issues = [] }) {
             <div className="studio-xray__separator" />
             <p className="studio-xray__section-label">Broken References</p>
             {analysis.brokenReferences.map((reference) => (
-              <code className="studio-xray__broken" key={`${reference.sourceId}-${reference.targetId}`}>
+              <code
+                className="studio-xray__broken"
+                key={`${reference.sourceId}-${reference.targetId}`}
+              >
                 #{reference.sourceId} → #{reference.targetId}
               </code>
             ))}

@@ -50,10 +50,7 @@ export default function useNodeMeasurements(nodes, scale = 1) {
 
     measureNodes()
 
-    const observer =
-      typeof ResizeObserver === 'undefined'
-        ? null
-        : new ResizeObserver(measureNodes)
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measureNodes)
 
     if (observer) {
       observer.observe(canvas)

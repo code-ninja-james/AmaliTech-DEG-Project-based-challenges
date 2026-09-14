@@ -195,6 +195,34 @@
   letter-spacing: 0.01em;
 }
 
+.connector-label {
+  cursor: pointer;
+  pointer-events: auto;
+  cursor: pointer;
+  outline: none;
+}
+
+.connector-label__background {
+  transition:
+    fill 120ms ease,
+    stroke 120ms ease;
+}
+
+.connector-label:hover .connector-label__background {
+  fill: #15181d;
+  stroke: rgba(111, 143, 174, 0.5);
+}
+
+.connector-label:focus-visible .connector-label__background,
+.connector-label--selected .connector-label__background {
+  fill: #151e28;
+  stroke: var(--sf-node-question);
+}
+
+.connector-label--selected .connector-label__text {
+  fill: var(--sf-text-primary);
+}
+
 /*
  * Nodes sit above the SVG connection layer so paths visually terminate at
  * card boundaries instead of appearing to run through card content.

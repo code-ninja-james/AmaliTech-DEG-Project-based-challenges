@@ -6,12 +6,7 @@
  * state or maintaining a second command model.
  */
 
-export default function CommandPalette({
-  open,
-  onClose,
-  onModeChange,
-  onPreviewStart,
-}) {
+export default function CommandPalette({ open, onClose, onModeChange, onPreviewStart }) {
   if (!open) {
     return null
   }
@@ -69,11 +64,7 @@ export default function CommandPalette({
 
         <div className="command-palette__commands">
           {commands.map((command) => (
-            <button
-              key={command.label}
-              type="button"
-              onClick={() => runCommand(command)}
-            >
+            <button key={command.label} type="button" onClick={() => runCommand(command)}>
               <span>{command.label}</span>
               <kbd>{command.shortcut}</kbd>
             </button>

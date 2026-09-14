@@ -29,23 +29,13 @@ export default function Minimap({
   const [isOpen, setIsOpen] = useState(true)
   const isXray = mode === 'X-Ray'
 
-  const connections = useMemo(
-    () => getConnections(flow.nodes),
-    [flow.nodes],
-  )
+  const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
 
-  const nodeMap = useMemo(
-    () => new Map(flow.nodes.map((node) => [node.id, node])),
-    [flow.nodes],
-  )
+  const nodeMap = useMemo(() => new Map(flow.nodes.map((node) => [node.id, node])), [flow.nodes])
 
   if (!isOpen) {
     return (
-      <button
-        className="minimap-toggle"
-        type="button"
-        onClick={() => setIsOpen(true)}
-      >
+      <button className="minimap-toggle" type="button" onClick={() => setIsOpen(true)}>
         Map
       </button>
     )
@@ -55,11 +45,7 @@ export default function Minimap({
     <aside className="minimap" aria-label="Flow minimap">
       <header className="minimap__header">
         <span>{isXray ? 'X-Ray Map' : 'Minimap'}</span>
-        <button
-          type="button"
-          aria-label="Close minimap"
-          onClick={() => setIsOpen(false)}
-        >
+        <button type="button" aria-label="Close minimap" onClick={() => setIsOpen(false)}>
           ×
         </button>
       </header>
@@ -82,15 +68,12 @@ export default function Minimap({
           const targetSize = getNodeDimensions(targetNode)
           const sourceX =
             sourceNode.position.x +
-            sourceSize.width *
-              ((connection.optionIndex + 1) /
-                (connection.sourceOptionCount + 1))
+            sourceSize.width * ((connection.optionIndex + 1) / (connection.sourceOptionCount + 1))
           const sourceY = sourceNode.position.y + sourceSize.height
           const targetX = targetNode.position.x + targetSize.width / 2
           const targetY = targetNode.position.y
           const isReachable =
-            reachableIds.has(connection.sourceId) &&
-            reachableIds.has(connection.targetId)
+            reachableIds.has(connection.sourceId) && reachableIds.has(connection.targetId)
 
           return (
             <line

@@ -20,6 +20,7 @@ import CommandPalette from './components/layout/CommandPalette.jsx'
 import StatusBar from './components/layout/StatusBar.jsx'
 import PreviewRunner from './components/preview/PreviewRunner.jsx'
 import validateFlow from './domain/validateFlow.js'
+import getConnections from './domain/getConnections.js'
 import './styles/flow.css'
 import './styles/studio.css'
 import './styles/studio-interactions.css'
@@ -28,17 +29,18 @@ import './styles/command-palette.css'
 export default function App() {
   const [flow, setFlow] = useState(flowData)
   const [selectedNodeId, setSelectedNodeId] = useState('2')
+  const [selectedConnectionId, setSelectedConnectionId] = useState(null)
   const [mode, setMode] = useState('Build')
   const [isPreviewing, setIsPreviewing] = useState(false)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
 
-  const selectedNode =
-    flow.nodes.find((node) => node.id === selectedNodeId) ?? null
+  const selectedNode = flow.nodes.find((node) => node.id === selectedNodeId) ?? null
+  const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
 
-  const healthIssues = useMemo(
-    () => validateFlow(flow.nodes),
-    [flow.nodes],
-  )
+  const selectedConnection =
+    connections.find((connection) => connection.id === selectedConnectionId) ?? null
+
+  const healthIssues = useMemo(() => validateFlow(flow.nodes), [flow.nodes])
 
   const handleNodeTextChange = (nodeId, nextText) => {
     setFlow((currentFlow) => ({
@@ -55,7 +57,13 @@ export default function App() {
   }
 
   const handleNodeSelect = (nodeId) => {
+    setSelectedConnectionId(null)
     setSelectedNodeId(nodeId)
+  }
+
+  const handleConnectionSelect = (connection) => {
+    setSelectedConnectionId(connection.id)
+    setSelectedNodeId(connection.targetId)
   }
 
   const handleModeChange = (nextMode) => {
@@ -130,30 +138,27 @@ export default function App() {
             flow={flow}
             mode={mode}
             selectedNodeId={selectedNodeId}
+            selectedConnectionId={selectedConnectionId}
             onNodeSelect={handleNodeSelect}
+            onConnectionSelect={handleConnectionSelect}
           />
         )}
 
         {mode === 'Build' && isPreviewing && (
-          <PreviewRunner
-            flow={flow}
-            onBack={handlePreviewExit}
-            onNodeSelect={handleNodeSelect}
-          />
+          <PreviewRunner flow={flow} onBack={handlePreviewExit} onNodeSelect={handleNodeSelect} />
         )}
 
         {(mode === 'Build' || mode === 'Spatial') && (
           <NodeInspector
-            key={selectedNodeId ?? 'no-selection'}
+            key={`${selectedNodeId ?? 'no-selection'}-${selectedConnectionId ?? 'no-route'}`}
             node={selectedNode}
             flow={flow}
+            selectedConnection={selectedConnection}
             onTextChange={handleNodeTextChange}
           />
         )}
 
-        {mode === 'X-Ray' && !isPreviewing && (
-          <FlowHealthPanel flow={flow} issues={healthIssues} />
-        )}
+        {mode === 'X-Ray' && !isPreviewing && <FlowHealthPanel flow={flow} issues={healthIssues} />}
       </div>
 
       <StatusBar

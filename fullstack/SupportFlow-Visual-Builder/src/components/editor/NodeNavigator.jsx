@@ -16,8 +16,7 @@ const NODE_GROUPS = [
 
 function getIncomingCount(nodes, targetId) {
   return nodes.reduce(
-    (count, node) =>
-      count + node.options.filter((option) => option.nextId === targetId).length,
+    (count, node) => count + node.options.filter((option) => option.nextId === targetId).length,
     0,
   )
 }

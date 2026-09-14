@@ -398,11 +398,7 @@
 .flow-canvas {
   border-color: rgba(255, 255, 255, 0.045);
   background-color: #050508;
-  background-image: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.075) 0.65px,
-    transparent 0.75px
-  );
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.075) 0.65px, transparent 0.75px);
   background-size: 24px 24px;
 }
 

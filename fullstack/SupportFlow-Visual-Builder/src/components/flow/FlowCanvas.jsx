@@ -28,11 +28,12 @@ export default function FlowCanvas({
   flow,
   mode = 'Build',
   selectedNodeId = null,
+  selectedConnectionId = null,
   onNodeSelect = () => {},
+  onConnectionSelect = () => {},
 }) {
   const { canvas_size: canvasSize } = flow.meta
   const workspaceRef = useRef(null)
-  const [selectedConnectionId, setSelectedConnectionId] = useState(null)
   const [hoveredNodeId, setHoveredNodeId] = useState(null)
   const [zoom, setZoom] = useState(1)
 
@@ -62,18 +63,7 @@ export default function FlowCanvas({
 
     setZoom(clampZoom(Math.min(horizontalScale, verticalScale, 1)))
   }
-  const handleNodeSelect = (nodeId) => {
-    setSelectedConnectionId(null)
-    onNodeSelect(nodeId)
-  }
 
-  const handleConnectionSelect = (connection) => {
-    setSelectedConnectionId(connection.id)
-
-    // Keep the existing node inspector useful by opening
-    // the destination node for the selected route.
-    onNodeSelect(connection.targetId)
-  }
   const isXray = mode === 'X-Ray'
 
   return (
@@ -135,7 +125,7 @@ export default function FlowCanvas({
               height={canvasSize.h}
               selectedNodeId={selectedNodeId}
               selectedConnectionId={selectedConnectionId}
-              onConnectionSelect={handleConnectionSelect}
+              onConnectionSelect={onConnectionSelect}
               mode={mode}
               reachableIds={analysis.reachable}
             />
@@ -150,7 +140,7 @@ export default function FlowCanvas({
                 isXray={isXray}
                 isReachable={analysis.reachable.has(node.id)}
                 incomingCount={incomingCounts.get(node.id) ?? 0}
-                onSelect={handleNodeSelect}
+                onSelect={onNodeSelect}
                 onHover={setHoveredNodeId}
               />
             ))}

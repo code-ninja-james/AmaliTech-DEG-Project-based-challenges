@@ -216,7 +216,12 @@ function HealthTab({ node, flow, analysis }) {
   )
 }
 
-export default function NodeInspector({ node, flow, onTextChange = () => {} }) {
+export default function NodeInspector({
+  node,
+  flow,
+  selectedConnection = null,
+  onTextChange = () => {},
+}) {
   const [tab, setTab] = useState('Properties')
   const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
 
@@ -243,6 +248,24 @@ export default function NodeInspector({ node, flow, onTextChange = () => {} }) {
         <strong style={{ color: meta.color }}>{meta.label}</strong>
         <code style={{ color: meta.color }}>#{node.id}</code>
       </header>
+      {selectedConnection && (
+        <section className="studio-inspector__selected-route">
+          <p className="studio-inspector__section-label">Selected Route</p>
+
+          <strong>{selectedConnection.label}</strong>
+
+          <div className="studio-inspector__selected-route-path">
+            <code>#{selectedConnection.sourceId}</code>
+            <span>→</span>
+            <code>#{selectedConnection.targetId}</code>
+          </div>
+
+          <span className="studio-inspector__route-status">
+            <span aria-hidden="true" />
+            Route target resolved
+          </span>
+        </section>
+      )}
 
       <nav className="studio-inspector__tabs" aria-label="Inspector sections">
         {['Properties', 'Routes', 'Health'].map((item) => (

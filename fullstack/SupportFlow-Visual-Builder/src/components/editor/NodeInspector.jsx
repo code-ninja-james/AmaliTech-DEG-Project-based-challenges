@@ -55,7 +55,9 @@ function PropertiesTab({ node, analysis, onTextChange }) {
       />
 
       <div className="studio-inspector__textarea-meta">
-        <span>Supports {'{'}variables{'}'}</span>
+        <span>
+          Supports {'{'}variables{'}'}
+        </span>
         <span>{node.text.length} chars</span>
       </div>
 
@@ -88,7 +90,7 @@ function RoutesTab({ node, flow }) {
         <div className="studio-inspector__routes">
           {node.options.map((option, index) => {
             const target = nodeMap.get(option.nextId)
-            const targetMeta = target ? NODE_META[target.type] ?? NODE_META.question : null
+            const targetMeta = target ? (NODE_META[target.type] ?? NODE_META.question) : null
 
             return (
               <article
@@ -214,11 +216,7 @@ function HealthTab({ node, flow, analysis }) {
   )
 }
 
-export default function NodeInspector({
-  node,
-  flow,
-  onTextChange = () => {},
-}) {
+export default function NodeInspector({ node, flow, onTextChange = () => {} }) {
   const [tab, setTab] = useState('Properties')
   const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
 

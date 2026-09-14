@@ -37,6 +37,30 @@ function getIncomingPositions(connections) {
   return positions
 }
 
+function getParallelRoutePositions(connections) {
+  const groups = new Map()
+
+  connections.forEach((connection) => {
+    const key = `${connection.sourceId}-${connection.targetId}`
+    const group = groups.get(key) ?? []
+
+    group.push(connection)
+    groups.set(key, group)
+  })
+
+  const positions = new Map()
+
+  groups.forEach((group) => {
+    group.forEach((connection, index) => {
+      positions.set(connection.id, {
+        index,
+        count: group.length,
+      })
+    })
+  })
+
+  return positions
+}
 function getBoundaryAnchor(rect, index, count, edge) {
   const horizontalRatio = (index + 1) / (count + 1)
 
@@ -57,15 +81,17 @@ export default function ConnectorLayer({
   width,
   height,
   selectedNodeId = null,
+  selectedConnectionId = null,
+  onConnectionSelect = () => {},
   mode = 'Build',
   reachableIds = new Set(),
 }) {
   const incomingPositions = getIncomingPositions(connections)
+  const parallelRoutePositions = getParallelRoutePositions(connections)
   const nodeMap = new Map(nodes.map((node) => [node.id, node]))
   const isXray = mode === 'X-Ray'
   const noMotion =
-    typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
   return (
     <svg
@@ -73,16 +99,37 @@ export default function ConnectorLayer({
       viewBox={`0 0 ${width} ${height}`}
       width={width}
       height={height}
-      aria-hidden="true"
+      aria-label="Flow connections"
     >
       <defs>
-        <marker id="supportflow-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+        <marker
+          id="supportflow-arrow"
+          markerWidth="7"
+          markerHeight="7"
+          refX="6"
+          refY="3.5"
+          orient="auto"
+        >
           <path d="M 0 0 L 7 3.5 L 0 7 Z" fill="rgba(255,255,255,0.14)" />
         </marker>
-        <marker id="supportflow-arrow-related" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+        <marker
+          id="supportflow-arrow-related"
+          markerWidth="7"
+          markerHeight="7"
+          refX="6"
+          refY="3.5"
+          orient="auto"
+        >
           <path d="M 0 0 L 7 3.5 L 0 7 Z" fill="rgba(79,143,247,0.80)" />
         </marker>
-        <marker id="supportflow-arrow-xray" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+        <marker
+          id="supportflow-arrow-xray"
+          markerWidth="7"
+          markerHeight="7"
+          refX="6"
+          refY="3.5"
+          orient="auto"
+        >
           <path d="M 0 0 L 7 3.5 L 0 7 Z" fill="rgba(16,185,129,0.48)" />
         </marker>
 
@@ -120,8 +167,16 @@ export default function ConnectorLayer({
               y2={target.y}
               gradientUnits="userSpaceOnUse"
             >
-              <stop offset="0%" stopColor={TYPE_COLOR[sourceNode.type] ?? '#4f8ff7'} stopOpacity="0.55" />
-              <stop offset="100%" stopColor={TYPE_COLOR[targetNode.type] ?? '#4f8ff7'} stopOpacity="0.35" />
+              <stop
+                offset="0%"
+                stopColor={TYPE_COLOR[sourceNode.type] ?? '#4f8ff7'}
+                stopOpacity="0.55"
+              />
+              <stop
+                offset="100%"
+                stopColor={TYPE_COLOR[targetNode.type] ?? '#4f8ff7'}
+                stopOpacity="0.35"
+              />
             </linearGradient>
           )
         })}
@@ -152,19 +207,29 @@ export default function ConnectorLayer({
 
         const path = createBezierPath(source, target)
         const labelPosition = getBezierPoint(source, target, 0.46)
+        const parallelPosition = parallelRoutePositions.get(connection.id) ?? {
+          index: 0,
+          count: 1,
+        }
+
+        const labelSpacing =
+          parallelPosition.count > 1
+            ? (parallelPosition.index - (parallelPosition.count - 1) / 2) * 30
+            : 0
         const labelWidth = getLabelWidth(connection.label)
+        const isConnectionSelected = selectedConnectionId === connection.id
+
         const isRelated =
+          isConnectionSelected ||
           selectedNodeId === connection.sourceId ||
           selectedNodeId === connection.targetId
         const xrayReachable =
-          reachableIds.has(connection.sourceId) &&
-          reachableIds.has(connection.targetId)
+          reachableIds.has(connection.sourceId) && reachableIds.has(connection.targetId)
         const sourceColor = TYPE_COLOR[sourceNode?.type] ?? '#4f8ff7'
         const pathLength = Math.hypot(target.x - source.x, target.y - source.y)
         const packetDuration = `${(2.8 + pathLength / 380).toFixed(2)}s`
         const showPacket =
-          !noMotion &&
-          ((!isXray && isRelated) || (isXray && isRelated && xrayReachable))
+          !noMotion && ((!isXray && isRelated) || (isXray && isRelated && xrayReachable))
 
         const stroke = isRelated
           ? `url(#connector-gradient-${connection.id})`
@@ -195,15 +260,51 @@ export default function ConnectorLayer({
 
             {showPacket && (
               <circle r="2.5" fill={sourceColor} className="connector-packet">
-                <animateMotion dur={packetDuration} repeatCount="indefinite" path={path} calcMode="linear" />
-                <animate attributeName="opacity" values="0;0.65;0.65;0" keyTimes="0;0.10;0.88;1" dur={packetDuration} repeatCount="indefinite" />
+                <animateMotion
+                  dur={packetDuration}
+                  repeatCount="indefinite"
+                  path={path}
+                  calcMode="linear"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0;0.65;0.65;0"
+                  keyTimes="0;0.10;0.88;1"
+                  dur={packetDuration}
+                  repeatCount="indefinite"
+                />
               </circle>
             )}
 
             <circle className="connector-port" cx={source.x} cy={source.y} r="3" />
 
             {(isRelated || !selectedNodeId) && (
-              <g className="connector-label" transform={`translate(${labelPosition.x} ${labelPosition.y})`}>
+              <g
+                className={[
+                  'connector-label',
+                  isConnectionSelected ? 'connector-label--selected' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                transform={`translate(${labelPosition.x + labelSpacing} ${labelPosition.y})`}
+                role="button"
+                tabIndex="0"
+                aria-pressed={isConnectionSelected}
+                aria-label={`${connection.label}, route to node ${connection.targetId}`}
+                data-testid={`connector-label-${connection.id}`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onConnectionSelect(connection)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter' && event.key !== ' ') {
+                    return
+                  }
+
+                  event.preventDefault()
+                  onConnectionSelect(connection)
+                }}
+              >
                 <rect
                   className="connector-label__background"
                   x={-labelWidth / 2}
@@ -212,7 +313,11 @@ export default function ConnectorLayer({
                   height="20"
                   rx="3"
                 />
-                <text className="connector-label__text" textAnchor="middle" dominantBaseline="middle">
+                <text
+                  className="connector-label__text"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
                   {connection.label.length > 26
                     ? `${connection.label.slice(0, 25)}…`
                     : connection.label}

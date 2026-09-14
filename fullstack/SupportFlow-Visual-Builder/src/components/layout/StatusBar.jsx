@@ -6,16 +6,8 @@
  * wired to a real application action rather than being decorative chrome.
  */
 
-export default function StatusBar({
-  flow,
-  selectedNodeId,
-  mode,
-  onCommandPalette = null,
-}) {
-  const edgeCount = flow.nodes.reduce(
-    (count, node) => count + node.options.length,
-    0,
-  )
+export default function StatusBar({ flow, selectedNodeId, mode, onCommandPalette = null }) {
+  const edgeCount = flow.nodes.reduce((count, node) => count + node.options.length, 0)
 
   const modeClass = mode.toLowerCase().replaceAll(' ', '-')
 
@@ -43,11 +35,7 @@ export default function StatusBar({
       <span className="status-bar__spacer" />
 
       {onCommandPalette && (
-        <button
-          className="status-bar__command"
-          type="button"
-          onClick={onCommandPalette}
-        >
+        <button className="status-bar__command" type="button" onClick={onCommandPalette}>
           ⌘K · Command palette
         </button>
       )}

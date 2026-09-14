@@ -25,22 +25,14 @@ function createInitialConversation(startNode) {
   ]
 }
 
-export default function PreviewRunner({
-  flow,
-  onBack = null,
-  onNodeSelect = () => {},
-}) {
+export default function PreviewRunner({ flow, onBack = null, onNodeSelect = () => {} }) {
   const startNode = getStartNode(flow.nodes)
   const scrollRef = useRef(null)
   const [currentNodeId, setCurrentNodeId] = useState(startNode?.id ?? null)
-  const [conversation, setConversation] = useState(() =>
-    createInitialConversation(startNode),
-  )
+  const [conversation, setConversation] = useState(() => createInitialConversation(startNode))
 
-  const currentNode =
-    flow.nodes.find((node) => node.id === currentNodeId) ?? null
-  const isTerminal =
-    currentNode?.type === 'end' || currentNode?.options.length === 0
+  const currentNode = flow.nodes.find((node) => node.id === currentNodeId) ?? null
+  const isTerminal = currentNode?.type === 'end' || currentNode?.options.length === 0
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -129,19 +121,14 @@ export default function PreviewRunner({
         </div>
       </header>
 
-      <div
-        ref={scrollRef}
-        className="studio-preview__conversation"
-        aria-live="polite"
-      >
+      <div ref={scrollRef} className="studio-preview__conversation" aria-live="polite">
         <div className="studio-preview__thread">
           {conversation.map((message, index) => (
             <div
               className={[
                 'studio-preview__row',
                 `studio-preview__row--${message.role}`,
-                index === conversation.length - 1 &&
-                message.role === 'assistant'
+                index === conversation.length - 1 && message.role === 'assistant'
                   ? 'studio-message-arrive'
                   : '',
               ]
@@ -176,11 +163,7 @@ export default function PreviewRunner({
 
           {isTerminal && (
             <div className="studio-preview__terminal-actions">
-              <button
-                type="button"
-                aria-label="Restart conversation"
-                onClick={handleRestart}
-              >
+              <button type="button" aria-label="Restart conversation" onClick={handleRestart}>
                 ↺ Restart conversation
               </button>
             </div>

@@ -53,18 +53,12 @@ export default function AppToolbar({
             className={[
               'app-mode-switch__button',
               `app-mode-switch__button--${MODE_CLASS[item]}`,
-              mode === item && !isPreviewMode
-                ? 'app-mode-switch__button--active'
-                : '',
+              mode === item && !isPreviewMode ? 'app-mode-switch__button--active' : '',
             ]
               .filter(Boolean)
               .join(' ')}
             type="button"
-            aria-label={
-              item === 'X-Ray'
-                ? `Flow Health, ${healthIssueCount} issues`
-                : item
-            }
+            aria-label={item === 'X-Ray' ? `Flow Health, ${healthIssueCount} issues` : item}
             onClick={() => onModeChange(item)}
           >
             {item}

@@ -22,21 +22,21 @@ const TYPE_GLYPH = {
 }
 
 const SPATIAL_POSITIONS = {
-  '1': [0, 0, 0],
-  '2': [580, -230, 180],
-  '3': [580, 240, 180],
-  '4': [1010, -280, 330],
-  '5': [1010, -70, 330],
-  '6': [1010, 250, 330],
+  1: [0, 0, 0],
+  2: [580, -230, 180],
+  3: [580, 240, 180],
+  4: [1010, -280, 330],
+  5: [1010, -70, 330],
+  6: [1010, 250, 330],
 }
 
 const SPATIAL_LABELS = {
-  '1': 'Welcome',
-  '2': 'Restart router?',
-  '3': 'Account type',
-  '4': 'Technician visit',
-  '5': 'Restart guidance',
-  '6': 'Billing agent',
+  1: 'Welcome',
+  2: 'Restart router?',
+  3: 'Account type',
+  4: 'Technician visit',
+  5: 'Restart guidance',
+  6: 'Billing agent',
 }
 
 const MIN_ZOOM = 0.7
@@ -180,7 +180,13 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
         </defs>
 
         <rect x={viewX} y={viewY} width={viewWidth} height={viewHeight} fill="url(#spatial-bg)" />
-        <rect x={viewX} y={viewY} width={viewWidth} height={viewHeight} fill="url(#spatial-vignette)" />
+        <rect
+          x={viewX}
+          y={viewY}
+          width={viewWidth}
+          height={viewHeight}
+          fill="url(#spatial-vignette)"
+        />
 
         {[0.28, 0.42, 0.58, 0.72].map((ratio) => (
           <line
@@ -216,8 +222,22 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
             <g key={edge.id}>
               {isRelated && (
                 <>
-                  <path d={path} fill="none" stroke={color} strokeWidth="30" opacity="0.07" filter="url(#spatial-blur-9)" />
-                  <path d={path} fill="none" stroke={color} strokeWidth="12" opacity="0.15" filter="url(#spatial-blur-4)" />
+                  <path
+                    d={path}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth="30"
+                    opacity="0.07"
+                    filter="url(#spatial-blur-9)"
+                  />
+                  <path
+                    d={path}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth="12"
+                    opacity="0.15"
+                    filter="url(#spatial-blur-4)"
+                  />
                 </>
               )}
 
@@ -232,11 +252,23 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
               {isParticle && (
                 <g>
                   <circle r="9" fill={color}>
-                    <animate attributeName="opacity" values="0;0.18;0.18;0" keyTimes="0;0.07;0.87;1" dur="2.8s" repeatCount="indefinite" />
+                    <animate
+                      attributeName="opacity"
+                      values="0;0.18;0.18;0"
+                      keyTimes="0;0.07;0.87;1"
+                      dur="2.8s"
+                      repeatCount="indefinite"
+                    />
                     <animateMotion dur="2.8s" repeatCount="indefinite" path={path} />
                   </circle>
                   <circle r="3.2" fill={color}>
-                    <animate attributeName="opacity" values="0;0.92;0.92;0" keyTimes="0;0.07;0.87;1" dur="2.8s" repeatCount="indefinite" />
+                    <animate
+                      attributeName="opacity"
+                      values="0;0.92;0.92;0"
+                      keyTimes="0;0.07;0.87;1"
+                      dur="2.8s"
+                      repeatCount="indefinite"
+                    />
                     <animateMotion dur="2.8s" repeatCount="indefinite" path={path} />
                   </circle>
                 </g>
@@ -261,25 +293,99 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
               opacity={dimmed ? 0.12 : 1}
               onClick={() => onNodeSelect(node.id)}
             >
-              <circle cx={point.x} cy={point.y} r={ring * 1.8} fill={color} opacity={selected ? 0.07 : 0.025} filter="url(#spatial-blur-16)" />
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={ring * 1.8}
+                fill={color}
+                opacity={selected ? 0.07 : 0.025}
+                filter="url(#spatial-blur-16)"
+              />
               {selected && (
-                <circle cx={point.x} cy={point.y} r={ring * 1.55} fill="none" stroke={color} strokeWidth="0.8" opacity="0.22" />
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={ring * 1.55}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth="0.8"
+                  opacity="0.22"
+                />
               )}
-              <circle cx={point.x} cy={point.y} r={ring} fill="none" stroke={color} strokeWidth={selected ? 1.4 : 0.9} opacity={selected ? 0.75 : 0.3} />
-              <circle cx={point.x} cy={point.y} r={glow} fill={color} opacity={selected ? 0.34 : 0.15} filter="url(#spatial-blur-9)" />
-              <circle cx={point.x} cy={point.y} r={core} fill={color} opacity={selected ? 1 : 0.84} />
-              <circle cx={point.x - core * 0.28} cy={point.y - core * 0.29} r={core * 0.36} fill="rgba(255,255,255,0.4)" />
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={ring}
+                fill="none"
+                stroke={color}
+                strokeWidth={selected ? 1.4 : 0.9}
+                opacity={selected ? 0.75 : 0.3}
+              />
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={glow}
+                fill={color}
+                opacity={selected ? 0.34 : 0.15}
+                filter="url(#spatial-blur-9)"
+              />
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={core}
+                fill={color}
+                opacity={selected ? 1 : 0.84}
+              />
+              <circle
+                cx={point.x - core * 0.28}
+                cy={point.y - core * 0.29}
+                r={core * 0.36}
+                fill="rgba(255,255,255,0.4)"
+              />
 
-              <text x={point.x} y={point.y} textAnchor="middle" dominantBaseline="central" fontSize={core * 0.65} fontFamily="JetBrains Mono, monospace" fontWeight="700" fill="rgba(255,255,255,0.96)">
+              <text
+                x={point.x}
+                y={point.y}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={core * 0.65}
+                fontFamily="JetBrains Mono, monospace"
+                fontWeight="700"
+                fill="rgba(255,255,255,0.96)"
+              >
                 {TYPE_GLYPH[node.type]}
               </text>
-              <text x={point.x} y={point.y - ring - 10} textAnchor="middle" fontSize={Math.max(7, 8.5 * point.scale)} fontFamily="JetBrains Mono, monospace" fill={color} opacity="0.68" letterSpacing="1">
+              <text
+                x={point.x}
+                y={point.y - ring - 10}
+                textAnchor="middle"
+                fontSize={Math.max(7, 8.5 * point.scale)}
+                fontFamily="JetBrains Mono, monospace"
+                fill={color}
+                opacity="0.68"
+                letterSpacing="1"
+              >
                 {node.type === 'end' ? 'TERMINAL' : node.type.toUpperCase()}
               </text>
-              <text x={point.x} y={point.y + ring + 15} textAnchor="middle" fontSize={Math.max(9.5, 11.5 * point.scale)} fontFamily="JetBrains Mono, monospace" fontWeight="500" fill="rgba(255,255,255,0.82)">
+              <text
+                x={point.x}
+                y={point.y + ring + 15}
+                textAnchor="middle"
+                fontSize={Math.max(9.5, 11.5 * point.scale)}
+                fontFamily="JetBrains Mono, monospace"
+                fontWeight="500"
+                fill="rgba(255,255,255,0.82)"
+              >
                 {SPATIAL_LABELS[node.id] ?? `Node ${node.id}`}
               </text>
-              <text x={point.x} y={point.y + ring + 28} textAnchor="middle" fontSize={Math.max(6, 7.5 * point.scale)} fontFamily="JetBrains Mono, monospace" fill="rgba(255,255,255,0.3)">
+              <text
+                x={point.x}
+                y={point.y + ring + 28}
+                textAnchor="middle"
+                fontSize={Math.max(6, 7.5 * point.scale)}
+                fontFamily="JetBrains Mono, monospace"
+                fill="rgba(255,255,255,0.3)"
+              >
                 node_{String(node.id).padStart(3, '0')}
               </text>
             </g>
@@ -303,11 +409,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
           +
         </button>
         <span>{Math.round(zoom * 100)}%</span>
-        <button
-          type="button"
-          aria-label="Reset spatial view"
-          onClick={() => setZoom(1)}
-        >
+        <button type="button" aria-label="Reset spatial view" onClick={() => setZoom(1)}>
           ⊡
         </button>
       </div>

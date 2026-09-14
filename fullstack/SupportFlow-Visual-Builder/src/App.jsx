@@ -32,13 +32,9 @@ export default function App() {
   const [isPreviewing, setIsPreviewing] = useState(false)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
 
-  const selectedNode =
-    flow.nodes.find((node) => node.id === selectedNodeId) ?? null
+  const selectedNode = flow.nodes.find((node) => node.id === selectedNodeId) ?? null
 
-  const healthIssues = useMemo(
-    () => validateFlow(flow.nodes),
-    [flow.nodes],
-  )
+  const healthIssues = useMemo(() => validateFlow(flow.nodes), [flow.nodes])
 
   const handleNodeTextChange = (nodeId, nextText) => {
     setFlow((currentFlow) => ({
@@ -135,11 +131,7 @@ export default function App() {
         )}
 
         {mode === 'Build' && isPreviewing && (
-          <PreviewRunner
-            flow={flow}
-            onBack={handlePreviewExit}
-            onNodeSelect={handleNodeSelect}
-          />
+          <PreviewRunner flow={flow} onBack={handlePreviewExit} onNodeSelect={handleNodeSelect} />
         )}
 
         {(mode === 'Build' || mode === 'Spatial') && (
@@ -151,9 +143,7 @@ export default function App() {
           />
         )}
 
-        {mode === 'X-Ray' && !isPreviewing && (
-          <FlowHealthPanel flow={flow} issues={healthIssues} />
-        )}
+        {mode === 'X-Ray' && !isPreviewing && <FlowHealthPanel flow={flow} issues={healthIssues} />}
       </div>
 
       <StatusBar

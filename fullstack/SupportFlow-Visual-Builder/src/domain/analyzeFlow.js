@@ -115,9 +115,7 @@ export default function analyzeFlow(nodes) {
   )
 
   const unreachable = nodes.filter((node) => !reachable.has(node.id))
-  const terminalsWithRoutes = nodes.filter(
-    (node) => node.type === 'end' && node.options.length > 0,
-  )
+  const terminalsWithRoutes = nodes.filter((node) => node.type === 'end' && node.options.length > 0)
   const questionsWithoutRoutes = nodes.filter(
     (node) => node.type === 'question' && node.options.length === 0,
   )

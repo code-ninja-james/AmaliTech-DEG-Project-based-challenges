@@ -38,7 +38,7 @@ Question or terminal text is edited against a single shared in-memory flow model
 
 The Routes tab supports authoring changes without touching JSON: add outbound routes, edit route labels, retarget routes to any existing node, remove routes, and create connected Question or Terminal nodes from the selected Start/Question node. Question and Terminal nodes can be deleted from Properties or with `Delete`/`Backspace`; the editor removes incoming routes automatically, keeps Start protected, and offers Undo after deletions.
 
-On the canvas, Start and Question nodes reveal a small `+` connector handle when selected, hovered, or focused. Drag it onto another node to create a new route visually, then rename or retarget that route in the Routes tab if needed. Selecting a route label exposes a Delete route action in the inspector and lets `Delete`/`Backspace` remove the selected route.
+On the canvas, Start and Question nodes reveal a small `+` connector handle when selected, hovered, or focused. Drag it onto another node to create a new route visually; newly created and selected routes expose a focused label field in the inspector so the route name can be entered immediately. Selecting a route label also exposes Delete route and lets `Delete`/`Backspace` remove the selected route.
 
 ### Preview runner
 

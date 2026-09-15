@@ -89,6 +89,9 @@ describe('SupportFlow application', () => {
 
     await user.click(screen.getByRole('button', { name: 'Routes' }))
     await user.click(screen.getByRole('button', { name: 'Add route' }))
+
+    expect(screen.getByLabelText('Selected route label')).toHaveFocus()
+
     await user.clear(screen.getByLabelText('Route 2 label'))
     await user.type(screen.getByLabelText('Route 2 label'), 'Escalate')
     await user.selectOptions(screen.getByLabelText('Route 2 target'), '6')
@@ -129,6 +132,28 @@ describe('SupportFlow application', () => {
     expect(screen.queryByText('Deleted route "Personal".')).not.toBeInTheDocument()
   })
 
+  it('renames the selected canvas route from the inspector', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('flow-node-3'))
+    await user.click(screen.getByRole('button', { name: 'Personal, route to node 6' }))
+
+    const label = screen.getByLabelText('Selected route label')
+
+    expect(label).toHaveValue('Personal')
+
+    await user.clear(label)
+    await user.type(label, 'VIP customer')
+
+    expect(screen.getByRole('button', { name: 'VIP customer, route to node 6' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(within(screen.getByTestId('flow-node-3')).getByText('VIP customer')).toBeInTheDocument()
+  })
+
   it('deletes the selected canvas route with the keyboard', async () => {
     const user = userEvent.setup()
 
@@ -159,6 +184,7 @@ describe('SupportFlow application', () => {
       clientY: 520,
     })
 
+    expect(screen.getByLabelText('Selected route label')).toHaveFocus()
     expect(within(screen.getByTestId('flow-node-2')).getByText('Route to #6')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Route to #6, route to node 6' })).toBeInTheDocument()
   })

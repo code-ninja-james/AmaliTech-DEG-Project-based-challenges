@@ -351,6 +351,7 @@ export default function NodeInspector({
   node,
   flow,
   selectedConnection = null,
+  autoFocusRouteId = null,
   issues = [],
   onIssueSelect = () => {},
   onTextChange = () => {},
@@ -391,6 +392,21 @@ export default function NodeInspector({
           <p className="studio-inspector__section-label">Selected Route</p>
 
           <strong>{selectedConnection.label}</strong>
+
+          <label className="studio-inspector__selected-route-field">
+            <span>Route label</span>
+            <input
+              aria-label="Selected route label"
+              autoFocus={selectedConnection.id === autoFocusRouteId}
+              value={selectedConnection.label}
+              onChange={(event) =>
+                onRouteChange(selectedConnection.sourceId, selectedConnection.optionIndex, {
+                  label: event.target.value,
+                })
+              }
+              onFocus={(event) => event.target.select()}
+            />
+          </label>
 
           <div className="studio-inspector__selected-route-path">
             <code>#{selectedConnection.sourceId}</code>

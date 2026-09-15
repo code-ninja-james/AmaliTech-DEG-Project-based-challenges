@@ -6,7 +6,7 @@
  * animated execution packets and functional zoom controls.
  */
 
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import analyzeFlow from '../../domain/analyzeFlow.js'
 import getConnections from '../../domain/getConnections.js'
@@ -32,11 +32,13 @@ export default function FlowCanvas({
   selectedConnectionId = null,
   onNodeSelect = () => {},
   onConnectionSelect = () => {},
+  onRouteConnect = () => {},
 }) {
   const { canvas_size: canvasSize } = flow.meta
   const workspaceRef = useRef(null)
   const [hoveredNodeId, setHoveredNodeId] = useState(null)
   const [zoom, setZoom] = useState(1)
+  const [draftRoute, setDraftRoute] = useState(null)
 
   const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
   const analysis = useMemo(() => analyzeFlow(flow.nodes), [flow.nodes])
@@ -52,6 +54,116 @@ export default function FlowCanvas({
   }, [connections, flow.nodes])
 
   const { canvasRef, nodeRects, registerNode } = useNodeMeasurements(flow.nodes, zoom)
+
+  const getCanvasPoint = useCallback(
+    (event) => {
+      const canvas = canvasRef.current
+
+      if (!canvas) {
+        return null
+      }
+
+      const rect = canvas.getBoundingClientRect()
+
+      return {
+        x: (event.clientX - rect.left) / zoom,
+        y: (event.clientY - rect.top) / zoom,
+      }
+    },
+    [canvasRef, zoom],
+  )
+
+  const getEventTargetNodeId = useCallback((event, sourceId) => {
+    const element =
+      event.target instanceof Element ? event.target.closest('[data-flow-node-id]') : null
+    const targetId = element?.getAttribute('data-flow-node-id') ?? null
+
+    return targetId && targetId !== sourceId ? targetId : null
+  }, [])
+
+  const getPointTargetNodeId = useCallback(
+    (point, sourceId) => {
+      if (!point) {
+        return null
+      }
+
+      return (
+        Object.entries(nodeRects).find(([nodeId, rect]) => {
+          if (nodeId === sourceId) {
+            return false
+          }
+
+          return (
+            point.x >= rect.x &&
+            point.x <= rect.x + rect.width &&
+            point.y >= rect.y &&
+            point.y <= rect.y + rect.height
+          )
+        })?.[0] ?? null
+      )
+    },
+    [nodeRects],
+  )
+
+  const handleRouteDraftStart = useCallback(
+    (sourceId, event) => {
+      if (mode !== 'Build') {
+        return
+      }
+
+      const point = getCanvasPoint(event) ?? { x: 0, y: 0 }
+
+      onNodeSelect(sourceId)
+      setDraftRoute({ sourceId, point, targetId: null })
+    },
+    [getCanvasPoint, mode, onNodeSelect],
+  )
+
+  useEffect(() => {
+    if (!draftRoute) {
+      return undefined
+    }
+
+    const handlePointerMove = (event) => {
+      const point = getCanvasPoint(event)
+      const targetId =
+        getEventTargetNodeId(event, draftRoute.sourceId) ??
+        getPointTargetNodeId(point, draftRoute.sourceId)
+
+      setDraftRoute((currentDraft) =>
+        currentDraft ? { ...currentDraft, point: point ?? currentDraft.point, targetId } : null,
+      )
+    }
+
+    const handlePointerUp = (event) => {
+      const point = getCanvasPoint(event)
+      const targetId =
+        getEventTargetNodeId(event, draftRoute.sourceId) ??
+        getPointTargetNodeId(point, draftRoute.sourceId)
+
+      if (targetId) {
+        onRouteConnect(draftRoute.sourceId, targetId)
+      }
+
+      setDraftRoute(null)
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setDraftRoute(null)
+      }
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [draftRoute, getCanvasPoint, getEventTargetNodeId, getPointTargetNodeId, onRouteConnect])
 
   const handleFitView = () => {
     const workspace = workspaceRef.current
@@ -132,6 +244,7 @@ export default function FlowCanvas({
               mode={mode}
               reachableIds={analysis.reachable}
               cycleParticipantIds={analysis.cycleParticipants}
+              draftConnection={draftRoute}
             />
 
             {flow.nodes.map((node) => (
@@ -146,6 +259,10 @@ export default function FlowCanvas({
                 isCycleParticipant={analysis.cycleParticipants.has(node.id)}
                 hasBrokenRoute={brokenRouteNodeIds.has(node.id)}
                 incomingCount={incomingCounts.get(node.id) ?? 0}
+                isConnectable={mode === 'Build' && node.type !== 'end'}
+                isConnectionTarget={draftRoute?.targetId === node.id}
+                isConnectionSource={draftRoute?.sourceId === node.id}
+                onRouteDraftStart={handleRouteDraftStart}
                 onSelect={onNodeSelect}
                 onHover={setHoveredNodeId}
               />

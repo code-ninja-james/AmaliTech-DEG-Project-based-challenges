@@ -86,6 +86,7 @@ export default function ConnectorLayer({
   mode = 'Build',
   reachableIds = new Set(),
   cycleParticipantIds = new Set(),
+  draftConnection = null,
 }) {
   const incomingPositions = getIncomingPositions(connections)
   const parallelRoutePositions = getParallelRoutePositions(connections)
@@ -149,6 +150,16 @@ export default function ConnectorLayer({
             <path d="M 0 0 L 7 3.5 L 0 7 Z" fill={color} />
           </marker>
         ))}
+        <marker
+          id="supportflow-arrow-draft"
+          markerWidth="7"
+          markerHeight="7"
+          refX="6"
+          refY="3.5"
+          orient="auto"
+        >
+          <path d="M 0 0 L 7 3.5 L 0 7 Z" fill="rgba(79,143,247,0.9)" />
+        </marker>
 
         {connections.map((connection) => {
           const sourceNode = nodeMap.get(connection.sourceId)
@@ -391,6 +402,45 @@ export default function ConnectorLayer({
           </g>
         )
       })}
+
+      {draftConnection && nodeRects[draftConnection.sourceId] && (
+        <g className="connector-draft" data-testid="draft-connection">
+          {(() => {
+            const sourceRect = nodeRects[draftConnection.sourceId]
+            const sourceNode = nodeMap.get(draftConnection.sourceId)
+            const sourceOptionCount = (sourceNode?.options.length ?? 0) + 1
+            const source = getBoundaryAnchor(
+              sourceRect,
+              sourceOptionCount - 1,
+              sourceOptionCount,
+              'bottom',
+            )
+            const targetRect = draftConnection.targetId ? nodeRects[draftConnection.targetId] : null
+            const target = targetRect
+              ? getBoundaryAnchor(targetRect, 0, 1, 'top')
+              : draftConnection.point
+
+            if (!target) {
+              return null
+            }
+
+            return (
+              <>
+                <path
+                  d={createBezierPath(source, target)}
+                  fill="none"
+                  stroke="rgba(79,143,247,0.78)"
+                  strokeWidth="1.7"
+                  strokeDasharray="6 4"
+                  markerEnd="url(#supportflow-arrow-draft)"
+                />
+                <circle cx={source.x} cy={source.y} r="4" fill="#06060a" stroke="#4f8ff7" />
+                <circle cx={target.x} cy={target.y} r="4" fill="#06060a" stroke="#4f8ff7" />
+              </>
+            )
+          })()}
+        </g>
+      )}
     </svg>
   )
 }

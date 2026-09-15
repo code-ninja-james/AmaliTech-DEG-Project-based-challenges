@@ -28,6 +28,10 @@ export default function FlowNode({
   isCycleParticipant = false,
   hasBrokenRoute = false,
   incomingCount = 0,
+  isConnectable = false,
+  isConnectionTarget = false,
+  isConnectionSource = false,
+  onRouteDraftStart = () => {},
   onSelect = () => {},
   onHover = () => {},
 }) {
@@ -55,10 +59,13 @@ export default function FlowNode({
         isXray && !isReachable ? 'flow-node--xray-error studio-xray-enter' : '',
         isXray && hasBrokenRoute ? 'flow-node--xray-broken' : '',
         isXray && isCycleParticipant ? 'flow-node--xray-cycle' : '',
+        isConnectionTarget ? 'flow-node--connect-target' : '',
+        isConnectionSource ? 'flow-node--connect-source' : '',
       ]
         .filter(Boolean)
         .join(' ')}
       data-testid={`flow-node-${node.id}`}
+      data-flow-node-id={node.id}
       role="button"
       tabIndex="0"
       aria-pressed={isSelected}
@@ -135,6 +142,27 @@ export default function FlowNode({
           }}
         />
       ))}
+
+      {isConnectable && (
+        <span
+          className="flow-node__connect-handle"
+          role="button"
+          tabIndex="0"
+          aria-label={`Drag new route from node ${node.id}`}
+          title="Drag to connect a new route"
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          onPointerDown={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            onRouteDraftStart(node.id, event)
+          }}
+        >
+          +
+        </span>
+      )}
     </article>
   )
 }

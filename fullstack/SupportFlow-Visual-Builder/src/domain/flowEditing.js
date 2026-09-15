@@ -115,7 +115,13 @@ export function addNode(flow, { id, type = 'question', sourceNodeId = null }) {
   }
 }
 
-export function addRoute(flow, nodeId) {
+export function addRoute(flow, nodeId, targetNodeId = null) {
+  const targetId = targetNodeId ?? getDefaultRouteTargetId(flow.nodes, nodeId)
+
+  if (!flow.nodes.some((node) => node.id === targetId)) {
+    return flow
+  }
+
   return {
     ...flow,
     nodes: flow.nodes.map((node) => {
@@ -128,8 +134,8 @@ export function addRoute(flow, nodeId) {
         options: [
           ...node.options,
           {
-            label: 'New route',
-            nextId: getDefaultRouteTargetId(flow.nodes, nodeId),
+            label: targetNodeId ? `Route to #${targetId}` : 'New route',
+            nextId: targetId,
           },
         ],
       }

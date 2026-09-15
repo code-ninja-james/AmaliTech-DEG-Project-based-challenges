@@ -214,6 +214,37 @@ describe('SupportFlow application', () => {
     expect(screen.getByTestId('flow-node-6')).toHaveClass('flow-node--selected')
   })
 
+  it('surfaces build validation hints after route edits create flow issues', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('navigator-node-3'))
+    await user.click(screen.getByRole('button', { name: 'Routes' }))
+    await user.click(screen.getAllByRole('button', { name: 'Remove' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'Remove' })[0])
+
+    expect(screen.getByRole('button', { name: 'Flow Health, 2 issues' })).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('flow-node-3')).getByLabelText('1 validation issue'),
+    ).toHaveTextContent('1')
+    expect(
+      within(screen.getByTestId('flow-node-6')).getByLabelText('1 validation issue'),
+    ).toHaveTextContent('1')
+    expect(screen.getByText('Node #3 ends unexpectedly without any routes.')).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('navigator-node-2'))
+
+    expect(
+      screen.getByText('Selected node is clean. Other flow issues need attention.'),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Select node #6' }))
+
+    expect(screen.getByTestId('flow-node-6')).toHaveClass('flow-node--selected')
+    expect(screen.getByText('Node #6 cannot be reached from the Start node.')).toBeInTheDocument()
+  })
+
   it('does not expose node deletion for the Start node', async () => {
     const user = userEvent.setup()
 

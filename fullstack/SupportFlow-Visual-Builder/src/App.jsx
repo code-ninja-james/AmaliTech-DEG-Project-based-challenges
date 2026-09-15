@@ -309,6 +309,7 @@ export default function App() {
             isDemo={isDemo}
             selectedNodeId={selectedNodeId}
             selectedConnectionId={selectedConnectionId}
+            issues={healthIssues}
             onNodeSelect={handleNodeSelect}
             onConnectionSelect={handleConnectionSelect}
             onRouteConnect={handleRouteConnect}
@@ -325,6 +326,8 @@ export default function App() {
             node={selectedNode}
             flow={flow}
             selectedConnection={selectedConnection}
+            issues={healthIssues}
+            onIssueSelect={handleNodeSelect}
             onTextChange={handleNodeTextChange}
             onNodeAdd={handleNodeAdd}
             onRouteAdd={handleRouteAdd}

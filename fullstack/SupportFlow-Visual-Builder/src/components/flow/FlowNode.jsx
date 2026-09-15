@@ -28,6 +28,7 @@ export default function FlowNode({
   isCycleParticipant = false,
   hasBrokenRoute = false,
   incomingCount = 0,
+  issues = [],
   isConnectable = false,
   isConnectionTarget = false,
   isConnectionSource = false,
@@ -37,6 +38,8 @@ export default function FlowNode({
 }) {
   const nodeType = NODE_LABELS[node.type] ?? node.type
   const glyph = NODE_GLYPHS[node.type] ?? '•'
+  const issueCount = issues.length
+  const issueSeverity = issues.some((issue) => issue.severity === 'error') ? 'error' : 'warning'
 
   const handleKeyDown = (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') {
@@ -59,6 +62,7 @@ export default function FlowNode({
         isXray && !isReachable ? 'flow-node--xray-error studio-xray-enter' : '',
         isXray && hasBrokenRoute ? 'flow-node--xray-broken' : '',
         isXray && isCycleParticipant ? 'flow-node--xray-cycle' : '',
+        !isXray && issueCount > 0 ? `flow-node--has-${issueSeverity}` : '',
         isConnectionTarget ? 'flow-node--connect-target' : '',
         isConnectionSource ? 'flow-node--connect-source' : '',
       ]
@@ -89,6 +93,15 @@ export default function FlowNode({
         </span>
 
         <span className="flow-node__header-meta">
+          {!isXray && issueCount > 0 && (
+            <span
+              className={`flow-node__issue-badge flow-node__issue-badge--${issueSeverity}`}
+              aria-label={`${issueCount} validation ${issueCount === 1 ? 'issue' : 'issues'}`}
+              title={issues.map((issue) => issue.message).join('\n')}
+            >
+              {issueCount}
+            </span>
+          )}
           {incomingCount > 0 && (
             <span className="flow-node__incoming" aria-label={`${incomingCount} incoming routes`}>
               {incomingCount}

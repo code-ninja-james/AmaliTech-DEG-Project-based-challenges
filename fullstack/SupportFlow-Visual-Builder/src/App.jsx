@@ -84,6 +84,7 @@ export default function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [demoScenario, setDemoScenario] = useState('current')
   const [deleteUndo, setDeleteUndo] = useState(null)
+  const [isDeleteUndoMinimized, setIsDeleteUndoMinimized] = useState(false)
   const [routeEditorFocusId, setRouteEditorFocusId] = useState(null)
   const [isSpreadsheetImporterOpen, setIsSpreadsheetImporterOpen] = useState(false)
   const [isWorkflowLibraryOpen, setIsWorkflowLibraryOpen] = useState(false)
@@ -231,6 +232,7 @@ export default function App() {
         selectedNodeId,
         message: `Deleted route "${route.label}".`,
       })
+      setIsDeleteUndoMinimized(false)
       setImportNotice(null)
       setWorkflowNotice(null)
       setFlow(removeRoute(flow, nodeId, optionIndex))
@@ -257,6 +259,7 @@ export default function App() {
         selectedNodeId,
         message: `Deleted ${nodeLabel} node #${nodeToRemove.id}.`,
       })
+      setIsDeleteUndoMinimized(false)
       setImportNotice(null)
       setWorkflowNotice(null)
       setFlow(nextFlow)
@@ -278,7 +281,13 @@ export default function App() {
     setSelectedNodeId(deleteUndo.selectedNodeId)
     setSelectedConnectionId(deleteUndo.selectedConnectionId)
     setDeleteUndo(null)
+    setIsDeleteUndoMinimized(false)
     setRouteEditorFocusId(null)
+  }
+
+  const handleDeleteUndoDismiss = () => {
+    setDeleteUndo(null)
+    setIsDeleteUndoMinimized(false)
   }
 
   const handleNodeSelect = (nodeId) => {
@@ -623,10 +632,44 @@ export default function App() {
       />
 
       {deleteUndo && (
-        <div className="app-undo-toast" aria-live="polite">
-          <span role="status">{deleteUndo.message}</span>
+        <div
+          className={['app-undo-toast', isDeleteUndoMinimized ? 'app-undo-toast--minimized' : '']
+            .filter(Boolean)
+            .join(' ')}
+          aria-live="polite"
+        >
+          <span role="status">
+            {isDeleteUndoMinimized ? 'Delete undo available' : deleteUndo.message}
+          </span>
           <button type="button" onClick={handleDeleteUndo}>
             Undo
+          </button>
+          {isDeleteUndoMinimized ? (
+            <button
+              type="button"
+              className="app-undo-toast__secondary"
+              aria-label="Restore undo message"
+              onClick={() => setIsDeleteUndoMinimized(false)}
+            >
+              Show
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="app-undo-toast__secondary"
+              aria-label="Minimize undo message"
+              onClick={() => setIsDeleteUndoMinimized(true)}
+            >
+              Minimize
+            </button>
+          )}
+          <button
+            type="button"
+            className="app-undo-toast__dismiss"
+            aria-label="Close undo message"
+            onClick={handleDeleteUndoDismiss}
+          >
+            Close
           </button>
         </div>
       )}

@@ -135,6 +135,51 @@ describe('SupportFlow application', () => {
     expect(screen.queryByText('Deleted route "Personal".')).not.toBeInTheDocument()
   })
 
+  it('minimizes, restores and closes the delete undo toast', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('flow-node-3'))
+    await user.click(screen.getByRole('button', { name: 'Personal, route to node 6' }))
+    await user.click(screen.getByRole('button', { name: 'Delete route' }))
+
+    expect(screen.getByText('Deleted route "Personal".')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Minimize undo message' }))
+
+    expect(screen.queryByText('Deleted route "Personal".')).not.toBeInTheDocument()
+    expect(screen.getByText('Delete undo available')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Restore undo message' }))
+
+    expect(screen.getByText('Deleted route "Personal".')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Close undo message' }))
+
+    expect(screen.queryByText('Deleted route "Personal".')).not.toBeInTheDocument()
+    expect(screen.queryByText('Delete undo available')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
+  })
+
+  it('keeps undo available while the delete toast is minimized', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('flow-node-3'))
+    await user.click(screen.getByRole('button', { name: 'Personal, route to node 6' }))
+    await user.click(screen.getByRole('button', { name: 'Delete route' }))
+    await user.click(screen.getByRole('button', { name: 'Minimize undo message' }))
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(screen.getByRole('button', { name: 'Personal, route to node 6' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.queryByText('Delete undo available')).not.toBeInTheDocument()
+  })
+
   it('renames the selected canvas route from the inspector', async () => {
     const user = userEvent.setup()
 

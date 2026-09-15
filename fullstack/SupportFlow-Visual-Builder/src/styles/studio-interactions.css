@@ -772,6 +772,45 @@
   margin-top: 12px;
 }
 
+.studio-inspector__route-creator {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid rgba(79, 143, 247, 0.12);
+  border-radius: 3px;
+  background: rgba(79, 143, 247, 0.035);
+}
+
+.studio-inspector__route-creator label {
+  display: grid;
+  gap: 5px;
+}
+
+.studio-inspector__route-creator label span {
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.studio-inspector__route-creator select {
+  width: 100%;
+  min-height: 30px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-size: 11px;
+}
+
+.studio-inspector__route-creator select:focus {
+  border-color: rgba(79, 143, 247, 0.5);
+  outline: 0;
+}
+
 .studio-inspector__route-actions button {
   min-height: 31px;
   border: 1px solid rgba(255, 255, 255, 0.12);

@@ -139,19 +139,24 @@ export default function App() {
     setRouteEditorFocusId(routeConnectionId)
   }
 
-  const handleRouteAdd = (nodeId) => {
+  const handleRouteAdd = (nodeId, targetNodeId = null) => {
     const sourceNode = flow.nodes.find((node) => node.id === nodeId)
 
     if (!sourceNode || sourceNode.type === 'end') {
       return
     }
 
-    const targetId = getDefaultRouteTargetId(flow.nodes, nodeId)
+    const targetId = targetNodeId ?? getDefaultRouteTargetId(flow.nodes, nodeId)
+    const targetNode = flow.nodes.find((node) => node.id === targetId)
+
+    if (!targetNode) {
+      return
+    }
 
     setDeleteUndo(null)
     setImportNotice(null)
     setWorkflowNotice(null)
-    setFlow((currentFlow) => addRoute(currentFlow, nodeId))
+    setFlow((currentFlow) => addRoute(currentFlow, nodeId, targetId))
     setSelectedNodeId(nodeId)
     setSelectedConnectionId(`${nodeId}-${sourceNode.options.length}-${targetId}`)
     setRouteEditorFocusId(`${nodeId}-${sourceNode.options.length}-${targetId}`)

@@ -90,13 +90,14 @@ describe('SupportFlow application', () => {
     render(<App />)
 
     await user.click(screen.getByRole('button', { name: 'Routes' }))
+    await user.selectOptions(screen.getByLabelText('New route target'), '6')
     await user.click(screen.getByRole('button', { name: 'Add route' }))
 
     expect(screen.getByLabelText('Selected route label')).toHaveFocus()
+    expect(screen.getByLabelText('Route 2 target')).toHaveValue('6')
 
     await user.clear(screen.getByLabelText('Route 2 label'))
     await user.type(screen.getByLabelText('Route 2 label'), 'Escalate')
-    await user.selectOptions(screen.getByLabelText('Route 2 target'), '6')
 
     expect(within(screen.getByTestId('flow-node-2')).getByText('Escalate')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Escalate, route to node 6' })).toBeInTheDocument()

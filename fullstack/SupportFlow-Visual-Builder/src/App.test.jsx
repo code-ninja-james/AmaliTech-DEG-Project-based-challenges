@@ -104,6 +104,22 @@ describe('SupportFlow application', () => {
     expect(screen.queryByLabelText('Route 2 label')).not.toBeInTheDocument()
   })
 
+  it('deletes the selected canvas route from the inspector', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('flow-node-3'))
+    await user.click(screen.getByRole('button', { name: 'Personal, route to node 6' }))
+    await user.click(screen.getByRole('button', { name: 'Delete route' }))
+
+    expect(
+      screen.queryByRole('button', { name: 'Personal, route to node 6' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Personal')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Business, route to node 6' })).toBeInTheDocument()
+  })
+
   it('creates a new route by dragging a connector handle onto a node', async () => {
     render(<App />)
 

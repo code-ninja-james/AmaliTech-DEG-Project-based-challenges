@@ -355,6 +355,16 @@ export default function NodeInspector({
             <span aria-hidden="true" />
             Route target resolved
           </span>
+
+          <button
+            type="button"
+            className="studio-inspector__selected-route-delete"
+            onClick={() =>
+              onRouteRemove(selectedConnection.sourceId, selectedConnection.optionIndex)
+            }
+          >
+            Delete route
+          </button>
         </section>
       )}
 

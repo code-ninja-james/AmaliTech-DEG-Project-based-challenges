@@ -1,4 +1,4 @@
-const DEFAULT_CANVAS_SIZE = { w: 1200, h: 800 }
+export const DEFAULT_CANVAS_SIZE = { w: 1200, h: 800 }
 const NODE_PADDING = 72
 const NODE_VERTICAL_STEP = 190
 const NODE_HORIZONTAL_GAP = 260
@@ -82,13 +82,13 @@ function normalizeHeader(value) {
     .replace(/\s+/g, ' ')
 }
 
-function normalizeId(value) {
+export function normalizeId(value) {
   return String(value ?? '')
     .trim()
     .replace(/^#/, '')
 }
 
-function normalizeNodeType(value) {
+export function normalizeNodeType(value) {
   const type = String(value ?? '')
     .trim()
     .toLowerCase()
@@ -287,7 +287,7 @@ function getLayoutDepths(nodes, startNode) {
   return depthById
 }
 
-function layoutNodes(nodes, canvasSize) {
+export function layoutNodes(nodes, canvasSize = DEFAULT_CANVAS_SIZE) {
   const startNode = nodes.find((node) => node.type === 'start') ?? nodes[0]
   const depthById = getLayoutDepths(nodes, startNode)
   const groups = new Map()
@@ -324,11 +324,15 @@ function layoutNodes(nodes, canvasSize) {
   return { w: width, h: height }
 }
 
-export function createFlowFromSpreadsheet(text, { canvasSize = DEFAULT_CANVAS_SIZE } = {}) {
-  const rows = parseSpreadsheetText(text)
-
+export function createFlowFromRows(
+  rows,
+  {
+    canvasSize = DEFAULT_CANVAS_SIZE,
+    emptyMessage = 'Paste spreadsheet rows or upload a CSV/TSV file first.',
+  } = {},
+) {
   if (rows.length === 0) {
-    throw new Error('Paste spreadsheet rows or upload a CSV/TSV file first.')
+    throw new Error(emptyMessage)
   }
 
   const { index: headerIndex, columns } = findHeader(rows)
@@ -435,4 +439,8 @@ export function createFlowFromSpreadsheet(text, { canvasSize = DEFAULT_CANVAS_SI
     },
     warnings,
   }
+}
+
+export function createFlowFromSpreadsheet(text, { canvasSize = DEFAULT_CANVAS_SIZE } = {}) {
+  return createFlowFromRows(parseSpreadsheetText(text), { canvasSize })
 }

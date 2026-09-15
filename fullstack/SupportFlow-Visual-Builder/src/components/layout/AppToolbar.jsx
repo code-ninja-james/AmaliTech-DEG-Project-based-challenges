@@ -79,10 +79,10 @@ export default function AppToolbar({
           <button
             className="app-import-button"
             type="button"
-            aria-label="Import spreadsheet"
+            aria-label="Import flow"
             onClick={onSpreadsheetImport}
           >
-            Import sheet
+            Import flow
           </button>
           <button
             className="app-preview-button"

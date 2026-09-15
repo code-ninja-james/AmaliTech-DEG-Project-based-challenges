@@ -5,10 +5,11 @@
  * and the chat preview while allowing the product shell to evolve visually.
  */
 
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { createStoredXlsx } from './test/createStoredXlsx.js'
 import App from './App.jsx'
 
 describe('SupportFlow application', () => {
@@ -315,15 +316,15 @@ describe('SupportFlow application', () => {
 
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: 'Import spreadsheet' }))
+    await user.click(screen.getByRole('button', { name: 'Import flow' }))
 
-    const dialog = screen.getByRole('dialog', { name: 'Import spreadsheet flow' })
-    expect(within(dialog).getByText('Build flow from Excel rows')).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog', { name: 'Import flow' })
+    expect(within(dialog).getByText('Build flow from JSON or Excel')).toBeInTheDocument()
 
-    await user.click(within(dialog).getByRole('button', { name: 'Use sample' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Use sheet sample' }))
 
     expect(within(dialog).getByRole('status')).toHaveTextContent(
-      'Ready to create 5 nodes and 4 routes.',
+      'Ready to create 5 nodes and 4 routes from spreadsheet.',
     )
 
     await user.click(within(dialog).getByRole('button', { name: 'Create flow' }))
@@ -347,6 +348,71 @@ describe('SupportFlow application', () => {
 
     expect(
       within(preview).getByText('Is this for a personal or business account?'),
+    ).toBeInTheDocument()
+  })
+
+  it('imports a JSON flow sample', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Import flow' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Import flow' })
+    await user.click(within(dialog).getByRole('button', { name: 'Use JSON sample' }))
+
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      'Ready to create 4 nodes and 3 routes from JSON.',
+    )
+
+    await user.click(within(dialog).getByRole('button', { name: 'Create flow' }))
+
+    expect(screen.getByText('Imported 4 nodes and 3 routes from JSON.')).toBeInTheDocument()
+    expect(within(screen.getByTestId('flow-node-start')).getByText('Billing')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('flow-node-business-billing')).getByText(
+        'A business billing agent will join shortly.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('imports an uploaded Excel workbook', async () => {
+    const user = userEvent.setup()
+    const workbook = createStoredXlsx([
+      ['Old help bot export'],
+      ['Node ID', 'Type', 'Question Text', 'Route Label', 'Next Node ID'],
+      ['1', 'start', 'Welcome from Excel.', 'Billing', '2'],
+      ['1', 'start', 'Welcome from Excel.', 'Technical support', '3'],
+      ['2', 'end', 'Connecting you to billing.', '', ''],
+      ['3', 'end', 'Restart your router first.', '', ''],
+    ])
+    const file = new File([workbook], 'support-flow.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Import flow' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Import flow' })
+    await user.upload(within(dialog).getByLabelText('Import file'), file)
+
+    await waitFor(() => {
+      expect(within(dialog).getByRole('status')).toHaveTextContent(
+        'Ready to create 3 nodes and 2 routes from Excel workbook.',
+      )
+    })
+
+    await user.click(within(dialog).getByRole('button', { name: 'Create flow' }))
+
+    expect(
+      screen.getByText('Imported 3 nodes and 2 routes from Excel workbook.'),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('flow-node-1')).getByText('Welcome from Excel.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Technical support, route to node 3' }),
     ).toBeInTheDocument()
   })
 

@@ -39,7 +39,7 @@ export default function CommandPalette({
       action: onPreviewStart,
     },
     {
-      label: 'Import Spreadsheet',
+      label: 'Import Flow',
       shortcut: 'I',
       action: onSpreadsheetImport,
     },

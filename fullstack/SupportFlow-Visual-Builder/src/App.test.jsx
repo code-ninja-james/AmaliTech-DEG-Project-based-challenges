@@ -5,7 +5,7 @@
  * and the chat preview while allowing the product shell to evolve visually.
  */
 
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -102,6 +102,25 @@ describe('SupportFlow application', () => {
       within(screen.getByTestId('flow-node-2')).queryByText('Escalate'),
     ).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Route 2 label')).not.toBeInTheDocument()
+  })
+
+  it('creates a new route by dragging a connector handle onto a node', async () => {
+    render(<App />)
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Drag new route from node 2' }), {
+      clientX: 420,
+      clientY: 350,
+    })
+
+    expect(await screen.findByTestId('draft-connection')).toBeInTheDocument()
+
+    fireEvent.pointerUp(screen.getByTestId('flow-node-6'), {
+      clientX: 850,
+      clientY: 520,
+    })
+
+    expect(within(screen.getByTestId('flow-node-2')).getByText('Route to #6')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Route to #6, route to node 6' })).toBeInTheDocument()
   })
 
   it('deletes a terminal node and removes routes that targeted it', async () => {

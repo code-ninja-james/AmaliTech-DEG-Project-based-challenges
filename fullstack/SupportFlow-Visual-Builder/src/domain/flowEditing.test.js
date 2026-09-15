@@ -43,6 +43,15 @@ describe('flow editing helpers', () => {
     expect(trimmed.nodes.find((node) => node.id === '2').options).toHaveLength(2)
   })
 
+  it('adds a route to an explicit target node', () => {
+    const nextFlow = addRoute(flowData, '2', '6')
+
+    expect(nextFlow.nodes.find((node) => node.id === '2').options.at(-1)).toEqual({
+      label: 'Route to #6',
+      nextId: '6',
+    })
+  })
+
   it('does not add outbound routes to terminal nodes', () => {
     const nextFlow = addRoute(flowData, '4')
 

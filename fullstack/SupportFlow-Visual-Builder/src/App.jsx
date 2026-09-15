@@ -86,6 +86,19 @@ export default function App() {
     setSelectedConnectionId(null)
   }
 
+  const handleRouteConnect = (sourceNodeId, targetNodeId) => {
+    const sourceNode = flow.nodes.find((node) => node.id === sourceNodeId)
+    const targetNode = flow.nodes.find((node) => node.id === targetNodeId)
+
+    if (!sourceNode || !targetNode || sourceNode.type === 'end') {
+      return
+    }
+
+    setFlow((currentFlow) => addRoute(currentFlow, sourceNodeId, targetNodeId))
+    setSelectedNodeId(sourceNodeId)
+    setSelectedConnectionId(`${sourceNodeId}-${sourceNode.options.length}-${targetNodeId}`)
+  }
+
   const handleRouteChange = (nodeId, optionIndex, patch) => {
     setFlow((currentFlow) => updateRoute(currentFlow, nodeId, optionIndex, patch))
     setSelectedConnectionId(null)
@@ -207,6 +220,7 @@ export default function App() {
             selectedConnectionId={selectedConnectionId}
             onNodeSelect={handleNodeSelect}
             onConnectionSelect={handleConnectionSelect}
+            onRouteConnect={handleRouteConnect}
           />
         )}
 

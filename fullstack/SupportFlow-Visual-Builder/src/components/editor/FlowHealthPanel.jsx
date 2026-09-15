@@ -9,9 +9,18 @@
 import { useMemo } from 'react'
 
 import analyzeFlow from '../../domain/analyzeFlow.js'
+import { XRAY_DEMO_SCENARIOS } from '../../domain/xrayDemo.js'
 
-export default function FlowHealthPanel({ flow, issues = [] }) {
+export default function FlowHealthPanel({
+  flow,
+  issues = [],
+  demoScenario = 'current',
+  onDemoChange,
+  onNodeSelect,
+}) {
   const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
+  const scenario = XRAY_DEMO_SCENARIOS.find(({ id }) => id === demoScenario)
+  const isDemo = demoScenario !== 'current'
 
   const diagnostics = [
     {
@@ -64,11 +73,42 @@ export default function FlowHealthPanel({ flow, issues = [] }) {
       </header>
 
       <div className="studio-xray__body">
+        {onDemoChange && (
+          <section className="studio-xray__demo" aria-label="Diagnostic demo">
+            <label htmlFor="xray-demo-scenario">Diagnostic demo</label>
+            <select
+              id="xray-demo-scenario"
+              value={demoScenario}
+              aria-describedby="xray-demo-description"
+              onChange={(event) => onDemoChange(event.target.value)}
+            >
+              {XRAY_DEMO_SCENARIOS.map(({ id, label }) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <p id="xray-demo-description" role="status">
+              {scenario?.description}
+            </p>
+            {isDemo && (
+              <>
+                <p className="studio-xray__demo-notice">
+                  Temporary example · your edits are preserved.
+                </p>
+                <button type="button" onClick={() => onDemoChange('current')}>
+                  Return to current flow
+                </button>
+              </>
+            )}
+          </section>
+        )}
+
         <p className="studio-xray__section-label">Legend</p>
         {[
           ['#10b981', 'Reachable node'],
           ['#f59e0b', 'Terminal exit'],
-          ['#ef4444', 'Unreachable node'],
+          ['#ef4444', 'Unreachable / broken route'],
           ['#4f8ff7', 'Cycle participant'],
         ].map(([color, label]) => (
           <div className="studio-xray__legend" key={label}>
@@ -99,11 +139,21 @@ export default function FlowHealthPanel({ flow, issues = [] }) {
             {analysis.brokenReferences.map((reference) => (
               <code
                 className="studio-xray__broken"
-                key={`${reference.sourceId}-${reference.targetId}`}
+                key={`${reference.sourceId}-${reference.targetId}-${reference.label}`}
               >
                 #{reference.sourceId} → #{reference.targetId}
               </code>
             ))}
+          </>
+        )}
+
+        {analysis.cycleParticipants.size > 0 && (
+          <>
+            <div className="studio-xray__separator" />
+            <p className="studio-xray__section-label">Cycle participants</p>
+            <p className="studio-xray__healthy-copy">
+              {[...analysis.cycleParticipants].map((id) => `#${id}`).join(', ')}
+            </p>
           </>
         )}
 
@@ -141,6 +191,11 @@ export default function FlowHealthPanel({ flow, issues = [] }) {
               <article key={issue.id}>
                 <strong>{issue.severity}</strong>
                 <span>{issue.message}</span>
+                {issue.nodeId && onNodeSelect && (
+                  <button type="button" onClick={() => onNodeSelect(issue.nodeId)}>
+                    Select node #{issue.nodeId}
+                  </button>
+                )}
               </article>
             ))}
           </div>

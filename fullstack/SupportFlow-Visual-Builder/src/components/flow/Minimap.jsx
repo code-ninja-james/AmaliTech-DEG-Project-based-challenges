@@ -25,6 +25,8 @@ export default function Minimap({
   selectedNodeId,
   mode = 'Build',
   reachableIds = new Set(),
+  cycleParticipantIds = new Set(),
+  brokenRouteNodeIds = new Set(),
 }) {
   const [isOpen, setIsOpen] = useState(true)
   const isXray = mode === 'X-Ray'
@@ -107,7 +109,10 @@ export default function Minimap({
                 'minimap__node',
                 `minimap__node--${node.type}`,
                 isSelected ? 'minimap__node--selected' : '',
-                isXray && !isReachable ? 'minimap__node--error' : '',
+                isXray && cycleParticipantIds.has(node.id) ? 'minimap__node--cycle' : '',
+                isXray && (!isReachable || brokenRouteNodeIds.has(node.id))
+                  ? 'minimap__node--error'
+                  : '',
               ]
                 .filter(Boolean)
                 .join(' ')}

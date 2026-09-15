@@ -27,6 +27,7 @@ function clampZoom(value) {
 export default function FlowCanvas({
   flow,
   mode = 'Build',
+  isDemo = false,
   selectedNodeId = null,
   selectedConnectionId = null,
   onNodeSelect = () => {},
@@ -39,6 +40,7 @@ export default function FlowCanvas({
 
   const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
   const analysis = useMemo(() => analyzeFlow(flow.nodes), [flow.nodes])
+  const brokenRouteNodeIds = new Set(analysis.brokenReferences.map(({ sourceId }) => sourceId))
   const incomingCounts = useMemo(() => {
     const counts = new Map(flow.nodes.map((node) => [node.id, 0]))
 
@@ -72,6 +74,7 @@ export default function FlowCanvas({
         <div className="flow-xray-banner">
           <span className="studio-blink" aria-hidden="true" />
           <strong>
+            {isDemo && 'DEMO · '}
             X-RAY · {analysis.reachable.size}/{flow.nodes.length} reachable ·{' '}
             {analysis.hasCycle ? 'cycle detected!' : 'no cycles'} ·{' '}
             {analysis.brokenReferences.length} broken refs · start count: {analysis.startCount}
@@ -128,6 +131,7 @@ export default function FlowCanvas({
               onConnectionSelect={onConnectionSelect}
               mode={mode}
               reachableIds={analysis.reachable}
+              cycleParticipantIds={analysis.cycleParticipants}
             />
 
             {flow.nodes.map((node) => (
@@ -139,6 +143,8 @@ export default function FlowCanvas({
                 isHovered={node.id === hoveredNodeId}
                 isXray={isXray}
                 isReachable={analysis.reachable.has(node.id)}
+                isCycleParticipant={analysis.cycleParticipants.has(node.id)}
+                hasBrokenRoute={brokenRouteNodeIds.has(node.id)}
                 incomingCount={incomingCounts.get(node.id) ?? 0}
                 onSelect={onNodeSelect}
                 onHover={setHoveredNodeId}
@@ -153,6 +159,8 @@ export default function FlowCanvas({
         selectedNodeId={selectedNodeId}
         mode={mode}
         reachableIds={analysis.reachable}
+        cycleParticipantIds={analysis.cycleParticipants}
+        brokenRouteNodeIds={brokenRouteNodeIds}
       />
 
       <div className="flow-canvas-controls">

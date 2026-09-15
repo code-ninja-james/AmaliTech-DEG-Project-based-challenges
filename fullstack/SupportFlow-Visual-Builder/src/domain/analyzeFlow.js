@@ -47,49 +47,57 @@ function getReachability(nodes, nodeMap, startNode) {
 }
 
 function detectCycle(nodes, nodeMap) {
-  const visited = new Set()
-  const stack = new Set()
+  // Strongly connected components identify actual cycle members, excluding
+  // nodes that only lead into a cycle or are reachable after it.
+  const indices = new Map()
+  const lowLinks = new Map()
+  const stack = []
+  const onStack = new Set()
   const participants = new Set()
+  let nextIndex = 0
 
   function visit(nodeId) {
-    if (stack.has(nodeId)) {
-      participants.add(nodeId)
-      return true
-    }
+    indices.set(nodeId, nextIndex)
+    lowLinks.set(nodeId, nextIndex)
+    nextIndex += 1
+    stack.push(nodeId)
+    onStack.add(nodeId)
 
-    if (visited.has(nodeId)) {
-      return false
-    }
-
-    visited.add(nodeId)
-    stack.add(nodeId)
-
-    const node = nodeMap.get(nodeId)
-    let hasCycle = false
-
-    node?.options.forEach((option) => {
+    nodeMap.get(nodeId).options.forEach((option) => {
       if (!nodeMap.has(option.nextId)) {
         return
       }
 
-      if (stack.has(option.nextId)) {
-        participants.add(nodeId)
-        participants.add(option.nextId)
-        hasCycle = true
-        return
-      }
-
-      if (visit(option.nextId)) {
-        participants.add(nodeId)
-        hasCycle = true
+      if (!indices.has(option.nextId)) {
+        visit(option.nextId)
+        lowLinks.set(nodeId, Math.min(lowLinks.get(nodeId), lowLinks.get(option.nextId)))
+      } else if (onStack.has(option.nextId)) {
+        lowLinks.set(nodeId, Math.min(lowLinks.get(nodeId), indices.get(option.nextId)))
       }
     })
 
-    stack.delete(nodeId)
-    return hasCycle
+    if (lowLinks.get(nodeId) !== indices.get(nodeId)) return
+
+    const component = []
+    let member
+
+    do {
+      member = stack.pop()
+      onStack.delete(member)
+      component.push(member)
+    } while (member !== nodeId)
+
+    if (
+      component.length > 1 ||
+      nodeMap.get(nodeId).options.some((option) => option.nextId === nodeId)
+    ) {
+      component.forEach((id) => participants.add(id))
+    }
   }
 
-  nodes.forEach((node) => visit(node.id))
+  nodes.forEach((node) => {
+    if (!indices.has(node.id)) visit(node.id)
+  })
 
   return {
     hasCycle: participants.size > 0,

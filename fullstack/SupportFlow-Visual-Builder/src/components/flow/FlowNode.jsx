@@ -25,6 +25,8 @@ export default function FlowNode({
   isHovered = false,
   isXray = false,
   isReachable = true,
+  isCycleParticipant = false,
+  hasBrokenRoute = false,
   incomingCount = 0,
   onSelect = () => {},
   onHover = () => {},
@@ -51,6 +53,8 @@ export default function FlowNode({
         isHovered ? 'flow-node--hovered' : '',
         isXray ? 'flow-node--xray' : '',
         isXray && !isReachable ? 'flow-node--xray-error studio-xray-enter' : '',
+        isXray && hasBrokenRoute ? 'flow-node--xray-broken' : '',
+        isXray && isCycleParticipant ? 'flow-node--xray-cycle' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -89,6 +93,18 @@ export default function FlowNode({
 
       <div className="flow-node__body">
         <p className="flow-node__text">{node.text}</p>
+
+        {isXray && (!isReachable || hasBrokenRoute || isCycleParticipant) && (
+          <p className="flow-node__diagnostic">
+            {[
+              !isReachable && 'Unreachable',
+              hasBrokenRoute && 'Broken route',
+              isCycleParticipant && 'Cycle',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        )}
 
         {node.options.length > 0 && (
           <div className="flow-node__route-list">

@@ -63,6 +63,16 @@ A flow can look visually correct while still containing structural mistakes that
 
 **Business value:** Flow Health acts as an editor-side quality gate before publish. It reduces broken customer journeys, configuration mistakes, and avoidable support tickets that are difficult for non-technical authors to spot visually.
 
+#### Diagnostic demo
+
+Open **X-Ray** and choose a **Diagnostic demo** scenario:
+
+- **Broken reference** sends the Business route from node #3 to a missing target. X-Ray marks the source and draws a dangling route; all six existing nodes remain reachable.
+- **Unreachable branch** disconnects Billing from Start, highlighting nodes #3 and #6 as unreachable.
+- **Cycle** adds a self-loop to node #3, highlighting the actual cycle participant and drawing the loop outside the card.
+
+Examples are temporary projections of the current flow, including any edited text. They preserve the six node IDs and supplied coordinates and never modify `flow_data.json` or the editable flow. **Return to current flow**, switching to Build/Spatial, or starting Preview clears the example. Preview always uses the author's real flow. Issue actions select the affected node on the canvas.
+
 ### Spatial mode
 
 Spatial mode provides an alternate topology view of the same six challenge nodes. It derives from the existing flow model rather than maintaining duplicate graph data and includes working zoom/reset controls plus relationship highlighting.

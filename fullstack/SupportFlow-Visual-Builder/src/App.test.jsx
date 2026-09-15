@@ -126,4 +126,99 @@ describe('SupportFlow application', () => {
     expect(within(inspector).getByText('#3')).toBeInTheDocument()
     expect(screen.getByTestId('flow-node-3')).toHaveClass('flow-node--selected')
   })
+
+  it('preserves interactive route selection across normal mode switches', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByTestId('flow-node-3'))
+    await user.click(screen.getByRole('button', { name: 'Personal, route to node 6' }))
+    await user.click(screen.getByRole('button', { name: 'Spatial', exact: true }))
+    await user.click(screen.getByRole('button', { name: 'Build', exact: true }))
+    expect(screen.getByRole('button', { name: 'Personal, route to node 6' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('switches diagnostic scenarios without accumulating faults or changing the six nodes', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: /Flow Health/ }))
+    const scenario = screen.getByRole('combobox', { name: 'Diagnostic demo' })
+
+    await user.selectOptions(scenario, 'broken-reference')
+    expect(
+      screen.getByText('Route "Business" from node #3 points to missing node #missing-billing.'),
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-3')).toHaveClass('flow-node--xray-broken')
+    expect(screen.getByTestId('broken-connection-3-1-missing-billing')).toBeInTheDocument()
+    expect(screen.getAllByTestId(/^flow-node-/)).toHaveLength(6)
+    expect(screen.getByText(/DEMO · X-RAY · 6\/6 reachable/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Select node #3' }))
+    expect(screen.getByTestId('flow-node-3')).toHaveClass('flow-node--selected')
+
+    await user.selectOptions(scenario, 'unreachable-branch')
+    expect(screen.getByText(/X-RAY · 4\/6 reachable/)).toBeInTheDocument()
+    expect(screen.queryByTestId('broken-connection-3-1-missing-billing')).not.toBeInTheDocument()
+    for (const id of ['3', '6']) {
+      expect(screen.getByTestId(`flow-node-${id}`)).toHaveClass('flow-node--xray-error')
+    }
+
+    await user.selectOptions(scenario, 'cycle')
+    expect(screen.getByText(/X-RAY · 6\/6 reachable · cycle detected/)).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-3')).toHaveClass('flow-node--xray-cycle')
+    expect(screen.getByTestId('flow-node-1')).not.toHaveClass('flow-node--xray-cycle')
+    expect(screen.getByTestId('flow-node-6')).not.toHaveClass('flow-node--xray-error')
+    expect(screen.getAllByTestId(/^flow-node-/)).toHaveLength(6)
+
+    await user.click(screen.getByRole('button', { name: 'Return to current flow' }))
+    expect(scenario).toHaveValue('current')
+    expect(screen.getByText('No structural issues detected')).toBeInTheDocument()
+    expect(screen.queryByText('Diagnostic demo · temporary')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Check account again, route to node 3' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('preserves unsaved edits through a demo and uses the original routes in Preview', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const text = screen.getByLabelText('Question Text')
+    await user.clear(text)
+    await user.type(text, 'Your edited router question')
+
+    await user.click(screen.getByRole('button', { name: /Flow Health/ }))
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Diagnostic demo' }), 'cycle')
+    await user.click(screen.getByRole('button', { name: 'Build', exact: true }))
+    expect(screen.getByLabelText('Question Text')).toHaveValue('Your edited router question')
+    expect(screen.getByRole('button', { name: 'Flow Health, 0 issues' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Play preview' }))
+    const preview = screen.getByRole('region', { name: 'Flow preview' })
+    await user.click(within(preview).getByRole('button', { name: 'Internet is down' }))
+    expect(within(preview).getByText('Your edited router question')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Flow Health/ }))
+    expect(screen.getByRole('combobox', { name: 'Diagnostic demo' })).toHaveValue('current')
+    expect(screen.getByText('No structural issues detected')).toBeInTheDocument()
+  })
+
+  it('exits the demo when changing modes through the command palette', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: /Flow Health/ }))
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Diagnostic demo' }),
+      'broken-reference',
+    )
+    await user.keyboard('{Control>}k{/Control}')
+    await user.click(screen.getByRole('button', { name: /Preview/ }))
+
+    const preview = screen.getByRole('region', { name: 'Flow preview' })
+    await user.click(within(preview).getByRole('button', { name: 'Billing Question' }))
+    await user.click(within(preview).getByRole('button', { name: 'Business' }))
+    expect(within(preview).getByText('Connecting you to a Billing Agent...')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Flow Health, 0 issues' })).toBeInTheDocument()
+  })
 })

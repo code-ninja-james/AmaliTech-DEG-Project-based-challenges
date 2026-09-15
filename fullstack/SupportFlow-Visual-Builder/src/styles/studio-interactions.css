@@ -1170,6 +1170,230 @@
   background: rgba(79, 143, 247, 0.18);
 }
 
+.app-import-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 36px;
+  z-index: 70;
+  display: flex;
+  max-width: min(440px, calc(100vw - 32px));
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  border-radius: 6px;
+  background: rgba(8, 19, 16, 0.96);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+  color: rgba(204, 251, 241, 0.88);
+  font-size: 11px;
+}
+
+.app-import-toast span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-import-toast button {
+  height: 26px;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.1);
+  color: rgba(167, 243, 208, 0.92);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.app-import-toast button:hover {
+  border-color: rgba(16, 185, 129, 0.44);
+  background: rgba(16, 185, 129, 0.16);
+}
+
+.spreadsheet-importer__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.spreadsheet-importer {
+  display: flex;
+  width: min(680px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #0b0b12;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.5);
+}
+
+.spreadsheet-importer header,
+.spreadsheet-importer footer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.spreadsheet-importer footer {
+  justify-content: flex-end;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 0;
+}
+
+.spreadsheet-importer header span,
+.spreadsheet-importer__textarea-label,
+.spreadsheet-importer__actions label span {
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.spreadsheet-importer h2 {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.spreadsheet-importer header button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.42);
+  cursor: pointer;
+}
+
+.spreadsheet-importer__body {
+  display: grid;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.spreadsheet-importer__body > p {
+  max-width: 560px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.spreadsheet-importer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+
+.spreadsheet-importer__actions label {
+  display: grid;
+  gap: 5px;
+}
+
+.spreadsheet-importer__actions input::file-selector-button {
+  min-height: 29px;
+  margin-right: 10px;
+  border: 1px solid rgba(79, 143, 247, 0.22);
+  border-radius: 4px;
+  background: rgba(79, 143, 247, 0.08);
+  color: rgba(154, 193, 255, 0.9);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+
+.spreadsheet-importer__actions input {
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 11px;
+}
+
+.spreadsheet-importer__actions button,
+.spreadsheet-importer footer button {
+  min-height: 31px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.68);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+
+.spreadsheet-importer footer button:last-child {
+  border-color: rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.09);
+  color: rgba(167, 243, 208, 0.92);
+}
+
+.spreadsheet-importer__file {
+  color: rgba(154, 193, 255, 0.8) !important;
+  font-family: var(--sf-font-mono);
+  font-size: 9px !important;
+}
+
+.spreadsheet-importer__textarea-label {
+  margin-bottom: -6px;
+}
+
+.spreadsheet-importer textarea {
+  width: 100%;
+  min-height: 220px;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 5px;
+  outline: 0;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.72);
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.spreadsheet-importer textarea:focus {
+  border-color: rgba(79, 143, 247, 0.46);
+  box-shadow: 0 0 0 2px rgba(79, 143, 247, 0.08);
+}
+
+.spreadsheet-importer__preview,
+.spreadsheet-importer__error {
+  padding: 9px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.spreadsheet-importer__preview {
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  background: rgba(16, 185, 129, 0.06);
+  color: rgba(167, 243, 208, 0.88);
+}
+
+.spreadsheet-importer__error {
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.06);
+  color: rgba(255, 143, 143, 0.9);
+}
+
 /* X-Ray rail -------------------------------------------------------------- */
 
 .studio-xray {

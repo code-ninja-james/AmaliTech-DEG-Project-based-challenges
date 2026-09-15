@@ -170,6 +170,28 @@
   background: rgba(16, 185, 129, 0.16);
 }
 
+.app-toolbar__build-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-import-button {
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid rgba(79, 143, 247, 0.22);
+  border-radius: 4px;
+  background: rgba(79, 143, 247, 0.08);
+  color: rgba(154, 193, 255, 0.88);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.app-import-button:hover {
+  background: rgba(79, 143, 247, 0.15);
+}
+
 .app-preview-button--secondary {
   border-color: rgba(255, 255, 255, 0.1);
   background: transparent;

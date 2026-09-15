@@ -6,7 +6,13 @@
  * state or maintaining a second command model.
  */
 
-export default function CommandPalette({ open, onClose, onModeChange, onPreviewStart }) {
+export default function CommandPalette({
+  open,
+  onClose,
+  onModeChange,
+  onPreviewStart,
+  onSpreadsheetImport,
+}) {
   if (!open) {
     return null
   }
@@ -31,6 +37,11 @@ export default function CommandPalette({ open, onClose, onModeChange, onPreviewS
       label: 'Run Preview',
       shortcut: 'P',
       action: onPreviewStart,
+    },
+    {
+      label: 'Import Spreadsheet',
+      shortcut: 'I',
+      action: onSpreadsheetImport,
     },
   ]
 

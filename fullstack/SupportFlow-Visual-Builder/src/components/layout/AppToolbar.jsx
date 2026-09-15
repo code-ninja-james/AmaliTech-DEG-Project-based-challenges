@@ -18,6 +18,7 @@ export default function AppToolbar({
   healthIssueCount,
   onModeChange,
   onPreviewStart,
+  onSpreadsheetImport,
 }) {
   return (
     <header className="app-toolbar">
@@ -74,14 +75,24 @@ export default function AppToolbar({
       <div className="app-toolbar__spacer" />
 
       {mode === 'Build' && !isPreviewMode && (
-        <button
-          className="app-preview-button"
-          type="button"
-          aria-label="Play preview"
-          onClick={onPreviewStart}
-        >
-          ▶ Preview
-        </button>
+        <div className="app-toolbar__build-actions">
+          <button
+            className="app-import-button"
+            type="button"
+            aria-label="Import spreadsheet"
+            onClick={onSpreadsheetImport}
+          >
+            Import sheet
+          </button>
+          <button
+            className="app-preview-button"
+            type="button"
+            aria-label="Play preview"
+            onClick={onPreviewStart}
+          >
+            ▶ Preview
+          </button>
+        </div>
       )}
 
       {isPreviewMode && (

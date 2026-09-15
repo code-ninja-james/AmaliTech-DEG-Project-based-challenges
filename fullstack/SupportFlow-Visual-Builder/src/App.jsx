@@ -13,6 +13,7 @@ import flowData from '../flow_data.json'
 import FlowHealthPanel from './components/editor/FlowHealthPanel.jsx'
 import NodeInspector from './components/editor/NodeInspector.jsx'
 import NodeNavigator from './components/editor/NodeNavigator.jsx'
+import SpreadsheetImporter from './components/editor/SpreadsheetImporter.jsx'
 import FlowCanvas from './components/flow/FlowCanvas.jsx'
 import SpatialView from './components/flow/SpatialView.jsx'
 import AppToolbar from './components/layout/AppToolbar.jsx'
@@ -59,6 +60,8 @@ export default function App() {
   const [demoScenario, setDemoScenario] = useState('current')
   const [deleteUndo, setDeleteUndo] = useState(null)
   const [routeEditorFocusId, setRouteEditorFocusId] = useState(null)
+  const [isSpreadsheetImporterOpen, setIsSpreadsheetImporterOpen] = useState(false)
+  const [importNotice, setImportNotice] = useState(null)
 
   const displayFlow = useMemo(
     () => (mode === 'X-Ray' ? createXrayDemo(flow, demoScenario) : flow),
@@ -77,6 +80,7 @@ export default function App() {
   const handleNodeTextChange = (nodeId, nextText) => {
     setDeleteUndo(null)
     setRouteEditorFocusId(null)
+    setImportNotice(null)
     setFlow((currentFlow) => ({
       ...currentFlow,
       nodes: currentFlow.nodes.map((node) =>
@@ -99,6 +103,7 @@ export default function App() {
         : null
 
     setDeleteUndo(null)
+    setImportNotice(null)
     setFlow((currentFlow) => addNode(currentFlow, { id: nextNodeId, type, sourceNodeId }))
     setSelectedNodeId(nextNodeId)
     setSelectedConnectionId(routeConnectionId)
@@ -115,6 +120,7 @@ export default function App() {
     const targetId = getDefaultRouteTargetId(flow.nodes, nodeId)
 
     setDeleteUndo(null)
+    setImportNotice(null)
     setFlow((currentFlow) => addRoute(currentFlow, nodeId))
     setSelectedNodeId(nodeId)
     setSelectedConnectionId(`${nodeId}-${sourceNode.options.length}-${targetId}`)
@@ -130,6 +136,7 @@ export default function App() {
     }
 
     setDeleteUndo(null)
+    setImportNotice(null)
     setFlow((currentFlow) => addRoute(currentFlow, sourceNodeId, targetNodeId))
     setSelectedNodeId(sourceNodeId)
     setSelectedConnectionId(`${sourceNodeId}-${sourceNode.options.length}-${targetNodeId}`)
@@ -144,6 +151,7 @@ export default function App() {
       : null
 
     setDeleteUndo(null)
+    setImportNotice(null)
     setFlow((currentFlow) => updateRoute(currentFlow, nodeId, optionIndex, patch))
     setSelectedConnectionId(nextConnectionId)
     setRouteEditorFocusId(routeEditorFocusId === selectedConnection?.id ? nextConnectionId : null)
@@ -164,6 +172,7 @@ export default function App() {
         selectedNodeId,
         message: `Deleted route "${route.label}".`,
       })
+      setImportNotice(null)
       setFlow(removeRoute(flow, nodeId, optionIndex))
       setSelectedConnectionId(null)
       setRouteEditorFocusId(null)
@@ -188,6 +197,7 @@ export default function App() {
         selectedNodeId,
         message: `Deleted ${nodeLabel} node #${nodeToRemove.id}.`,
       })
+      setImportNotice(null)
       setFlow(nextFlow)
       setSelectedNodeId(
         nextFlow.nodes.find((node) => node.type === 'start')?.id ?? nextFlow.nodes[0]?.id ?? null,
@@ -254,6 +264,26 @@ export default function App() {
     setIsPreviewing(false)
   }
 
+  const handleSpreadsheetImport = ({ flow: importedFlow, warnings = [] }) => {
+    const startNode =
+      importedFlow.nodes.find((node) => node.type === 'start') ?? importedFlow.nodes[0] ?? null
+    const routeCount = importedFlow.nodes.reduce((count, node) => count + node.options.length, 0)
+
+    setFlow(importedFlow)
+    setSelectedNodeId(startNode?.id ?? null)
+    setSelectedConnectionId(null)
+    setRouteEditorFocusId(null)
+    setDeleteUndo(null)
+    setMode('Build')
+    setIsPreviewing(false)
+    setDemoScenario('current')
+    setIsSpreadsheetImporterOpen(false)
+    setImportNotice({
+      message: `Imported ${importedFlow.nodes.length} nodes and ${routeCount} routes from spreadsheet.`,
+      warnings,
+    })
+  }
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
@@ -264,6 +294,7 @@ export default function App() {
 
       if (event.key === 'Escape') {
         setIsCommandPaletteOpen(false)
+        setIsSpreadsheetImporterOpen(false)
         return
       }
 
@@ -274,6 +305,7 @@ export default function App() {
       if (
         event.defaultPrevented ||
         isCommandPaletteOpen ||
+        isSpreadsheetImporterOpen ||
         isPreviewing ||
         (mode !== 'Build' && mode !== 'Spatial') ||
         isTextEditingTarget(event.target)
@@ -302,6 +334,7 @@ export default function App() {
     handleNodeRemove,
     handleRouteRemove,
     isCommandPaletteOpen,
+    isSpreadsheetImporterOpen,
     isPreviewing,
     mode,
     selectedConnection,
@@ -318,6 +351,7 @@ export default function App() {
         healthIssueCount={healthIssues.length}
         onModeChange={handleModeChange}
         onPreviewStart={handlePreviewStart}
+        onSpreadsheetImport={() => setIsSpreadsheetImporterOpen(true)}
       />
 
       <div className="editor-layout">
@@ -399,11 +433,30 @@ export default function App() {
         </div>
       )}
 
+      {importNotice && (
+        <div className="app-import-toast" aria-live="polite">
+          <span role="status">
+            {importNotice.message}
+            {importNotice.warnings.length > 0 && ` ${importNotice.warnings.length} warnings.`}
+          </span>
+          <button type="button" onClick={() => setImportNotice(null)}>
+            Dismiss
+          </button>
+        </div>
+      )}
+
       <CommandPalette
         open={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         onModeChange={handleModeChange}
         onPreviewStart={handlePreviewStart}
+        onSpreadsheetImport={() => setIsSpreadsheetImporterOpen(true)}
+      />
+
+      <SpreadsheetImporter
+        open={isSpreadsheetImporterOpen}
+        onClose={() => setIsSpreadsheetImporterOpen(false)}
+        onImport={handleSpreadsheetImport}
       />
     </main>
   )

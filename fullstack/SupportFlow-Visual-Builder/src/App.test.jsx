@@ -310,6 +310,46 @@ describe('SupportFlow application', () => {
     expect(screen.getByTestId('flow-canvas')).toBeInTheDocument()
   })
 
+  it('imports a pasted spreadsheet flow and runs it in Preview', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Import spreadsheet' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Import spreadsheet flow' })
+    expect(within(dialog).getByText('Build flow from Excel rows')).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Use sample' }))
+
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      'Ready to create 5 nodes and 4 routes.',
+    )
+
+    await user.click(within(dialog).getByRole('button', { name: 'Create flow' }))
+
+    expect(screen.getByText('Imported 5 nodes and 4 routes from spreadsheet.')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('flow-node-1')).getByText(
+        'Welcome to Acme Support. What do you need help with?',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Billing, route to node 2' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Play preview' }))
+
+    const preview = screen.getByRole('region', { name: 'Flow preview' })
+    expect(
+      within(preview).getByText('Welcome to Acme Support. What do you need help with?'),
+    ).toBeInTheDocument()
+
+    await user.click(within(preview).getByRole('button', { name: 'Billing' }))
+
+    expect(
+      within(preview).getByText('Is this for a personal or business account?'),
+    ).toBeInTheDocument()
+  })
+
   it('opens X-Ray and reports the supplied challenge flow as healthy', async () => {
     const user = userEvent.setup()
 

@@ -30,6 +30,25 @@ The product shell includes a searchable node navigator, visual graph, inspector 
 - Supports route labels, selection states, execution packets, minimap navigation, and canvas zoom controls.
 - Includes a searchable/collapsible node navigator.
 
+### Spreadsheet import
+
+Support teams can convert an old Excel-style configuration into a visual flow without hand-authoring JSON. Open **Import sheet** in Build mode, paste rows copied from Excel, or upload a CSV/TSV export. The importer detects the useful header row, accepts flexible column names, groups repeated node rows into outbound routes, creates terminal placeholders for referenced endpoints that are missing from the sheet, and lays out nodes automatically when coordinates are absent.
+
+Accepted spreadsheet shape:
+
+| Flow field    | Example headings                             |
+| ------------- | -------------------------------------------- |
+| Node ID       | `Node ID`, `Source Node`, `Step ID`          |
+| Type          | `Type`, `Kind`, `Category`                   |
+| Question text | `Question Text`, `Prompt`, `Message`         |
+| Route label   | `Route Label`, `Answer Label`, `Choice`      |
+| Next node     | `Next Node ID`, `Destination Node`, `Target` |
+| Position      | `X`, `Y`, `Canvas X`, `Canvas Y`             |
+
+For `.xlsx` workbooks, copy the relevant table from Excel or export the sheet as CSV/TSV first.
+
+**Business value:** this gives teams a practical migration path from the messy spreadsheet process described in the brief. A manager can bring existing support logic into the editor, visually inspect the generated tree, use Flow Health to catch bad references, and then refine routes or messages on the canvas.
+
 ### Node inspector
 
 Selecting a node opens a detailed inspector with **Properties**, **Routes**, and **Health** tabs.
@@ -85,7 +104,7 @@ Spatial mode provides an alternate topology view of the same six challenge nodes
 
 ### Command palette
 
-`⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, and Preview modes.
+`⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, Preview, and Spreadsheet Import.
 
 ## Architecture
 
@@ -99,6 +118,8 @@ flow_data.json
       |                                  native SVG
       |
       +--> FlowCanvas.jsx --------------> FlowNode.jsx
+      |
+      +--> importSpreadsheetFlow.js ----> SpreadsheetImporter.jsx
       |
       +--> analyzeFlow.js / validateFlow.js --> X-Ray + Flow Health
       |
@@ -137,7 +158,8 @@ src/
 │   ├── editor/
 │   │   ├── FlowHealthPanel.jsx
 │   │   ├── NodeInspector.jsx
-│   │   └── NodeNavigator.jsx
+│   │   ├── NodeNavigator.jsx
+│   │   └── SpreadsheetImporter.jsx
 │   ├── flow/
 │   │   ├── ConnectorLayer.jsx
 │   │   ├── FlowCanvas.jsx
@@ -154,6 +176,7 @@ src/
 │   ├── analyzeFlow.js
 │   ├── createBezierPath.js
 │   ├── getConnections.js
+│   ├── importSpreadsheetFlow.js
 │   ├── traverseFlow.js
 │   └── validateFlow.js
 ├── hooks/
@@ -203,7 +226,7 @@ Git hooks also enforce quality locally:
 
 ## Tests
 
-The suite covers node rendering, exact challenge coordinates, connector extraction, Bézier geometry, selection and editing, mode switching, Preview traversal/restart, Flow Health rules, and navigator interactions.
+The suite covers node rendering, exact challenge coordinates, connector extraction, Bézier geometry, selection and editing, mode switching, Preview traversal/restart, Spreadsheet Import parsing, Flow Health rules, and navigator interactions.
 
 Run tests independently with:
 

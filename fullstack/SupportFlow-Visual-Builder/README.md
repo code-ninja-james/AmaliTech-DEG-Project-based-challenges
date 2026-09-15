@@ -57,6 +57,14 @@ Search checks workflow names, node IDs, node text, route labels, and route targe
 
 **Business value:** support managers can keep separate flows for billing, technical support, onboarding, or seasonal campaigns and switch between them without rebuilding from scratch.
 
+### Security audit trail
+
+SupportFlow Studio includes a lightweight local audit trail for demo security reviews. The toolbar has a **Current user** field so the manager making changes can identify themselves before editing. Open **Audit** to search and filter recorded changes, inspect who changed what, and export the log as JSON or CSV.
+
+The audit trail records node additions, node text edits, node deletions, route additions, route label edits, route target changes, dragged route rewires, JSON/Excel imports, workflow saves, workflow use, workflow renames, workflow deletions, and delete undo actions. Audit entries are stored in `localStorage` with the saved workflow library.
+
+**Business value:** managers can review change history before publishing a support flow, which makes accidental edits easier to trace and gives the demo a credible governance story without needing a backend database.
+
 ### Node inspector
 
 Selecting a node opens a detailed inspector with **Properties**, **Routes**, and **Health** tabs.
@@ -114,7 +122,7 @@ Spatial mode provides an alternate topology view of the same six challenge nodes
 
 ### Command palette
 
-`⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, Preview, Flow Import, and Workflows.
+`⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, Preview, Flow Import, Workflows, and Audit.
 
 ## Architecture
 
@@ -135,6 +143,8 @@ flow_data.json
       |
       +--> workflowLibrary.js ----------> WorkflowLibraryPanel.jsx
       |
+      +--> auditLog.js -----------------> AuditLogPanel.jsx
+      |
       +--> analyzeFlow.js / validateFlow.js --> X-Ray + Flow Health
       |
       +--> traverseFlow.js -------------> PreviewRunner.jsx
@@ -144,6 +154,7 @@ Key decisions:
 
 - `App.jsx` owns the editable flow so all modes observe the same data.
 - Graph traversal, validation, analysis, and path geometry live in pure domain functions.
+- Workflow and audit-history persistence are isolated in localStorage domain helpers.
 - DOM measurement keeps connector anchors aligned when node dimensions change.
 - Broken `nextId` references do not crash rendering; diagnostics surface them instead.
 - Coordinates from `flow_data.json` remain authoritative.
@@ -174,6 +185,7 @@ src/
 │   │   ├── NodeInspector.jsx
 │   │   ├── NodeNavigator.jsx
 │   │   ├── SpreadsheetImporter.jsx
+│   │   ├── AuditLogPanel.jsx
 │   │   └── WorkflowLibraryPanel.jsx
 │   ├── flow/
 │   │   ├── ConnectorLayer.jsx
@@ -189,6 +201,7 @@ src/
 │       └── PreviewRunner.jsx
 ├── domain/
 │   ├── analyzeFlow.js
+│   ├── auditLog.js
 │   ├── createBezierPath.js
 │   ├── getConnections.js
 │   ├── importExcelFlow.js

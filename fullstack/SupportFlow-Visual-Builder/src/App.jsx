@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import flowData from '../flow_data.json'
 
+import AuditLogPanel from './components/editor/AuditLogPanel.jsx'
 import FlowHealthPanel from './components/editor/FlowHealthPanel.jsx'
 import NodeInspector from './components/editor/NodeInspector.jsx'
 import NodeNavigator from './components/editor/NodeNavigator.jsx'
@@ -37,11 +38,22 @@ import {
   cloneFlow,
   DEFAULT_WORKFLOW_NAME,
   deleteWorkflow,
+  getWorkflowStats,
   loadWorkflowLibrary,
   persistWorkflowLibrary,
   renameWorkflow,
   saveWorkflow,
 } from './domain/workflowLibrary.js'
+import {
+  appendAuditEntry,
+  createAuditCsvExport,
+  createAuditJsonExport,
+  loadAuditLog,
+  loadAuditUser,
+  normalizeAuditUser,
+  persistAuditLog,
+  persistAuditUser,
+} from './domain/auditLog.js'
 import './styles/flow.css'
 import './styles/studio.css'
 import './styles/studio-interactions.css'
@@ -72,6 +84,62 @@ function getImportedWorkflowName(sourceLabel) {
   return 'Imported spreadsheet workflow'
 }
 
+function getNodeTypeLabel(node) {
+  return node?.type === 'end' ? 'terminal' : (node?.type ?? 'node')
+}
+
+function getNodeTargetLabel(node) {
+  return `${getNodeTypeLabel(node)} node #${node.id}`
+}
+
+function getRouteTargetLabel(nodeId, route) {
+  return `"${route.label}" from node #${nodeId}`
+}
+
+function getRouteAuditId(nodeId, optionIndex) {
+  return `${nodeId}-${optionIndex}`
+}
+
+function truncateAuditValue(value, maxLength = 90) {
+  const text = String(value ?? '')
+
+  if (text.length <= maxLength) {
+    return text
+  }
+
+  return `${text.slice(0, maxLength - 3)}...`
+}
+
+function getTextChangeDetails(field, previousValue, nextValue) {
+  return `${field} changed from "${truncateAuditValue(previousValue)}" to "${truncateAuditValue(
+    nextValue,
+  )}".`
+}
+
+function downloadTextFile(filename, content, type) {
+  if (
+    typeof document === 'undefined' ||
+    typeof Blob === 'undefined' ||
+    typeof globalThis.URL?.createObjectURL !== 'function'
+  ) {
+    return false
+  }
+
+  const blob = new Blob([content], { type })
+  const url = globalThis.URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+
+  anchor.href = url
+  anchor.download = filename
+  anchor.style.display = 'none'
+  document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+  globalThis.URL.revokeObjectURL(url)
+
+  return true
+}
+
 export default function App() {
   const [flow, setFlow] = useState(flowData)
   const [workflowName, setWorkflowName] = useState(DEFAULT_WORKFLOW_NAME)
@@ -88,6 +156,9 @@ export default function App() {
   const [routeEditorFocusId, setRouteEditorFocusId] = useState(null)
   const [isSpreadsheetImporterOpen, setIsSpreadsheetImporterOpen] = useState(false)
   const [isWorkflowLibraryOpen, setIsWorkflowLibraryOpen] = useState(false)
+  const [isAuditLogOpen, setIsAuditLogOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState(() => loadAuditUser())
+  const [auditEntries, setAuditEntries] = useState(() => loadAuditLog())
   const [importNotice, setImportNotice] = useState(null)
   const [workflowNotice, setWorkflowNotice] = useState(null)
 
@@ -104,6 +175,52 @@ export default function App() {
     connections.find((connection) => connection.id === selectedConnectionId) ?? null
 
   const healthIssues = useMemo(() => validateFlow(displayFlow.nodes), [displayFlow.nodes])
+
+  const recordAuditEvent = useCallback(
+    (event) => {
+      setAuditEntries((currentEntries) => {
+        const nextEntries = appendAuditEntry(currentEntries, {
+          actor: normalizeAuditUser(currentUser),
+          workflowName,
+          ...event,
+        })
+
+        persistAuditLog(nextEntries)
+        return nextEntries
+      })
+    },
+    [currentUser, workflowName],
+  )
+
+  const handleCurrentUserChange = (nextUser) => {
+    setCurrentUser(nextUser)
+    persistAuditUser(nextUser)
+  }
+
+  const handleAuditExport = (format) => {
+    const exportedAt = new Date().toISOString().slice(0, 10)
+
+    if (format === 'csv') {
+      downloadTextFile(
+        `supportflow-audit-${exportedAt}.csv`,
+        createAuditCsvExport(auditEntries),
+        'text/csv;charset=utf-8',
+      )
+      return
+    }
+
+    downloadTextFile(
+      `supportflow-audit-${exportedAt}.json`,
+      createAuditJsonExport(auditEntries),
+      'application/json;charset=utf-8',
+    )
+  }
+
+  const handleAuditLogOpen = () => {
+    setIsAuditLogOpen(true)
+    setIsSpreadsheetImporterOpen(false)
+    setIsWorkflowLibraryOpen(false)
+  }
 
   const handleNodeTextChange = (nodeId, nextText) => {
     setDeleteUndo(null)
@@ -123,6 +240,28 @@ export default function App() {
     }))
   }
 
+  const handleNodeTextCommit = (nodeId, previousText, nextText) => {
+    const node = flow.nodes.find((currentNode) => currentNode.id === nodeId)
+
+    if (!node || previousText === nextText) {
+      return
+    }
+
+    recordAuditEvent({
+      action: 'node.edited',
+      targetType: 'node',
+      targetId: node.id,
+      targetLabel: getNodeTargetLabel(node),
+      summary: `Edited ${getNodeTypeLabel(node)} node #${node.id}.`,
+      details: getTextChangeDetails('Text', previousText, nextText),
+      meta: {
+        field: 'text',
+        before: previousText,
+        after: nextText,
+      },
+    })
+  }
+
   const handleNodeAdd = ({ type, sourceNodeId = selectedNodeId }) => {
     const nextNodeId = getNextNodeId(flow.nodes)
     const sourceNode = flow.nodes.find((node) => node.id === sourceNodeId)
@@ -130,6 +269,8 @@ export default function App() {
       sourceNode && sourceNode.type !== 'end'
         ? `${sourceNodeId}-${sourceNode.options.length}-${nextNodeId}`
         : null
+    const nodeType = type === 'end' ? 'end' : 'question'
+    const nodeLabel = nodeType === 'end' ? 'terminal' : nodeType
 
     setDeleteUndo(null)
     setImportNotice(null)
@@ -138,6 +279,21 @@ export default function App() {
     setSelectedNodeId(nextNodeId)
     setSelectedConnectionId(routeConnectionId)
     setRouteEditorFocusId(routeConnectionId)
+    recordAuditEvent({
+      action: 'node.added',
+      targetType: 'node',
+      targetId: nextNodeId,
+      targetLabel: `${nodeLabel} node #${nextNodeId}`,
+      summary: `Added ${nodeLabel} node #${nextNodeId}.`,
+      details:
+        sourceNode && sourceNode.type !== 'end'
+          ? `Connected from ${getNodeTargetLabel(sourceNode)}.`
+          : 'Created without an incoming route.',
+      meta: {
+        nodeType,
+        sourceNodeId: sourceNode?.id ?? '',
+      },
+    })
   }
 
   const handleRouteAdd = (nodeId, targetNodeId = null) => {
@@ -154,6 +310,9 @@ export default function App() {
       return
     }
 
+    const optionIndex = sourceNode.options.length
+    const routeLabel = targetNodeId ? `Route to #${targetId}` : 'New route'
+
     setDeleteUndo(null)
     setImportNotice(null)
     setWorkflowNotice(null)
@@ -161,6 +320,19 @@ export default function App() {
     setSelectedNodeId(nodeId)
     setSelectedConnectionId(`${nodeId}-${sourceNode.options.length}-${targetId}`)
     setRouteEditorFocusId(`${nodeId}-${sourceNode.options.length}-${targetId}`)
+    recordAuditEvent({
+      action: 'route.added',
+      targetType: 'route',
+      targetId: getRouteAuditId(nodeId, optionIndex),
+      targetLabel: `"${routeLabel}" from node #${nodeId}`,
+      summary: `Added route "${routeLabel}" from node #${nodeId} to node #${targetId}.`,
+      details: `Target node: ${getNodeTargetLabel(targetNode)}.`,
+      meta: {
+        sourceNodeId: nodeId,
+        optionIndex,
+        targetNodeId: targetId,
+      },
+    })
   }
 
   const handleRouteConnect = (sourceNodeId, targetNodeId) => {
@@ -171,6 +343,9 @@ export default function App() {
       return
     }
 
+    const optionIndex = sourceNode.options.length
+    const routeLabel = `Route to #${targetNodeId}`
+
     setDeleteUndo(null)
     setImportNotice(null)
     setWorkflowNotice(null)
@@ -178,9 +353,24 @@ export default function App() {
     setSelectedNodeId(sourceNodeId)
     setSelectedConnectionId(`${sourceNodeId}-${sourceNode.options.length}-${targetNodeId}`)
     setRouteEditorFocusId(`${sourceNodeId}-${sourceNode.options.length}-${targetNodeId}`)
+    recordAuditEvent({
+      action: 'route.added',
+      targetType: 'route',
+      targetId: getRouteAuditId(sourceNodeId, optionIndex),
+      targetLabel: `"${routeLabel}" from node #${sourceNodeId}`,
+      summary: `Added route "${routeLabel}" from node #${sourceNodeId} to node #${targetNodeId}.`,
+      details: `Created by dragging the connector handle onto ${getNodeTargetLabel(targetNode)}.`,
+      meta: {
+        sourceNodeId,
+        optionIndex,
+        targetNodeId,
+        createdByDrag: true,
+      },
+    })
   }
 
   const handleRouteChange = (nodeId, optionIndex, patch) => {
+    const route = flow.nodes.find((node) => node.id === nodeId)?.options[optionIndex]
     const isEditingSelectedConnection =
       selectedConnection?.sourceId === nodeId && selectedConnection.optionIndex === optionIndex
     const nextConnectionId = isEditingSelectedConnection
@@ -193,6 +383,56 @@ export default function App() {
     setFlow((currentFlow) => updateRoute(currentFlow, nodeId, optionIndex, patch))
     setSelectedConnectionId(nextConnectionId)
     setRouteEditorFocusId(routeEditorFocusId === selectedConnection?.id ? nextConnectionId : null)
+
+    if (
+      route &&
+      Object.prototype.hasOwnProperty.call(patch, 'nextId') &&
+      route.nextId !== patch.nextId
+    ) {
+      const targetNode = flow.nodes.find((node) => node.id === patch.nextId)
+
+      recordAuditEvent({
+        action: 'route.edited',
+        targetType: 'route',
+        targetId: getRouteAuditId(nodeId, optionIndex),
+        targetLabel: getRouteTargetLabel(nodeId, route),
+        summary: `Changed route "${route.label}" target from node #${route.nextId} to node #${patch.nextId}.`,
+        details: targetNode ? `New target: ${getNodeTargetLabel(targetNode)}.` : '',
+        meta: {
+          field: 'nextId',
+          before: route.nextId,
+          after: patch.nextId,
+          sourceNodeId: nodeId,
+          optionIndex,
+        },
+      })
+    }
+  }
+
+  const handleRouteLabelCommit = (nodeId, optionIndex, previousLabel, nextLabel) => {
+    const route = flow.nodes.find((node) => node.id === nodeId)?.options[optionIndex]
+
+    if (!route || previousLabel === nextLabel) {
+      return
+    }
+
+    recordAuditEvent({
+      action: 'route.edited',
+      targetType: 'route',
+      targetId: getRouteAuditId(nodeId, optionIndex),
+      targetLabel: getRouteTargetLabel(nodeId, route),
+      summary: `Renamed route "${truncateAuditValue(previousLabel)}" to "${truncateAuditValue(
+        nextLabel,
+      )}".`,
+      details: `Route from node #${nodeId} still points to node #${route.nextId}.`,
+      meta: {
+        field: 'label',
+        before: previousLabel,
+        after: nextLabel,
+        sourceNodeId: nodeId,
+        optionIndex,
+      },
+    })
   }
 
   const handleRouteReconnect = (nodeId, optionIndex, targetNodeId) => {
@@ -215,6 +455,22 @@ export default function App() {
     setSelectedNodeId(targetNodeId)
     setSelectedConnectionId(nextConnectionId)
     setRouteEditorFocusId(null)
+    recordAuditEvent({
+      action: 'route.rewired',
+      targetType: 'route',
+      targetId: getRouteAuditId(nodeId, optionIndex),
+      targetLabel: getRouteTargetLabel(nodeId, route),
+      summary: `Rewired route "${route.label}" from node #${nodeId} to node #${targetNodeId}.`,
+      details: `Target changed from node #${route.nextId} to ${getNodeTargetLabel(targetNode)} by dragging the route label.`,
+      meta: {
+        field: 'nextId',
+        before: route.nextId,
+        after: targetNodeId,
+        sourceNodeId: nodeId,
+        optionIndex,
+        changedByDrag: true,
+      },
+    })
   }
 
   const handleRouteRemove = useCallback(
@@ -231,6 +487,14 @@ export default function App() {
         selectedConnectionId,
         selectedNodeId,
         message: `Deleted route "${route.label}".`,
+        undoAuditEvent: {
+          action: 'delete.undone',
+          targetType: 'route',
+          targetId: getRouteAuditId(nodeId, optionIndex),
+          targetLabel: getRouteTargetLabel(nodeId, route),
+          summary: `Undid deletion of route "${route.label}".`,
+          details: `Restored route from node #${nodeId} to node #${route.nextId}.`,
+        },
       })
       setIsDeleteUndoMinimized(false)
       setImportNotice(null)
@@ -238,8 +502,21 @@ export default function App() {
       setFlow(removeRoute(flow, nodeId, optionIndex))
       setSelectedConnectionId(null)
       setRouteEditorFocusId(null)
+      recordAuditEvent({
+        action: 'route.deleted',
+        targetType: 'route',
+        targetId: getRouteAuditId(nodeId, optionIndex),
+        targetLabel: getRouteTargetLabel(nodeId, route),
+        summary: `Deleted route "${route.label}".`,
+        details: `Removed route from node #${nodeId} to node #${route.nextId}.`,
+        meta: {
+          sourceNodeId: nodeId,
+          optionIndex,
+          targetNodeId: route.nextId,
+        },
+      })
     },
-    [flow, selectedConnectionId, selectedNodeId],
+    [flow, recordAuditEvent, selectedConnectionId, selectedNodeId],
   )
 
   const handleNodeRemove = useCallback(
@@ -252,12 +529,24 @@ export default function App() {
       }
 
       const nodeLabel = nodeToRemove.type === 'end' ? 'terminal' : nodeToRemove.type
+      const incomingRouteCount = flow.nodes.reduce(
+        (count, node) => count + node.options.filter((option) => option.nextId === nodeId).length,
+        0,
+      )
 
       setDeleteUndo({
         flow,
         selectedConnectionId,
         selectedNodeId,
         message: `Deleted ${nodeLabel} node #${nodeToRemove.id}.`,
+        undoAuditEvent: {
+          action: 'delete.undone',
+          targetType: 'node',
+          targetId: nodeToRemove.id,
+          targetLabel: getNodeTargetLabel(nodeToRemove),
+          summary: `Undid deletion of ${nodeLabel} node #${nodeToRemove.id}.`,
+          details: `Restored the node and its connected routes.`,
+        },
       })
       setIsDeleteUndoMinimized(false)
       setImportNotice(null)
@@ -268,8 +557,21 @@ export default function App() {
       )
       setSelectedConnectionId(null)
       setRouteEditorFocusId(null)
+      recordAuditEvent({
+        action: 'node.deleted',
+        targetType: 'node',
+        targetId: nodeToRemove.id,
+        targetLabel: getNodeTargetLabel(nodeToRemove),
+        summary: `Deleted ${nodeLabel} node #${nodeToRemove.id}.`,
+        details: `Removed ${nodeToRemove.options.length} outbound routes and ${incomingRouteCount} incoming routes.`,
+        meta: {
+          nodeType: nodeToRemove.type,
+          outgoingRouteCount: nodeToRemove.options.length,
+          incomingRouteCount,
+        },
+      })
     },
-    [flow, selectedConnectionId, selectedNodeId],
+    [flow, recordAuditEvent, selectedConnectionId, selectedNodeId],
   )
 
   const handleDeleteUndo = () => {
@@ -283,6 +585,7 @@ export default function App() {
     setDeleteUndo(null)
     setIsDeleteUndoMinimized(false)
     setRouteEditorFocusId(null)
+    recordAuditEvent(deleteUndo.undoAuditEvent)
   }
 
   const handleDeleteUndoDismiss = () => {
@@ -359,6 +662,24 @@ export default function App() {
       message: `Imported ${importedFlow.nodes.length} nodes and ${routeCount} routes from ${sourceLabel}.`,
       warnings,
     })
+    recordAuditEvent({
+      action: 'import.completed',
+      targetType: 'import',
+      targetId: sourceLabel,
+      targetLabel: sourceLabel,
+      summary: `Imported ${importedFlow.nodes.length} nodes and ${routeCount} routes from ${sourceLabel}.`,
+      details:
+        warnings.length > 0
+          ? `${warnings.length} warnings were raised during import.`
+          : 'Import completed without warnings.',
+      workflowName: getImportedWorkflowName(sourceLabel),
+      meta: {
+        sourceLabel,
+        nodeCount: importedFlow.nodes.length,
+        routeCount,
+        warningCount: warnings.length,
+      },
+    })
   }
 
   const persistWorkflows = (nextWorkflows) => {
@@ -393,6 +714,21 @@ export default function App() {
     setDeleteUndo(null)
     setImportNotice(null)
     setWorkflowNotice(`Saved workflow "${workflow.name}".`)
+
+    const stats = getWorkflowStats(workflow.flow)
+
+    recordAuditEvent({
+      action: 'workflow.saved',
+      targetType: 'workflow',
+      targetId: workflow.id,
+      targetLabel: workflow.name,
+      summary: `Saved workflow "${workflow.name}".`,
+      details: `${stats.nodeCount} nodes and ${stats.routeCount} routes saved.`,
+      workflowName: workflow.name,
+      meta: {
+        workflowId: workflow.id,
+      },
+    })
   }
 
   const handleWorkflowUse = (workflowId) => {
@@ -418,9 +754,22 @@ export default function App() {
     setIsWorkflowLibraryOpen(false)
     setImportNotice(null)
     setWorkflowNotice(`Using workflow "${workflow.name}".`)
+    recordAuditEvent({
+      action: 'workflow.used',
+      targetType: 'workflow',
+      targetId: workflow.id,
+      targetLabel: workflow.name,
+      summary: `Used workflow "${workflow.name}".`,
+      details: `Loaded saved workflow onto the active canvas.`,
+      workflowName: workflow.name,
+      meta: {
+        workflowId: workflow.id,
+      },
+    })
   }
 
   const handleWorkflowRename = (workflowId, nextName) => {
+    const previousWorkflow = workflows.find((currentWorkflow) => currentWorkflow.id === workflowId)
     const { workflow, workflows: nextWorkflows } = renameWorkflow(workflows, workflowId, nextName)
 
     if (!workflow || !persistWorkflows(nextWorkflows)) {
@@ -433,6 +782,20 @@ export default function App() {
 
     setImportNotice(null)
     setWorkflowNotice(`Renamed workflow to "${workflow.name}".`)
+    recordAuditEvent({
+      action: 'workflow.renamed',
+      targetType: 'workflow',
+      targetId: workflow.id,
+      targetLabel: workflow.name,
+      summary: `Renamed workflow "${previousWorkflow?.name ?? workflow.id}" to "${workflow.name}".`,
+      details: getTextChangeDetails('Workflow name', previousWorkflow?.name ?? '', workflow.name),
+      workflowName: workflow.name,
+      meta: {
+        workflowId: workflow.id,
+        before: previousWorkflow?.name ?? '',
+        after: workflow.name,
+      },
+    })
   }
 
   const handleWorkflowDelete = (workflowId) => {
@@ -454,6 +817,21 @@ export default function App() {
 
     setImportNotice(null)
     setWorkflowNotice(`Deleted workflow "${workflow.name}".`)
+
+    const stats = getWorkflowStats(workflow.flow)
+
+    recordAuditEvent({
+      action: 'workflow.deleted',
+      targetType: 'workflow',
+      targetId: workflow.id,
+      targetLabel: workflow.name,
+      summary: `Deleted workflow "${workflow.name}".`,
+      details: `${stats.nodeCount} nodes and ${stats.routeCount} routes were in the deleted workflow.`,
+      workflowName: workflow.name,
+      meta: {
+        workflowId: workflow.id,
+      },
+    })
   }
 
   useEffect(() => {
@@ -468,6 +846,7 @@ export default function App() {
         setIsCommandPaletteOpen(false)
         setIsSpreadsheetImporterOpen(false)
         setIsWorkflowLibraryOpen(false)
+        setIsAuditLogOpen(false)
         return
       }
 
@@ -480,6 +859,7 @@ export default function App() {
         isCommandPaletteOpen ||
         isSpreadsheetImporterOpen ||
         isWorkflowLibraryOpen ||
+        isAuditLogOpen ||
         isPreviewing ||
         (mode !== 'Build' && mode !== 'Spatial') ||
         isTextEditingTarget(event.target)
@@ -507,6 +887,7 @@ export default function App() {
   }, [
     handleNodeRemove,
     handleRouteRemove,
+    isAuditLogOpen,
     isCommandPaletteOpen,
     isSpreadsheetImporterOpen,
     isWorkflowLibraryOpen,
@@ -552,10 +933,14 @@ export default function App() {
         mode={mode}
         isPreviewMode={isPreviewing}
         healthIssueCount={healthIssues.length}
+        auditEntryCount={auditEntries.length}
+        currentUser={currentUser}
         onModeChange={handleModeChange}
         onPreviewStart={handlePreviewStart}
         onSpreadsheetImport={() => setIsSpreadsheetImporterOpen(true)}
         onWorkflowLibrary={() => setIsWorkflowLibraryOpen(true)}
+        onAuditLog={handleAuditLogOpen}
+        onCurrentUserChange={handleCurrentUserChange}
       />
 
       <div className="editor-layout">
@@ -602,9 +987,11 @@ export default function App() {
             issues={healthIssues}
             onIssueSelect={handleNodeSelect}
             onTextChange={handleNodeTextChange}
+            onTextCommit={handleNodeTextCommit}
             onNodeAdd={handleNodeAdd}
             onRouteAdd={handleRouteAdd}
             onRouteChange={handleRouteChange}
+            onRouteLabelCommit={handleRouteLabelCommit}
             onRouteRemove={handleRouteRemove}
             onNodeRemove={handleNodeRemove}
             onBackToCanvas={handleInspectorBackToCanvas}
@@ -702,6 +1089,7 @@ export default function App() {
         onPreviewStart={handlePreviewStart}
         onSpreadsheetImport={() => setIsSpreadsheetImporterOpen(true)}
         onWorkflowLibrary={() => setIsWorkflowLibraryOpen(true)}
+        onAuditLog={handleAuditLogOpen}
       />
 
       <SpreadsheetImporter
@@ -722,6 +1110,15 @@ export default function App() {
         onUseWorkflow={handleWorkflowUse}
         onRenameWorkflow={handleWorkflowRename}
         onDeleteWorkflow={handleWorkflowDelete}
+      />
+
+      <AuditLogPanel
+        open={isAuditLogOpen}
+        entries={auditEntries}
+        currentUser={currentUser}
+        onCurrentUserChange={handleCurrentUserChange}
+        onClose={() => setIsAuditLogOpen(false)}
+        onExport={handleAuditExport}
       />
     </main>
   )

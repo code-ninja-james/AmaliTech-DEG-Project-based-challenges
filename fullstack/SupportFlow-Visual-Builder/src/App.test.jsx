@@ -180,6 +180,70 @@ describe('SupportFlow application', () => {
     expect(screen.queryByText('Delete undo available')).not.toBeInTheDocument()
   })
 
+  it('records named editor changes in the audit log', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.clear(screen.getByLabelText('Current user'))
+    await user.type(screen.getByLabelText('Current user'), 'Jameson')
+    await user.click(screen.getByTestId('flow-node-2'))
+
+    const questionText = screen.getByLabelText('Question Text')
+
+    await user.clear(questionText)
+    await user.type(questionText, 'Audit-ready router question')
+    fireEvent.blur(questionText)
+
+    await user.click(screen.getByRole('button', { name: 'Routes' }))
+    await user.selectOptions(screen.getByLabelText('New route target'), '6')
+    await user.click(screen.getByRole('button', { name: 'Add route' }))
+    await user.click(screen.getByRole('button', { name: /Open audit log/ }))
+
+    const audit = screen.getByRole('dialog', { name: 'Audit log' })
+
+    expect(within(audit).getByLabelText('Audit current user')).toHaveValue('Jameson')
+    expect(within(audit).getByText('Edited question node #2.')).toBeInTheDocument()
+    expect(
+      within(audit).getByText('Added route "Route to #6" from node #2 to node #6.'),
+    ).toBeInTheDocument()
+    expect(within(audit).getAllByText('Jameson').length).toBeGreaterThan(0)
+    expect(within(audit).getByRole('button', { name: 'Export JSON' })).toBeEnabled()
+    expect(within(audit).getByRole('button', { name: 'Export CSV' })).toBeEnabled()
+
+    await user.type(within(audit).getByLabelText('Search audit log'), 'question node')
+
+    expect(within(audit).getByText('Edited question node #2.')).toBeInTheDocument()
+    expect(
+      within(audit).queryByText('Added route "Route to #6" from node #2 to node #6.'),
+    ).not.toBeInTheDocument()
+
+    await user.clear(within(audit).getByLabelText('Search audit log'))
+    await user.selectOptions(within(audit).getByLabelText('Audit action filter'), 'route.added')
+
+    expect(
+      within(audit).getByText('Added route "Route to #6" from node #2 to node #6.'),
+    ).toBeInTheDocument()
+    expect(within(audit).queryByText('Edited question node #2.')).not.toBeInTheDocument()
+  })
+
+  it('records delete undo actions in the audit log', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('flow-node-3'))
+    await user.click(screen.getByRole('button', { name: 'Personal, route to node 6' }))
+    await user.click(screen.getByRole('button', { name: 'Delete route' }))
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    await user.click(screen.getByRole('button', { name: /Open audit log/ }))
+
+    const audit = screen.getByRole('dialog', { name: 'Audit log' })
+
+    expect(within(audit).getByText('Deleted route "Personal".')).toBeInTheDocument()
+    expect(within(audit).getByText('Undid deletion of route "Personal".')).toBeInTheDocument()
+  })
+
   it('renames the selected canvas route from the inspector', async () => {
     const user = userEvent.setup()
 
@@ -200,6 +264,15 @@ describe('SupportFlow application', () => {
       'true',
     )
     expect(within(screen.getByTestId('flow-node-3')).getByText('VIP customer')).toBeInTheDocument()
+
+    fireEvent.blur(label)
+    await user.click(screen.getByRole('button', { name: /Open audit log/ }))
+
+    expect(
+      within(screen.getByRole('dialog', { name: 'Audit log' })).getByText(
+        'Renamed route "Personal" to "VIP customer".',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('deletes the selected canvas route with the keyboard', async () => {
@@ -267,6 +340,14 @@ describe('SupportFlow application', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByLabelText('Selected route label')).toHaveValue('Personal')
     expect(screen.getByTestId('flow-node-4')).toHaveClass('flow-node--selected')
+
+    await user.click(screen.getByRole('button', { name: /Open audit log/ }))
+
+    expect(
+      within(screen.getByRole('dialog', { name: 'Audit log' })).getByText(
+        'Rewired route "Personal" from node #3 to node #4.',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('deletes a terminal node and removes routes that targeted it', async () => {
@@ -552,6 +633,39 @@ describe('SupportFlow application', () => {
 
     expect(screen.getByText('Deleted workflow "Saved support workflow".')).toBeInTheDocument()
     expect(within(library).getByText('No saved workflows yet.')).toBeInTheDocument()
+  })
+
+  it('records imports and workflow library actions in the audit log', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Import flow' }))
+
+    let dialog = screen.getByRole('dialog', { name: 'Import flow' })
+    await user.click(within(dialog).getByRole('button', { name: 'Use JSON sample' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Create flow' }))
+
+    await user.click(screen.getByRole('button', { name: 'Open workflows' }))
+
+    let library = screen.getByRole('dialog', { name: 'Workflow library' })
+    await user.click(within(library).getByRole('button', { name: 'Save current workflow' }))
+    await user.click(within(library).getByRole('button', { name: 'Use workflow' }))
+
+    await user.click(screen.getByRole('button', { name: 'Open workflows' }))
+    library = screen.getByRole('dialog', { name: 'Workflow library' })
+    await user.click(within(library).getByRole('button', { name: 'Delete' }))
+    await user.click(within(library).getByRole('button', { name: 'Close workflow library' }))
+    await user.click(screen.getByRole('button', { name: /Open audit log/ }))
+
+    dialog = screen.getByRole('dialog', { name: 'Audit log' })
+
+    expect(within(dialog).getByText('Imported 4 nodes and 3 routes from JSON.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Saved workflow "Imported JSON workflow".')).toBeInTheDocument()
+    expect(within(dialog).getByText('Used workflow "Imported JSON workflow".')).toBeInTheDocument()
+    expect(
+      within(dialog).getByText('Deleted workflow "Imported JSON workflow".'),
+    ).toBeInTheDocument()
   })
 
   it('opens X-Ray and reports the supplied challenge flow as healthy', async () => {

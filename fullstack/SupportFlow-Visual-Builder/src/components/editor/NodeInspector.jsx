@@ -6,7 +6,7 @@
  * and ensures canvas, preview and diagnostics all observe the same data.
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import analyzeFlow from '../../domain/analyzeFlow.js'
 import { getDefaultRouteTargetId } from '../../domain/flowEditing.js'
@@ -81,10 +81,11 @@ function ValidationSummary({ node, issues = [], onIssueSelect = () => {} }) {
   )
 }
 
-function PropertiesTab({ node, analysis, onTextChange, onNodeRemove }) {
+function PropertiesTab({ node, analysis, onTextChange, onTextCommit, onNodeRemove }) {
   const size = NODE_SIZE[node.type] ?? { width: 180, height: 80 }
   const textFieldLabel = node.type === 'end' ? 'Message Text' : 'Question Text'
   const canDeleteNode = node.type !== 'start'
+  const textBeforeEdit = useRef(node.text)
 
   return (
     <div className="studio-inspector__tab-content">
@@ -98,7 +99,14 @@ function PropertiesTab({ node, analysis, onTextChange, onNodeRemove }) {
         className="studio-inspector__textarea"
         value={node.text}
         rows="3"
+        onFocus={(event) => {
+          textBeforeEdit.current = event.target.value
+        }}
         onChange={(event) => onTextChange(node.id, event.target.value)}
+        onBlur={(event) => {
+          onTextCommit(node.id, textBeforeEdit.current, event.target.value)
+          textBeforeEdit.current = event.target.value
+        }}
       />
 
       <div className="studio-inspector__textarea-meta">
@@ -136,12 +144,96 @@ function PropertiesTab({ node, analysis, onTextChange, onNodeRemove }) {
   )
 }
 
+function RouteCard({
+  node,
+  flow,
+  option,
+  index,
+  meta,
+  nodeMap,
+  canAddRoutes,
+  onRouteChange,
+  onRouteRemove,
+  onRouteLabelCommit,
+}) {
+  const labelBeforeEdit = useRef(option.label)
+  const target = nodeMap.get(option.nextId)
+  const targetMeta = target ? (NODE_META[target.type] ?? NODE_META.question) : null
+
+  return (
+    <article className="studio-inspector__route-card">
+      <header>
+        <span className="studio-inspector__route-accent" style={{ background: meta.color }} />
+        <strong>{option.label}</strong>
+        <code>route_{index}</code>
+        {canAddRoutes && (
+          <button type="button" onClick={() => onRouteRemove(node.id, index)}>
+            Remove
+          </button>
+        )}
+      </header>
+
+      <div className="studio-inspector__route-target">
+        <span>→</span>
+        {targetMeta ? (
+          <>
+            <span style={{ color: targetMeta.color }}>{targetMeta.glyph}</span>
+            <code style={{ color: targetMeta.color }}>#{target.id}</code>
+            <span>{target.text}</span>
+          </>
+        ) : (
+          <span className="studio-inspector__route-missing">Missing target #{option.nextId}</span>
+        )}
+      </div>
+
+      {canAddRoutes && (
+        <div className="studio-inspector__route-fields">
+          <label>
+            <span>Route label</span>
+            <input
+              aria-label={`Route ${index} label`}
+              value={option.label}
+              onFocus={(event) => {
+                labelBeforeEdit.current = event.target.value
+              }}
+              onChange={(event) => onRouteChange(node.id, index, { label: event.target.value })}
+              onBlur={(event) => {
+                onRouteLabelCommit(node.id, index, labelBeforeEdit.current, event.target.value)
+                labelBeforeEdit.current = event.target.value
+              }}
+            />
+          </label>
+
+          <label>
+            <span>Target node</span>
+            <select
+              aria-label={`Route ${index} target`}
+              value={option.nextId}
+              onChange={(event) => onRouteChange(node.id, index, { nextId: event.target.value })}
+            >
+              {!nodeMap.has(option.nextId) && (
+                <option value={option.nextId}>Missing target #{option.nextId}</option>
+              )}
+              {flow.nodes.map((targetNode) => (
+                <option key={targetNode.id} value={targetNode.id}>
+                  #{targetNode.id} {NODE_META[targetNode.type]?.label ?? targetNode.type}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+    </article>
+  )
+}
+
 function RoutesTab({
   node,
   flow,
   onNodeAdd = () => {},
   onRouteAdd = () => {},
   onRouteChange = () => {},
+  onRouteLabelCommit = () => {},
   onRouteRemove = () => {},
 }) {
   const meta = NODE_META[node.type] ?? NODE_META.question
@@ -167,81 +259,21 @@ function RoutesTab({
         </div>
       ) : (
         <div className="studio-inspector__routes">
-          {node.options.map((option, index) => {
-            const target = nodeMap.get(option.nextId)
-            const targetMeta = target ? (NODE_META[target.type] ?? NODE_META.question) : null
-
-            return (
-              <article
-                className="studio-inspector__route-card"
-                key={`${node.id}-${index}-${option.nextId}`}
-              >
-                <header>
-                  <span
-                    className="studio-inspector__route-accent"
-                    style={{ background: meta.color }}
-                  />
-                  <strong>{option.label}</strong>
-                  <code>route_{index}</code>
-                  {canAddRoutes && (
-                    <button type="button" onClick={() => onRouteRemove(node.id, index)}>
-                      Remove
-                    </button>
-                  )}
-                </header>
-
-                <div className="studio-inspector__route-target">
-                  <span>→</span>
-                  {targetMeta ? (
-                    <>
-                      <span style={{ color: targetMeta.color }}>{targetMeta.glyph}</span>
-                      <code style={{ color: targetMeta.color }}>#{target.id}</code>
-                      <span>{target.text}</span>
-                    </>
-                  ) : (
-                    <span className="studio-inspector__route-missing">
-                      Missing target #{option.nextId}
-                    </span>
-                  )}
-                </div>
-
-                {canAddRoutes && (
-                  <div className="studio-inspector__route-fields">
-                    <label>
-                      <span>Route label</span>
-                      <input
-                        aria-label={`Route ${index} label`}
-                        value={option.label}
-                        onChange={(event) =>
-                          onRouteChange(node.id, index, { label: event.target.value })
-                        }
-                      />
-                    </label>
-
-                    <label>
-                      <span>Target node</span>
-                      <select
-                        aria-label={`Route ${index} target`}
-                        value={option.nextId}
-                        onChange={(event) =>
-                          onRouteChange(node.id, index, { nextId: event.target.value })
-                        }
-                      >
-                        {!nodeMap.has(option.nextId) && (
-                          <option value={option.nextId}>Missing target #{option.nextId}</option>
-                        )}
-                        {flow.nodes.map((targetNode) => (
-                          <option key={targetNode.id} value={targetNode.id}>
-                            #{targetNode.id} {NODE_META[targetNode.type]?.label ?? targetNode.type}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                )}
-              </article>
-            )
-          })}
+          {node.options.map((option, index) => (
+            <RouteCard
+              key={`${node.id}-${index}-${option.nextId}`}
+              node={node}
+              flow={flow}
+              option={option}
+              index={index}
+              meta={meta}
+              nodeMap={nodeMap}
+              canAddRoutes={canAddRoutes}
+              onRouteChange={onRouteChange}
+              onRouteRemove={onRouteRemove}
+              onRouteLabelCommit={onRouteLabelCommit}
+            />
+          ))}
         </div>
       )}
 
@@ -380,15 +412,18 @@ export default function NodeInspector({
   issues = [],
   onIssueSelect = () => {},
   onTextChange = () => {},
+  onTextCommit = () => {},
   onNodeAdd = () => {},
   onRouteAdd = () => {},
   onRouteChange = () => {},
+  onRouteLabelCommit = () => {},
   onRouteRemove = () => {},
   onNodeRemove = () => {},
   onBackToCanvas = () => {},
 }) {
   const [tab, setTab] = useState('Properties')
   const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
+  const selectedRouteLabelBeforeEdit = useRef(selectedConnection?.label ?? '')
 
   if (!node) {
     return (
@@ -438,7 +473,19 @@ export default function NodeInspector({
                   label: event.target.value,
                 })
               }
-              onFocus={(event) => event.target.select()}
+              onFocus={(event) => {
+                selectedRouteLabelBeforeEdit.current = event.target.value
+                event.target.select()
+              }}
+              onBlur={(event) => {
+                onRouteLabelCommit(
+                  selectedConnection.sourceId,
+                  selectedConnection.optionIndex,
+                  selectedRouteLabelBeforeEdit.current,
+                  event.target.value,
+                )
+                selectedRouteLabelBeforeEdit.current = event.target.value
+              }}
             />
           </label>
 
@@ -487,6 +534,7 @@ export default function NodeInspector({
             node={node}
             analysis={analysis}
             onTextChange={onTextChange}
+            onTextCommit={onTextCommit}
             onNodeRemove={onNodeRemove}
           />
         )}
@@ -497,6 +545,7 @@ export default function NodeInspector({
             onNodeAdd={onNodeAdd}
             onRouteAdd={onRouteAdd}
             onRouteChange={onRouteChange}
+            onRouteLabelCommit={onRouteLabelCommit}
             onRouteRemove={onRouteRemove}
           />
         )}

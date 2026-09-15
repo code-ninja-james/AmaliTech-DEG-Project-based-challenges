@@ -8,6 +8,7 @@
 
 export default function StatusBar({
   flow,
+  workflowName = 'flow_data.json',
   selectedNodeId,
   mode,
   isDemo = false,
@@ -19,7 +20,7 @@ export default function StatusBar({
 
   return (
     <footer className="status-bar">
-      <span>{isDemo ? 'Diagnostic demo · temporary' : 'flow_data.json'}</span>
+      <span>{isDemo ? 'Diagnostic demo · temporary' : workflowName}</span>
       <span className="status-bar__divider" />
       <span>
         {flow.nodes.length} nodes · {edgeCount} edges

@@ -36,9 +36,9 @@ Selecting a node opens a detailed inspector with **Properties**, **Routes**, and
 
 Question or terminal text is edited against a single shared in-memory flow model, so changes update the canvas and Preview immediately. The imported challenge fixture is never mutated directly.
 
-The Routes tab supports authoring changes without touching JSON: add outbound routes, edit route labels, retarget routes to any existing node, remove routes, and create connected Question or Terminal nodes from the selected Start/Question node. Question and Terminal nodes can be deleted from Properties; the editor removes incoming routes automatically and keeps Start protected.
+The Routes tab supports authoring changes without touching JSON: add outbound routes, edit route labels, retarget routes to any existing node, remove routes, and create connected Question or Terminal nodes from the selected Start/Question node. Question and Terminal nodes can be deleted from Properties or with `Delete`/`Backspace`; the editor removes incoming routes automatically, keeps Start protected, and offers Undo after deletions.
 
-On the canvas, Start and Question nodes reveal a small `+` connector handle when selected, hovered, or focused. Drag it onto another node to create a new route visually, then rename or retarget that route in the Routes tab if needed. Selecting a route label also exposes a Delete route action in the inspector.
+On the canvas, Start and Question nodes reveal a small `+` connector handle when selected, hovered, or focused. Drag it onto another node to create a new route visually, then rename or retarget that route in the Routes tab if needed. Selecting a route label exposes a Delete route action in the inspector and lets `Delete`/`Backspace` remove the selected route.
 
 ### Preview runner
 

@@ -7,11 +7,15 @@
 
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App.jsx'
 
 describe('SupportFlow application', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('renders the product identity', () => {
     render(<App />)
 
@@ -220,5 +224,29 @@ describe('SupportFlow application', () => {
     await user.click(within(preview).getByRole('button', { name: 'Business' }))
     expect(within(preview).getByText('Connecting you to a Billing Agent...')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Flow Health, 0 issues' })).toBeInTheDocument()
+  })
+
+  it('copies a diagnostic report for the active X-Ray scenario', async () => {
+    const user = userEvent.setup()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: /Flow Health/ }))
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Diagnostic demo' }),
+      'broken-reference',
+    )
+    await user.click(screen.getByRole('button', { name: 'Copy diagnostic report' }))
+
+    expect(writeText).toHaveBeenCalledTimes(1)
+    expect(writeText.mock.calls[0][0]).toContain('Scenario: Broken reference (temporary demo)')
+    expect(writeText.mock.calls[0][0]).toContain(
+      'ERROR: Route "Business" from node #3 points to missing node #missing-billing.',
+    )
+    expect(screen.getByText('Report copied')).toBeInTheDocument()
   })
 })

@@ -6,9 +6,10 @@
  * the concrete issues that would affect a customer journey.
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import analyzeFlow from '../../domain/analyzeFlow.js'
+import createXrayReport from '../../domain/xrayReport.js'
 import { XRAY_DEMO_SCENARIOS } from '../../domain/xrayDemo.js'
 
 export default function FlowHealthPanel({
@@ -21,6 +22,36 @@ export default function FlowHealthPanel({
   const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
   const scenario = XRAY_DEMO_SCENARIOS.find(({ id }) => id === demoScenario)
   const isDemo = demoScenario !== 'current'
+  const [copyState, setCopyState] = useState({ status: 'idle', reportText: null })
+
+  const reportText = useMemo(
+    () =>
+      createXrayReport({
+        flow,
+        analysis,
+        issues,
+        scenarioLabel: scenario?.label ?? 'Current flow',
+        isDemo,
+      }),
+    [analysis, flow, isDemo, issues, scenario?.label],
+  )
+
+  const copyStatus = copyState.reportText === reportText ? copyState.status : 'idle'
+
+  const handleCopyReport = async () => {
+    setCopyState({ status: 'copying', reportText })
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard API unavailable')
+      }
+
+      await navigator.clipboard.writeText(reportText)
+      setCopyState({ status: 'copied', reportText })
+    } catch {
+      setCopyState({ status: 'error', reportText })
+    }
+  }
 
   const diagnostics = [
     {
@@ -173,6 +204,14 @@ export default function FlowHealthPanel({
               ? `Flow is valid. All ${flow.nodes.length} nodes reachable. ${analysis.terminalCount} terminal exits. No cycles or broken references.`
               : `Issues detected: ${analysis.unreachable.length} unreachable, ${analysis.brokenReferences.length} broken refs${analysis.hasCycle ? ', cycle detected' : ''}.`}
           </p>
+        </div>
+
+        <div className="studio-xray__report-actions">
+          <button type="button" onClick={handleCopyReport} disabled={copyStatus === 'copying'}>
+            {copyStatus === 'copying' ? 'Copying report...' : 'Copy diagnostic report'}
+          </button>
+          {copyStatus === 'copied' && <span role="status">Report copied</span>}
+          {copyStatus === 'error' && <span role="alert">Copy unavailable</span>}
         </div>
 
         {analysis.isHealthy && (

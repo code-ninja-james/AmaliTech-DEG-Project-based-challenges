@@ -37,6 +37,7 @@
 }
 
 .studio-xray__demo button,
+.studio-xray__report-actions button,
 .studio-xray__validation-list button {
   justify-self: start;
   padding: 6px 8px;
@@ -50,14 +51,27 @@
 }
 
 .studio-xray__demo button:hover,
+.studio-xray__report-actions button:hover,
 .studio-xray__validation-list button:hover {
   background: rgba(255, 255, 255, 0.07);
 }
 
 .studio-xray__demo :focus-visible,
+.studio-xray__report-actions button:focus-visible,
 .studio-xray__validation-list button:focus-visible {
   outline: 2px solid #4f8ff7;
   outline-offset: 3px;
+}
+
+.studio-xray__report-actions {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.studio-xray__report-actions span {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
 }
 
 .flow-node.flow-node--xray-cycle:not(.flow-node--xray-error):not(.flow-node--xray-broken) {

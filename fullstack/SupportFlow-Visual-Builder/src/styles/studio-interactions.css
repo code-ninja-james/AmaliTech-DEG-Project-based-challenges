@@ -1045,6 +1045,38 @@
   font-weight: 500;
 }
 
+.studio-inspector__selected-route-field {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.studio-inspector__selected-route-field span {
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.studio-inspector__selected-route-field input {
+  width: 100%;
+  min-height: 30px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid rgba(79, 143, 247, 0.18);
+  border-radius: 3px;
+  background: rgba(79, 143, 247, 0.06);
+  color: rgba(255, 255, 255, 0.76);
+  font: inherit;
+  font-size: 11px;
+}
+
+.studio-inspector__selected-route-field input:focus {
+  border-color: rgba(79, 143, 247, 0.5);
+  outline: 0;
+  box-shadow: 0 0 0 2px rgba(79, 143, 247, 0.08);
+}
+
 .studio-inspector__selected-route-path {
   display: flex;
   align-items: center;

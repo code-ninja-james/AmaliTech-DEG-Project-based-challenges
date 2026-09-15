@@ -24,6 +24,7 @@ import getConnections from './domain/getConnections.js'
 import {
   addNode,
   addRoute,
+  getDefaultRouteTargetId,
   getNextNodeId,
   removeNode,
   removeRoute,
@@ -57,6 +58,7 @@ export default function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [demoScenario, setDemoScenario] = useState('current')
   const [deleteUndo, setDeleteUndo] = useState(null)
+  const [routeEditorFocusId, setRouteEditorFocusId] = useState(null)
 
   const displayFlow = useMemo(
     () => (mode === 'X-Ray' ? createXrayDemo(flow, demoScenario) : flow),
@@ -74,6 +76,7 @@ export default function App() {
 
   const handleNodeTextChange = (nodeId, nextText) => {
     setDeleteUndo(null)
+    setRouteEditorFocusId(null)
     setFlow((currentFlow) => ({
       ...currentFlow,
       nodes: currentFlow.nodes.map((node) =>
@@ -89,17 +92,33 @@ export default function App() {
 
   const handleNodeAdd = ({ type, sourceNodeId = selectedNodeId }) => {
     const nextNodeId = getNextNodeId(flow.nodes)
+    const sourceNode = flow.nodes.find((node) => node.id === sourceNodeId)
+    const routeConnectionId =
+      sourceNode && sourceNode.type !== 'end'
+        ? `${sourceNodeId}-${sourceNode.options.length}-${nextNodeId}`
+        : null
 
     setDeleteUndo(null)
     setFlow((currentFlow) => addNode(currentFlow, { id: nextNodeId, type, sourceNodeId }))
     setSelectedNodeId(nextNodeId)
-    setSelectedConnectionId(null)
+    setSelectedConnectionId(routeConnectionId)
+    setRouteEditorFocusId(routeConnectionId)
   }
 
   const handleRouteAdd = (nodeId) => {
+    const sourceNode = flow.nodes.find((node) => node.id === nodeId)
+
+    if (!sourceNode || sourceNode.type === 'end') {
+      return
+    }
+
+    const targetId = getDefaultRouteTargetId(flow.nodes, nodeId)
+
     setDeleteUndo(null)
     setFlow((currentFlow) => addRoute(currentFlow, nodeId))
-    setSelectedConnectionId(null)
+    setSelectedNodeId(nodeId)
+    setSelectedConnectionId(`${nodeId}-${sourceNode.options.length}-${targetId}`)
+    setRouteEditorFocusId(`${nodeId}-${sourceNode.options.length}-${targetId}`)
   }
 
   const handleRouteConnect = (sourceNodeId, targetNodeId) => {
@@ -114,12 +133,20 @@ export default function App() {
     setFlow((currentFlow) => addRoute(currentFlow, sourceNodeId, targetNodeId))
     setSelectedNodeId(sourceNodeId)
     setSelectedConnectionId(`${sourceNodeId}-${sourceNode.options.length}-${targetNodeId}`)
+    setRouteEditorFocusId(`${sourceNodeId}-${sourceNode.options.length}-${targetNodeId}`)
   }
 
   const handleRouteChange = (nodeId, optionIndex, patch) => {
+    const isEditingSelectedConnection =
+      selectedConnection?.sourceId === nodeId && selectedConnection.optionIndex === optionIndex
+    const nextConnectionId = isEditingSelectedConnection
+      ? `${nodeId}-${optionIndex}-${patch.nextId ?? selectedConnection.targetId}`
+      : null
+
     setDeleteUndo(null)
     setFlow((currentFlow) => updateRoute(currentFlow, nodeId, optionIndex, patch))
-    setSelectedConnectionId(null)
+    setSelectedConnectionId(nextConnectionId)
+    setRouteEditorFocusId(routeEditorFocusId === selectedConnection?.id ? nextConnectionId : null)
   }
 
   const handleRouteRemove = useCallback(
@@ -139,6 +166,7 @@ export default function App() {
       })
       setFlow(removeRoute(flow, nodeId, optionIndex))
       setSelectedConnectionId(null)
+      setRouteEditorFocusId(null)
     },
     [flow, selectedConnectionId, selectedNodeId],
   )
@@ -165,6 +193,7 @@ export default function App() {
         nextFlow.nodes.find((node) => node.type === 'start')?.id ?? nextFlow.nodes[0]?.id ?? null,
       )
       setSelectedConnectionId(null)
+      setRouteEditorFocusId(null)
     },
     [flow, selectedConnectionId, selectedNodeId],
   )
@@ -178,15 +207,18 @@ export default function App() {
     setSelectedNodeId(deleteUndo.selectedNodeId)
     setSelectedConnectionId(deleteUndo.selectedConnectionId)
     setDeleteUndo(null)
+    setRouteEditorFocusId(null)
   }
 
   const handleNodeSelect = (nodeId) => {
     setSelectedConnectionId(null)
+    setRouteEditorFocusId(null)
     setSelectedNodeId(nodeId)
   }
 
   const handleConnectionSelect = (connection) => {
     setSelectedConnectionId(connection.id)
+    setRouteEditorFocusId(null)
     setSelectedNodeId(
       displayFlow.nodes.some((node) => node.id === connection.targetId)
         ? connection.targetId
@@ -197,6 +229,7 @@ export default function App() {
   const handleDemoChange = (scenarioId) => {
     setDemoScenario(scenarioId)
     setSelectedConnectionId(null)
+    setRouteEditorFocusId(null)
   }
 
   const handleModeChange = (nextMode) => {
@@ -322,10 +355,11 @@ export default function App() {
 
         {(mode === 'Build' || mode === 'Spatial') && (
           <NodeInspector
-            key={`${selectedNodeId ?? 'no-selection'}-${selectedConnectionId ?? 'no-route'}`}
+            key={selectedNodeId ?? 'no-selection'}
             node={selectedNode}
             flow={flow}
             selectedConnection={selectedConnection}
+            autoFocusRouteId={routeEditorFocusId}
             issues={healthIssues}
             onIssueSelect={handleNodeSelect}
             onTextChange={handleNodeTextChange}

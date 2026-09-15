@@ -118,6 +118,30 @@ describe('SupportFlow application', () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByText('Personal')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Business, route to node 6' })).toBeInTheDocument()
+    expect(screen.getByText('Deleted route "Personal".')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(screen.getByRole('button', { name: 'Personal, route to node 6' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.queryByText('Deleted route "Personal".')).not.toBeInTheDocument()
+  })
+
+  it('deletes the selected canvas route with the keyboard', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('flow-node-3'))
+    await user.click(screen.getByRole('button', { name: 'Personal, route to node 6' }))
+    await user.keyboard('{Delete}')
+
+    expect(
+      screen.queryByRole('button', { name: 'Personal, route to node 6' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Deleted route "Personal".')).toBeInTheDocument()
   })
 
   it('creates a new route by dragging a connector handle onto a node', async () => {
@@ -164,6 +188,30 @@ describe('SupportFlow application', () => {
     expect(
       screen.queryByRole('button', { name: 'Business, route to node 6' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('deletes selected nodes with the keyboard and protects text editing', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('navigator-node-6'))
+    await user.click(screen.getByLabelText('Message Text'))
+    await user.keyboard('{Backspace}')
+
+    expect(screen.getByTestId('flow-node-6')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByTestId('navigator-node-6'))
+    await user.keyboard('{Delete}')
+
+    expect(screen.queryByTestId('flow-node-6')).not.toBeInTheDocument()
+    expect(screen.getByText('Deleted terminal node #6.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(screen.getByTestId('flow-node-6')).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-6')).toHaveClass('flow-node--selected')
   })
 
   it('does not expose node deletion for the Start node', async () => {

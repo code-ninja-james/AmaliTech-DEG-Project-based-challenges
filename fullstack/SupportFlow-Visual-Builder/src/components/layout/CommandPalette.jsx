@@ -12,6 +12,7 @@ export default function CommandPalette({
   onModeChange,
   onPreviewStart,
   onSpreadsheetImport,
+  onWorkflowLibrary,
 }) {
   if (!open) {
     return null
@@ -42,6 +43,11 @@ export default function CommandPalette({
       label: 'Import Flow',
       shortcut: 'I',
       action: onSpreadsheetImport,
+    },
+    {
+      label: 'Open Workflows',
+      shortcut: 'W',
+      action: onWorkflowLibrary,
     },
   ]
 

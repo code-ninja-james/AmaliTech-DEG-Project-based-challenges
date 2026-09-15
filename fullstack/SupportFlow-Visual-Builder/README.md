@@ -49,6 +49,14 @@ Accepted table shape for Excel, CSV/TSV, and flat JSON rows:
 
 **Business value:** this gives teams a practical migration path from the messy spreadsheet process described in the brief. A manager can bring existing support logic into the editor, visually inspect the generated tree, use Flow Health to catch bad references, and then refine routes or messages on the canvas.
 
+### Workflow library
+
+Workflows can be saved in the browser and reused later without a backend database. Open **Workflows** in Build mode to name and save the current flow, search saved workflows, rename them, delete old ones, or click **Use workflow** to load a saved flow back onto the canvas.
+
+Search checks workflow names, node IDs, node text, route labels, and route targets. When a saved workflow is used, the editor switches back to Build mode, selects the Start node, and all normal editing, validation, import, and Preview behavior continues against that loaded workflow.
+
+**Business value:** support managers can keep separate flows for billing, technical support, onboarding, or seasonal campaigns and switch between them without rebuilding from scratch.
+
 ### Node inspector
 
 Selecting a node opens a detailed inspector with **Properties**, **Routes**, and **Health** tabs.
@@ -104,7 +112,7 @@ Spatial mode provides an alternate topology view of the same six challenge nodes
 
 ### Command palette
 
-`⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, Preview, and Flow Import.
+`⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, Preview, Flow Import, and Workflows.
 
 ## Architecture
 
@@ -122,6 +130,8 @@ flow_data.json
       +--> importJsonFlow.js / importExcelFlow.js / importSpreadsheetFlow.js
       |                                      |
       |                                  SpreadsheetImporter.jsx
+      |
+      +--> workflowLibrary.js ----------> WorkflowLibraryPanel.jsx
       |
       +--> analyzeFlow.js / validateFlow.js --> X-Ray + Flow Health
       |
@@ -161,7 +171,8 @@ src/
 │   │   ├── FlowHealthPanel.jsx
 │   │   ├── NodeInspector.jsx
 │   │   ├── NodeNavigator.jsx
-│   │   └── SpreadsheetImporter.jsx
+│   │   ├── SpreadsheetImporter.jsx
+│   │   └── WorkflowLibraryPanel.jsx
 │   ├── flow/
 │   │   ├── ConnectorLayer.jsx
 │   │   ├── FlowCanvas.jsx
@@ -182,7 +193,8 @@ src/
 │   ├── importJsonFlow.js
 │   ├── importSpreadsheetFlow.js
 │   ├── traverseFlow.js
-│   └── validateFlow.js
+│   ├── validateFlow.js
+│   └── workflowLibrary.js
 ├── hooks/
 │   └── useNodeMeasurements.js
 ├── styles/
@@ -230,7 +242,7 @@ Git hooks also enforce quality locally:
 
 ## Tests
 
-The suite covers node rendering, exact challenge coordinates, connector extraction, Bézier geometry, selection and editing, mode switching, Preview traversal/restart, JSON/Excel/Spreadsheet Import parsing, Flow Health rules, and navigator interactions.
+The suite covers node rendering, exact challenge coordinates, connector extraction, Bézier geometry, selection and editing, workflow saving/searching/loading/deletion, mode switching, Preview traversal/restart, JSON/Excel/Spreadsheet Import parsing, Flow Health rules, and navigator interactions.
 
 Run tests independently with:
 

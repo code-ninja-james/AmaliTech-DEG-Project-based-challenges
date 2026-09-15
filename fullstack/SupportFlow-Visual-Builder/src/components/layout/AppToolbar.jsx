@@ -13,12 +13,14 @@ const MODE_CLASS = {
 }
 
 export default function AppToolbar({
+  workflowName = 'Main Flow',
   mode,
   isPreviewMode,
   healthIssueCount,
   onModeChange,
   onPreviewStart,
   onSpreadsheetImport,
+  onWorkflowLibrary,
 }) {
   return (
     <header className="app-toolbar">
@@ -42,7 +44,7 @@ export default function AppToolbar({
         <span>/</span>
         <span>Support</span>
         <span>/</span>
-        <strong>Main Flow</strong>
+        <strong>{workflowName}</strong>
       </nav>
 
       <div className="app-toolbar__spacer" />
@@ -76,6 +78,14 @@ export default function AppToolbar({
 
       {mode === 'Build' && !isPreviewMode && (
         <div className="app-toolbar__build-actions">
+          <button
+            className="app-workflow-button"
+            type="button"
+            aria-label="Open workflows"
+            onClick={onWorkflowLibrary}
+          >
+            Workflows
+          </button>
           <button
             className="app-import-button"
             type="button"

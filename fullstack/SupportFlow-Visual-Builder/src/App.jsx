@@ -14,6 +14,7 @@ import FlowHealthPanel from './components/editor/FlowHealthPanel.jsx'
 import NodeInspector from './components/editor/NodeInspector.jsx'
 import NodeNavigator from './components/editor/NodeNavigator.jsx'
 import SpreadsheetImporter from './components/editor/SpreadsheetImporter.jsx'
+import WorkflowLibraryPanel from './components/editor/WorkflowLibraryPanel.jsx'
 import FlowCanvas from './components/flow/FlowCanvas.jsx'
 import SpatialView from './components/flow/SpatialView.jsx'
 import AppToolbar from './components/layout/AppToolbar.jsx'
@@ -32,6 +33,15 @@ import {
   updateRoute,
 } from './domain/flowEditing.js'
 import createXrayDemo from './domain/xrayDemo.js'
+import {
+  cloneFlow,
+  DEFAULT_WORKFLOW_NAME,
+  deleteWorkflow,
+  loadWorkflowLibrary,
+  persistWorkflowLibrary,
+  renameWorkflow,
+  saveWorkflow,
+} from './domain/workflowLibrary.js'
 import './styles/flow.css'
 import './styles/studio.css'
 import './styles/studio-interactions.css'
@@ -50,8 +60,23 @@ function isTextEditingTarget(target) {
   )
 }
 
+function getImportedWorkflowName(sourceLabel) {
+  if (sourceLabel === 'JSON') {
+    return 'Imported JSON workflow'
+  }
+
+  if (sourceLabel === 'Excel workbook') {
+    return 'Imported Excel workflow'
+  }
+
+  return 'Imported spreadsheet workflow'
+}
+
 export default function App() {
   const [flow, setFlow] = useState(flowData)
+  const [workflowName, setWorkflowName] = useState(DEFAULT_WORKFLOW_NAME)
+  const [activeWorkflowId, setActiveWorkflowId] = useState(null)
+  const [workflows, setWorkflows] = useState(() => loadWorkflowLibrary())
   const [selectedNodeId, setSelectedNodeId] = useState('2')
   const [selectedConnectionId, setSelectedConnectionId] = useState(null)
   const [mode, setMode] = useState('Build')
@@ -61,7 +86,9 @@ export default function App() {
   const [deleteUndo, setDeleteUndo] = useState(null)
   const [routeEditorFocusId, setRouteEditorFocusId] = useState(null)
   const [isSpreadsheetImporterOpen, setIsSpreadsheetImporterOpen] = useState(false)
+  const [isWorkflowLibraryOpen, setIsWorkflowLibraryOpen] = useState(false)
   const [importNotice, setImportNotice] = useState(null)
+  const [workflowNotice, setWorkflowNotice] = useState(null)
 
   const displayFlow = useMemo(
     () => (mode === 'X-Ray' ? createXrayDemo(flow, demoScenario) : flow),
@@ -81,6 +108,7 @@ export default function App() {
     setDeleteUndo(null)
     setRouteEditorFocusId(null)
     setImportNotice(null)
+    setWorkflowNotice(null)
     setFlow((currentFlow) => ({
       ...currentFlow,
       nodes: currentFlow.nodes.map((node) =>
@@ -104,6 +132,7 @@ export default function App() {
 
     setDeleteUndo(null)
     setImportNotice(null)
+    setWorkflowNotice(null)
     setFlow((currentFlow) => addNode(currentFlow, { id: nextNodeId, type, sourceNodeId }))
     setSelectedNodeId(nextNodeId)
     setSelectedConnectionId(routeConnectionId)
@@ -121,6 +150,7 @@ export default function App() {
 
     setDeleteUndo(null)
     setImportNotice(null)
+    setWorkflowNotice(null)
     setFlow((currentFlow) => addRoute(currentFlow, nodeId))
     setSelectedNodeId(nodeId)
     setSelectedConnectionId(`${nodeId}-${sourceNode.options.length}-${targetId}`)
@@ -137,6 +167,7 @@ export default function App() {
 
     setDeleteUndo(null)
     setImportNotice(null)
+    setWorkflowNotice(null)
     setFlow((currentFlow) => addRoute(currentFlow, sourceNodeId, targetNodeId))
     setSelectedNodeId(sourceNodeId)
     setSelectedConnectionId(`${sourceNodeId}-${sourceNode.options.length}-${targetNodeId}`)
@@ -152,6 +183,7 @@ export default function App() {
 
     setDeleteUndo(null)
     setImportNotice(null)
+    setWorkflowNotice(null)
     setFlow((currentFlow) => updateRoute(currentFlow, nodeId, optionIndex, patch))
     setSelectedConnectionId(nextConnectionId)
     setRouteEditorFocusId(routeEditorFocusId === selectedConnection?.id ? nextConnectionId : null)
@@ -173,6 +205,7 @@ export default function App() {
         message: `Deleted route "${route.label}".`,
       })
       setImportNotice(null)
+      setWorkflowNotice(null)
       setFlow(removeRoute(flow, nodeId, optionIndex))
       setSelectedConnectionId(null)
       setRouteEditorFocusId(null)
@@ -198,6 +231,7 @@ export default function App() {
         message: `Deleted ${nodeLabel} node #${nodeToRemove.id}.`,
       })
       setImportNotice(null)
+      setWorkflowNotice(null)
       setFlow(nextFlow)
       setSelectedNodeId(
         nextFlow.nodes.find((node) => node.type === 'start')?.id ?? nextFlow.nodes[0]?.id ?? null,
@@ -282,10 +316,108 @@ export default function App() {
     setIsPreviewing(false)
     setDemoScenario('current')
     setIsSpreadsheetImporterOpen(false)
+    setActiveWorkflowId(null)
+    setWorkflowName(getImportedWorkflowName(sourceLabel))
+    setWorkflowNotice(null)
     setImportNotice({
       message: `Imported ${importedFlow.nodes.length} nodes and ${routeCount} routes from ${sourceLabel}.`,
       warnings,
     })
+  }
+
+  const persistWorkflows = (nextWorkflows) => {
+    setWorkflows(nextWorkflows)
+
+    if (persistWorkflowLibrary(nextWorkflows)) {
+      return true
+    }
+
+    setWorkflowNotice('Could not save workflows in this browser.')
+    return false
+  }
+
+  const handleWorkflowNameChange = (nextName) => {
+    setWorkflowName(nextName)
+    setWorkflowNotice(null)
+  }
+
+  const handleWorkflowSave = () => {
+    const { workflow, workflows: nextWorkflows } = saveWorkflow(workflows, {
+      id: activeWorkflowId,
+      name: workflowName,
+      flow,
+    })
+
+    if (!persistWorkflows(nextWorkflows)) {
+      return
+    }
+
+    setActiveWorkflowId(workflow.id)
+    setWorkflowName(workflow.name)
+    setDeleteUndo(null)
+    setImportNotice(null)
+    setWorkflowNotice(`Saved workflow "${workflow.name}".`)
+  }
+
+  const handleWorkflowUse = (workflowId) => {
+    const workflow = workflows.find((currentWorkflow) => currentWorkflow.id === workflowId)
+
+    if (!workflow) {
+      return
+    }
+
+    const nextFlow = cloneFlow(workflow.flow)
+    const startNode = nextFlow.nodes.find((node) => node.type === 'start') ?? nextFlow.nodes[0]
+
+    setFlow(nextFlow)
+    setWorkflowName(workflow.name)
+    setActiveWorkflowId(workflow.id)
+    setSelectedNodeId(startNode?.id ?? null)
+    setSelectedConnectionId(null)
+    setRouteEditorFocusId(null)
+    setDeleteUndo(null)
+    setMode('Build')
+    setIsPreviewing(false)
+    setDemoScenario('current')
+    setIsWorkflowLibraryOpen(false)
+    setImportNotice(null)
+    setWorkflowNotice(`Using workflow "${workflow.name}".`)
+  }
+
+  const handleWorkflowRename = (workflowId, nextName) => {
+    const { workflow, workflows: nextWorkflows } = renameWorkflow(workflows, workflowId, nextName)
+
+    if (!workflow || !persistWorkflows(nextWorkflows)) {
+      return
+    }
+
+    if (workflow.id === activeWorkflowId) {
+      setWorkflowName(workflow.name)
+    }
+
+    setImportNotice(null)
+    setWorkflowNotice(`Renamed workflow to "${workflow.name}".`)
+  }
+
+  const handleWorkflowDelete = (workflowId) => {
+    const workflow = workflows.find((currentWorkflow) => currentWorkflow.id === workflowId)
+
+    if (!workflow) {
+      return
+    }
+
+    const nextWorkflows = deleteWorkflow(workflows, workflowId)
+
+    if (!persistWorkflows(nextWorkflows)) {
+      return
+    }
+
+    if (workflowId === activeWorkflowId) {
+      setActiveWorkflowId(null)
+    }
+
+    setImportNotice(null)
+    setWorkflowNotice(`Deleted workflow "${workflow.name}".`)
   }
 
   useEffect(() => {
@@ -299,6 +431,7 @@ export default function App() {
       if (event.key === 'Escape') {
         setIsCommandPaletteOpen(false)
         setIsSpreadsheetImporterOpen(false)
+        setIsWorkflowLibraryOpen(false)
         return
       }
 
@@ -310,6 +443,7 @@ export default function App() {
         event.defaultPrevented ||
         isCommandPaletteOpen ||
         isSpreadsheetImporterOpen ||
+        isWorkflowLibraryOpen ||
         isPreviewing ||
         (mode !== 'Build' && mode !== 'Spatial') ||
         isTextEditingTarget(event.target)
@@ -339,6 +473,7 @@ export default function App() {
     handleRouteRemove,
     isCommandPaletteOpen,
     isSpreadsheetImporterOpen,
+    isWorkflowLibraryOpen,
     isPreviewing,
     mode,
     selectedConnection,
@@ -350,12 +485,14 @@ export default function App() {
   return (
     <main className="app-shell">
       <AppToolbar
+        workflowName={workflowName}
         mode={mode}
         isPreviewMode={isPreviewing}
         healthIssueCount={healthIssues.length}
         onModeChange={handleModeChange}
         onPreviewStart={handlePreviewStart}
         onSpreadsheetImport={() => setIsSpreadsheetImporterOpen(true)}
+        onWorkflowLibrary={() => setIsWorkflowLibraryOpen(true)}
       />
 
       <div className="editor-layout">
@@ -422,6 +559,7 @@ export default function App() {
 
       <StatusBar
         flow={displayFlow}
+        workflowName={workflowName}
         isDemo={isDemo}
         selectedNodeId={selectedNodeId}
         mode={displayMode}
@@ -449,18 +587,42 @@ export default function App() {
         </div>
       )}
 
+      {workflowNotice && (
+        <div className="app-import-toast" aria-live="polite">
+          <span role="status">{workflowNotice}</span>
+          <button type="button" onClick={() => setWorkflowNotice(null)}>
+            Dismiss
+          </button>
+        </div>
+      )}
+
       <CommandPalette
         open={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         onModeChange={handleModeChange}
         onPreviewStart={handlePreviewStart}
         onSpreadsheetImport={() => setIsSpreadsheetImporterOpen(true)}
+        onWorkflowLibrary={() => setIsWorkflowLibraryOpen(true)}
       />
 
       <SpreadsheetImporter
         open={isSpreadsheetImporterOpen}
         onClose={() => setIsSpreadsheetImporterOpen(false)}
         onImport={handleSpreadsheetImport}
+      />
+
+      <WorkflowLibraryPanel
+        open={isWorkflowLibraryOpen}
+        workflows={workflows}
+        activeWorkflowId={activeWorkflowId}
+        workflowName={workflowName}
+        currentFlow={flow}
+        onClose={() => setIsWorkflowLibraryOpen(false)}
+        onWorkflowNameChange={handleWorkflowNameChange}
+        onSaveCurrent={handleWorkflowSave}
+        onUseWorkflow={handleWorkflowUse}
+        onRenameWorkflow={handleWorkflowRename}
+        onDeleteWorkflow={handleWorkflowDelete}
       />
     </main>
   )

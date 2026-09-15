@@ -14,6 +14,7 @@ import App from './App.jsx'
 
 describe('SupportFlow application', () => {
   afterEach(() => {
+    window.localStorage.clear()
     vi.restoreAllMocks()
   })
 
@@ -414,6 +415,65 @@ describe('SupportFlow application', () => {
     expect(
       screen.getByRole('button', { name: 'Technical support, route to node 3' }),
     ).toBeInTheDocument()
+  })
+
+  it('saves, searches, edits, uses and deletes workflows', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('flow-node-2'))
+    await user.clear(screen.getByLabelText('Question Text'))
+    await user.type(screen.getByLabelText('Question Text'), 'Saved router question')
+
+    await user.click(screen.getByRole('button', { name: 'Open workflows' }))
+
+    let library = screen.getByRole('dialog', { name: 'Workflow library' })
+    await user.clear(within(library).getByLabelText('Current workflow name'))
+    await user.type(within(library).getByLabelText('Current workflow name'), 'Router workflow')
+    await user.click(within(library).getByRole('button', { name: 'Save current workflow' }))
+
+    expect(screen.getByText('Saved workflow "Router workflow".')).toBeInTheDocument()
+    expect(within(library).getByText('Router workflow')).toBeInTheDocument()
+
+    await user.click(within(library).getByRole('button', { name: 'Close workflow library' }))
+    await user.clear(screen.getByLabelText('Question Text'))
+    await user.type(screen.getByLabelText('Question Text'), 'Temporary canvas question')
+
+    await user.click(screen.getByRole('button', { name: 'Open workflows' }))
+    library = screen.getByRole('dialog', { name: 'Workflow library' })
+
+    await user.type(within(library).getByLabelText('Search workflows'), 'saved router')
+    expect(within(library).getByText('Router workflow')).toBeInTheDocument()
+
+    await user.click(within(library).getByRole('button', { name: 'Edit name' }))
+    await user.clear(within(library).getByLabelText('Workflow name for Router workflow'))
+    await user.type(
+      within(library).getByLabelText('Workflow name for Router workflow'),
+      'Saved support workflow',
+    )
+    await user.click(within(library).getByRole('button', { name: 'Save name' }))
+
+    expect(screen.getByText('Renamed workflow to "Saved support workflow".')).toBeInTheDocument()
+    expect(within(library).getByText('Saved support workflow')).toBeInTheDocument()
+
+    await user.click(within(library).getByRole('button', { name: 'Use workflow' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Workflow library' })).not.toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('flow-node-2')).getByText('Saved router question'),
+    ).toBeInTheDocument()
+    await user.click(screen.getByTestId('flow-node-2'))
+    expect(screen.getByLabelText('Question Text')).toHaveValue('Saved router question')
+    expect(screen.getByText('Using workflow "Saved support workflow".')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Open workflows' }))
+    library = screen.getByRole('dialog', { name: 'Workflow library' })
+    await user.clear(within(library).getByLabelText('Search workflows'))
+    await user.click(within(library).getByRole('button', { name: 'Delete' }))
+
+    expect(screen.getByText('Deleted workflow "Saved support workflow".')).toBeInTheDocument()
+    expect(within(library).getByText('No saved workflows yet.')).toBeInTheDocument()
   })
 
   it('opens X-Ray and reports the supplied challenge flow as healthy', async () => {

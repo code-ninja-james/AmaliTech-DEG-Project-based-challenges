@@ -73,9 +73,17 @@ function PropertiesTab({ node, analysis, onTextChange }) {
   )
 }
 
-function RoutesTab({ node, flow }) {
+function RoutesTab({
+  node,
+  flow,
+  onNodeAdd = () => {},
+  onRouteAdd = () => {},
+  onRouteChange = () => {},
+  onRouteRemove = () => {},
+}) {
   const meta = NODE_META[node.type] ?? NODE_META.question
   const nodeMap = new Map(flow.nodes.map((candidate) => [candidate.id, candidate]))
+  const canAddRoutes = node.type !== 'end'
 
   return (
     <div className="studio-inspector__tab-content">
@@ -84,7 +92,7 @@ function RoutesTab({ node, flow }) {
       {node.options.length === 0 ? (
         <div className="studio-inspector__empty-routes">
           <span className="studio-inspector__empty-glyph">{meta.glyph}</span>
-          <p>Terminal — no outbound routes</p>
+          <p>{node.type === 'end' ? 'Terminal - no outbound routes' : 'No outbound routes yet'}</p>
         </div>
       ) : (
         <div className="studio-inspector__routes">
@@ -104,6 +112,11 @@ function RoutesTab({ node, flow }) {
                   />
                   <strong>{option.label}</strong>
                   <code>route_{index}</code>
+                  {canAddRoutes && (
+                    <button type="button" onClick={() => onRouteRemove(node.id, index)}>
+                      Remove
+                    </button>
+                  )}
                 </header>
 
                 <div className="studio-inspector__route-target">
@@ -120,10 +133,66 @@ function RoutesTab({ node, flow }) {
                     </span>
                   )}
                 </div>
+
+                {canAddRoutes && (
+                  <div className="studio-inspector__route-fields">
+                    <label>
+                      <span>Route label</span>
+                      <input
+                        aria-label={`Route ${index} label`}
+                        value={option.label}
+                        onChange={(event) =>
+                          onRouteChange(node.id, index, { label: event.target.value })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      <span>Target node</span>
+                      <select
+                        aria-label={`Route ${index} target`}
+                        value={option.nextId}
+                        onChange={(event) =>
+                          onRouteChange(node.id, index, { nextId: event.target.value })
+                        }
+                      >
+                        {!nodeMap.has(option.nextId) && (
+                          <option value={option.nextId}>Missing target #{option.nextId}</option>
+                        )}
+                        {flow.nodes.map((targetNode) => (
+                          <option key={targetNode.id} value={targetNode.id}>
+                            #{targetNode.id} {NODE_META[targetNode.type]?.label ?? targetNode.type}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                )}
               </article>
             )
           })}
         </div>
+      )}
+
+      {canAddRoutes ? (
+        <div className="studio-inspector__route-actions">
+          <button type="button" onClick={() => onRouteAdd(node.id)}>
+            Add route
+          </button>
+          <button
+            type="button"
+            onClick={() => onNodeAdd({ type: 'question', sourceNodeId: node.id })}
+          >
+            Add question node
+          </button>
+          <button type="button" onClick={() => onNodeAdd({ type: 'end', sourceNodeId: node.id })}>
+            Add terminal node
+          </button>
+        </div>
+      ) : (
+        <p className="studio-inspector__route-help">
+          Terminal nodes end the journey. Select a Start or Question node to add outbound routes.
+        </p>
       )}
     </div>
   )
@@ -221,6 +290,10 @@ export default function NodeInspector({
   flow,
   selectedConnection = null,
   onTextChange = () => {},
+  onNodeAdd = () => {},
+  onRouteAdd = () => {},
+  onRouteChange = () => {},
+  onRouteRemove = () => {},
 }) {
   const [tab, setTab] = useState('Properties')
   const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
@@ -285,7 +358,16 @@ export default function NodeInspector({
         {tab === 'Properties' && (
           <PropertiesTab node={node} analysis={analysis} onTextChange={onTextChange} />
         )}
-        {tab === 'Routes' && <RoutesTab node={node} flow={flow} />}
+        {tab === 'Routes' && (
+          <RoutesTab
+            node={node}
+            flow={flow}
+            onNodeAdd={onNodeAdd}
+            onRouteAdd={onRouteAdd}
+            onRouteChange={onRouteChange}
+            onRouteRemove={onRouteRemove}
+          />
+        )}
         {tab === 'Health' && <HealthTab node={node} flow={flow} analysis={analysis} />}
       </div>
     </aside>

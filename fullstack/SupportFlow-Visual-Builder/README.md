@@ -36,6 +36,8 @@ Selecting a node opens a detailed inspector with **Properties**, **Routes**, and
 
 Question or terminal text is edited against a single shared in-memory flow model, so changes update the canvas and Preview immediately. The imported challenge fixture is never mutated directly.
 
+The Routes tab supports authoring changes without touching JSON: add outbound routes, edit route labels, retarget routes to any existing node, remove routes, and create connected Question or Terminal nodes from the selected Start/Question node.
+
 ### Preview runner
 
 Preview mode runs the same live flow as a customer conversation:

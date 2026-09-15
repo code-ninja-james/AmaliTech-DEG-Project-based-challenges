@@ -114,6 +114,8 @@ Spatial mode provides an alternate topology view of the same six challenge nodes
 
 `⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, Preview, Flow Import, and Workflows.
 
+When the user is in Preview, X-Ray, or Spatial mode, a clear **Back to Build** action returns them to the main authoring canvas. Pressing `Esc` also acts as a back action when no modal or text field is active.
+
 ## Architecture
 
 ```text

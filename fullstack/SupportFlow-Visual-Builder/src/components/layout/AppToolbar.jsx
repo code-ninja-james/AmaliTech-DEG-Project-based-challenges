@@ -18,10 +18,13 @@ export default function AppToolbar({
   isPreviewMode,
   healthIssueCount,
   onModeChange,
+  onBackToBuild = () => {},
   onPreviewStart,
   onSpreadsheetImport,
   onWorkflowLibrary,
 }) {
+  const showBackToBuild = mode !== 'Build' && !isPreviewMode
+
   return (
     <header className="app-toolbar">
       <div className="app-brand">
@@ -48,6 +51,17 @@ export default function AppToolbar({
       </nav>
 
       <div className="app-toolbar__spacer" />
+
+      {showBackToBuild && (
+        <button
+          className="app-back-to-build"
+          type="button"
+          aria-label="Back to Build"
+          onClick={onBackToBuild}
+        >
+          ← Back to Build
+        </button>
+      )}
 
       <div className="app-mode-switch" role="group" aria-label="Editor mode">
         {['Build', 'X-Ray', 'Spatial'].map((item) => (

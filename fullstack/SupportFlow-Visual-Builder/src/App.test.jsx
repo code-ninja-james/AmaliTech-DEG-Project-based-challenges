@@ -191,6 +191,38 @@ describe('SupportFlow application', () => {
     expect(screen.getByRole('button', { name: 'Route to #6, route to node 6' })).toBeInTheDocument()
   })
 
+  it('rewires an existing route by dragging its canvas label onto another node', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('flow-node-3'))
+
+    const routeLabel = screen.getByRole('button', { name: 'Personal, route to node 6' })
+
+    fireEvent.pointerDown(routeLabel, {
+      clientX: 820,
+      clientY: 420,
+    })
+
+    expect(await screen.findByTestId('draft-connection')).toBeInTheDocument()
+
+    fireEvent.pointerUp(screen.getByTestId('flow-node-4'), {
+      clientX: 210,
+      clientY: 560,
+    })
+
+    expect(screen.getByRole('button', { name: 'Personal, route to node 4' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Personal, route to node 6' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Selected route label')).toHaveValue('Personal')
+    expect(screen.getByTestId('flow-node-4')).toHaveClass('flow-node--selected')
+  })
+
   it('deletes a terminal node and removes routes that targeted it', async () => {
     const user = userEvent.setup()
 

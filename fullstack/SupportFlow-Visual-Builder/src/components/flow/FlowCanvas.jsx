@@ -34,6 +34,7 @@ export default function FlowCanvas({
   onNodeSelect = () => {},
   onConnectionSelect = () => {},
   onRouteConnect = () => {},
+  onRouteReconnect = () => {},
 }) {
   const { canvas_size: canvasSize } = flow.meta
   const workspaceRef = useRef(null)
@@ -87,23 +88,23 @@ export default function FlowCanvas({
     [canvasRef, zoom],
   )
 
-  const getEventTargetNodeId = useCallback((event, sourceId) => {
+  const getEventTargetNodeId = useCallback((event, sourceId, allowSource = false) => {
     const element =
       event.target instanceof Element ? event.target.closest('[data-flow-node-id]') : null
     const targetId = element?.getAttribute('data-flow-node-id') ?? null
 
-    return targetId && targetId !== sourceId ? targetId : null
+    return targetId && (allowSource || targetId !== sourceId) ? targetId : null
   }, [])
 
   const getPointTargetNodeId = useCallback(
-    (point, sourceId) => {
+    (point, sourceId, allowSource = false) => {
       if (!point) {
         return null
       }
 
       return (
         Object.entries(nodeRects).find(([nodeId, rect]) => {
-          if (nodeId === sourceId) {
+          if (!allowSource && nodeId === sourceId) {
             return false
           }
 
@@ -128,9 +129,32 @@ export default function FlowCanvas({
       const point = getCanvasPoint(event) ?? { x: 0, y: 0 }
 
       onNodeSelect(sourceId)
-      setDraftRoute({ sourceId, point, targetId: null })
+      setDraftRoute({ type: 'create', sourceId, point, startPoint: point, targetId: null })
     },
     [getCanvasPoint, mode, onNodeSelect],
+  )
+
+  const handleRouteRewireStart = useCallback(
+    (connection, event) => {
+      if (mode !== 'Build') {
+        return
+      }
+
+      const point = getCanvasPoint(event) ?? { x: 0, y: 0 }
+
+      onConnectionSelect(connection)
+      setDraftRoute({
+        type: 'rewire',
+        sourceId: connection.sourceId,
+        optionIndex: connection.optionIndex,
+        sourceOptionCount: connection.sourceOptionCount,
+        point,
+        startPoint: point,
+        targetId: null,
+        hasMoved: false,
+      })
+    },
+    [getCanvasPoint, mode, onConnectionSelect],
   )
 
   useEffect(() => {
@@ -140,22 +164,38 @@ export default function FlowCanvas({
 
     const handlePointerMove = (event) => {
       const point = getCanvasPoint(event)
+      const allowSource = draftRoute.type === 'rewire'
       const targetId =
-        getEventTargetNodeId(event, draftRoute.sourceId) ??
-        getPointTargetNodeId(point, draftRoute.sourceId)
+        getEventTargetNodeId(event, draftRoute.sourceId, allowSource) ??
+        getPointTargetNodeId(point, draftRoute.sourceId, allowSource)
+      const dragDistance =
+        point && draftRoute.startPoint
+          ? Math.hypot(point.x - draftRoute.startPoint.x, point.y - draftRoute.startPoint.y)
+          : 0
 
       setDraftRoute((currentDraft) =>
-        currentDraft ? { ...currentDraft, point: point ?? currentDraft.point, targetId } : null,
+        currentDraft
+          ? {
+              ...currentDraft,
+              point: point ?? currentDraft.point,
+              targetId,
+              hasMoved: currentDraft.hasMoved || dragDistance > 4,
+            }
+          : null,
       )
     }
 
     const handlePointerUp = (event) => {
       const point = getCanvasPoint(event)
+      const allowSource = draftRoute.type === 'rewire'
+      const directTargetId = getEventTargetNodeId(event, draftRoute.sourceId, allowSource)
       const targetId =
-        getEventTargetNodeId(event, draftRoute.sourceId) ??
-        getPointTargetNodeId(point, draftRoute.sourceId)
+        directTargetId ?? getPointTargetNodeId(point, draftRoute.sourceId, allowSource)
+      const canCommitDrop = draftRoute.hasMoved || Boolean(directTargetId)
 
-      if (targetId) {
+      if (targetId && draftRoute.type === 'rewire' && canCommitDrop) {
+        onRouteReconnect(draftRoute.sourceId, draftRoute.optionIndex, targetId)
+      } else if (targetId && canCommitDrop) {
         onRouteConnect(draftRoute.sourceId, targetId)
       }
 
@@ -177,7 +217,14 @@ export default function FlowCanvas({
       window.removeEventListener('pointerup', handlePointerUp)
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [draftRoute, getCanvasPoint, getEventTargetNodeId, getPointTargetNodeId, onRouteConnect])
+  }, [
+    draftRoute,
+    getCanvasPoint,
+    getEventTargetNodeId,
+    getPointTargetNodeId,
+    onRouteConnect,
+    onRouteReconnect,
+  ])
 
   const handleFitView = () => {
     const workspace = workspaceRef.current
@@ -255,6 +302,7 @@ export default function FlowCanvas({
               selectedNodeId={selectedNodeId}
               selectedConnectionId={selectedConnectionId}
               onConnectionSelect={onConnectionSelect}
+              onRouteRewireStart={handleRouteRewireStart}
               mode={mode}
               reachableIds={analysis.reachable}
               cycleParticipantIds={analysis.cycleParticipants}

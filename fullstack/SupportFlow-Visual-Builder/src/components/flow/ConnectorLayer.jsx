@@ -83,6 +83,7 @@ export default function ConnectorLayer({
   selectedNodeId = null,
   selectedConnectionId = null,
   onConnectionSelect = () => {},
+  onRouteRewireStart = () => {},
   mode = 'Build',
   reachableIds = new Set(),
   cycleParticipantIds = new Set(),
@@ -284,6 +285,7 @@ export default function ConnectorLayer({
             : 0
         const labelWidth = getLabelWidth(connection.label)
         const isConnectionSelected = selectedConnectionId === connection.id
+        const canRewire = mode === 'Build'
 
         const isRelated =
           isConnectionSelected ||
@@ -358,6 +360,7 @@ export default function ConnectorLayer({
                 className={[
                   'connector-label',
                   isConnectionSelected ? 'connector-label--selected' : '',
+                  canRewire ? 'connector-label--draggable' : '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
@@ -367,6 +370,15 @@ export default function ConnectorLayer({
                 aria-pressed={isConnectionSelected}
                 aria-label={`${connection.label}, route to node ${connection.targetId}`}
                 data-testid={`connector-label-${connection.id}`}
+                onPointerDown={(event) => {
+                  if (!canRewire) {
+                    return
+                  }
+
+                  event.preventDefault()
+                  event.stopPropagation()
+                  onRouteRewireStart(connection, event)
+                }}
                 onClick={(event) => {
                   event.stopPropagation()
                   onConnectionSelect(connection)
@@ -380,6 +392,11 @@ export default function ConnectorLayer({
                   onConnectionSelect(connection)
                 }}
               >
+                <title>
+                  {canRewire
+                    ? `${connection.label}: click to edit, drag to change target`
+                    : `${connection.label}: route to node ${connection.targetId}`}
+                </title>
                 <rect
                   className="connector-label__background"
                   x={-labelWidth / 2}
@@ -408,10 +425,12 @@ export default function ConnectorLayer({
           {(() => {
             const sourceRect = nodeRects[draftConnection.sourceId]
             const sourceNode = nodeMap.get(draftConnection.sourceId)
-            const sourceOptionCount = (sourceNode?.options.length ?? 0) + 1
+            const sourceOptionCount =
+              draftConnection.sourceOptionCount ?? (sourceNode?.options.length ?? 0) + 1
+            const sourceOptionIndex = draftConnection.optionIndex ?? sourceOptionCount - 1
             const source = getBoundaryAnchor(
               sourceRect,
-              sourceOptionCount - 1,
+              sourceOptionIndex,
               sourceOptionCount,
               'bottom',
             )

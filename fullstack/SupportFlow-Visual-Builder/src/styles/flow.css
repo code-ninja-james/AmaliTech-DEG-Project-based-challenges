@@ -196,10 +196,17 @@
 }
 
 .connector-label {
-  cursor: pointer;
   pointer-events: auto;
   cursor: pointer;
   outline: none;
+}
+
+.connector-label--draggable {
+  cursor: grab;
+}
+
+.connector-label--draggable:active {
+  cursor: grabbing;
 }
 
 .connector-label__background {

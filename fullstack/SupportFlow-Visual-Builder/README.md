@@ -63,6 +63,8 @@ Selecting a node opens a detailed inspector with **Properties**, **Routes**, and
 
 Question or terminal text is edited against a single shared in-memory flow model, so changes update the canvas and Preview immediately. The imported challenge fixture is never mutated directly.
 
+The inspector header includes a **Canvas** back action so narrow layouts can jump from Properties, Routes, or Health back to the main Build canvas quickly.
+
 The Routes tab supports authoring changes without touching JSON: choose where a new outbound route should point before adding it, edit route labels, retarget routes to any existing node, remove routes, and create connected Question or Terminal nodes from the selected Start/Question node. Question and Terminal nodes can be deleted from Properties or with `Delete`/`Backspace`; the editor removes incoming routes automatically, keeps Start protected, and offers Undo after deletions.
 
 On the canvas, Start and Question nodes reveal a small `+` connector handle when selected, hovered, or focused. Drag it onto another node to create a new route visually; newly created and selected routes expose a focused label field in the inspector so the route name can be entered immediately. Existing route labels can also be dragged onto another node to change their target while keeping the route name. Selecting a route label exposes Delete route and lets `Delete`/`Backspace` remove the selected route.
@@ -113,8 +115,6 @@ Spatial mode provides an alternate topology view of the same six challenge nodes
 ### Command palette
 
 `⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, Preview, Flow Import, and Workflows.
-
-When the user is in Preview, X-Ray, or Spatial mode, a clear **Back to Build** action returns them to the main authoring canvas. Pressing `Esc` also acts as a back action when no modal or text field is active.
 
 ## Architecture
 

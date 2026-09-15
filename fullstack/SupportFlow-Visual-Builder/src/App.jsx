@@ -264,7 +264,11 @@ export default function App() {
     setIsPreviewing(false)
   }
 
-  const handleSpreadsheetImport = ({ flow: importedFlow, warnings = [] }) => {
+  const handleSpreadsheetImport = ({
+    flow: importedFlow,
+    warnings = [],
+    sourceLabel = 'import',
+  }) => {
     const startNode =
       importedFlow.nodes.find((node) => node.type === 'start') ?? importedFlow.nodes[0] ?? null
     const routeCount = importedFlow.nodes.reduce((count, node) => count + node.options.length, 0)
@@ -279,7 +283,7 @@ export default function App() {
     setDemoScenario('current')
     setIsSpreadsheetImporterOpen(false)
     setImportNotice({
-      message: `Imported ${importedFlow.nodes.length} nodes and ${routeCount} routes from spreadsheet.`,
+      message: `Imported ${importedFlow.nodes.length} nodes and ${routeCount} routes from ${sourceLabel}.`,
       warnings,
     })
   }

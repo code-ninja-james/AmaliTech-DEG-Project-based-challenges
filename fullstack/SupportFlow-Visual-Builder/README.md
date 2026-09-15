@@ -30,11 +30,13 @@ The product shell includes a searchable node navigator, visual graph, inspector 
 - Supports route labels, selection states, execution packets, minimap navigation, and canvas zoom controls.
 - Includes a searchable/collapsible node navigator.
 
-### Spreadsheet import
+### Flow import
 
-Support teams can convert an old Excel-style configuration into a visual flow without hand-authoring JSON. Open **Import sheet** in Build mode, paste rows copied from Excel, or upload a CSV/TSV export. The importer detects the useful header row, accepts flexible column names, groups repeated node rows into outbound routes, creates terminal placeholders for referenced endpoints that are missing from the sheet, and lays out nodes automatically when coordinates are absent.
+Support teams can convert an old Excel-style configuration into a visual flow without hand-authoring JSON. Open **Import flow** in Build mode, then paste SupportFlow JSON, paste rows copied from Excel, or upload `.json`, `.xlsx`, `.csv`, or `.tsv` files.
 
-Accepted spreadsheet shape:
+Native JSON imports accept the same `{ meta, nodes }` structure used by the app, plus flat `rows`, `data`, or `records` exports when they use spreadsheet-style headings. Excel and CSV/TSV imports detect the useful header row, accept flexible column names, group repeated node rows into outbound routes, create terminal placeholders for referenced endpoints that are missing from the sheet, and lay out nodes automatically when coordinates are absent.
+
+Accepted table shape for Excel, CSV/TSV, and flat JSON rows:
 
 | Flow field    | Example headings                             |
 | ------------- | -------------------------------------------- |
@@ -44,8 +46,6 @@ Accepted spreadsheet shape:
 | Route label   | `Route Label`, `Answer Label`, `Choice`      |
 | Next node     | `Next Node ID`, `Destination Node`, `Target` |
 | Position      | `X`, `Y`, `Canvas X`, `Canvas Y`             |
-
-For `.xlsx` workbooks, copy the relevant table from Excel or export the sheet as CSV/TSV first.
 
 **Business value:** this gives teams a practical migration path from the messy spreadsheet process described in the brief. A manager can bring existing support logic into the editor, visually inspect the generated tree, use Flow Health to catch bad references, and then refine routes or messages on the canvas.
 
@@ -104,7 +104,7 @@ Spatial mode provides an alternate topology view of the same six challenge nodes
 
 ### Command palette
 
-`⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, Preview, and Spreadsheet Import.
+`⌘K` / `Ctrl+K` opens a command palette for switching between Build, X-Ray, Spatial, Preview, and Flow Import.
 
 ## Architecture
 
@@ -119,7 +119,9 @@ flow_data.json
       |
       +--> FlowCanvas.jsx --------------> FlowNode.jsx
       |
-      +--> importSpreadsheetFlow.js ----> SpreadsheetImporter.jsx
+      +--> importJsonFlow.js / importExcelFlow.js / importSpreadsheetFlow.js
+      |                                      |
+      |                                  SpreadsheetImporter.jsx
       |
       +--> analyzeFlow.js / validateFlow.js --> X-Ray + Flow Health
       |
@@ -176,6 +178,8 @@ src/
 │   ├── analyzeFlow.js
 │   ├── createBezierPath.js
 │   ├── getConnections.js
+│   ├── importExcelFlow.js
+│   ├── importJsonFlow.js
 │   ├── importSpreadsheetFlow.js
 │   ├── traverseFlow.js
 │   └── validateFlow.js
@@ -226,7 +230,7 @@ Git hooks also enforce quality locally:
 
 ## Tests
 
-The suite covers node rendering, exact challenge coordinates, connector extraction, Bézier geometry, selection and editing, mode switching, Preview traversal/restart, Spreadsheet Import parsing, Flow Health rules, and navigator interactions.
+The suite covers node rendering, exact challenge coordinates, connector extraction, Bézier geometry, selection and editing, mode switching, Preview traversal/restart, JSON/Excel/Spreadsheet Import parsing, Flow Health rules, and navigator interactions.
 
 Run tests independently with:
 

@@ -13,6 +13,7 @@ export default function CommandPalette({
   onPreviewStart,
   onSpreadsheetImport,
   onWorkflowLibrary,
+  onAuditLog,
 }) {
   if (!open) {
     return null
@@ -48,6 +49,11 @@ export default function CommandPalette({
       label: 'Open Workflows',
       shortcut: 'W',
       action: onWorkflowLibrary,
+    },
+    {
+      label: 'Open Audit Log',
+      shortcut: 'A',
+      action: onAuditLog,
     },
   ]
 

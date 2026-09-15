@@ -17,10 +17,14 @@ export default function AppToolbar({
   mode,
   isPreviewMode,
   healthIssueCount,
+  auditEntryCount = 0,
+  currentUser,
   onModeChange,
   onPreviewStart,
   onSpreadsheetImport,
   onWorkflowLibrary,
+  onAuditLog,
+  onCurrentUserChange,
 }) {
   return (
     <header className="app-toolbar">
@@ -72,6 +76,28 @@ export default function AppToolbar({
             )}
           </button>
         ))}
+      </div>
+
+      <div className="app-toolbar__spacer" />
+
+      <div className="app-toolbar__security-actions">
+        <label className="app-current-user">
+          <span>User</span>
+          <input
+            aria-label="Current user"
+            value={currentUser}
+            onChange={(event) => onCurrentUserChange(event.target.value)}
+          />
+        </label>
+        <button
+          className="app-audit-button"
+          type="button"
+          aria-label={`Open audit log, ${auditEntryCount} entries`}
+          onClick={onAuditLog}
+        >
+          Audit
+          <span aria-hidden="true">{auditEntryCount}</span>
+        </button>
       </div>
 
       <div className="app-toolbar__spacer" />

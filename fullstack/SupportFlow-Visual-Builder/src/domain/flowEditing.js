@@ -170,3 +170,21 @@ export function removeRoute(flow, nodeId, optionIndex) {
     }),
   }
 }
+
+export function removeNode(flow, nodeId) {
+  const nodeToRemove = flow.nodes.find((node) => node.id === nodeId)
+
+  if (!nodeToRemove || nodeToRemove.type === 'start') {
+    return flow
+  }
+
+  return {
+    ...flow,
+    nodes: flow.nodes
+      .filter((node) => node.id !== nodeId)
+      .map((node) => ({
+        ...node,
+        options: node.options.filter((option) => option.nextId !== nodeId),
+      })),
+  }
+}

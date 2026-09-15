@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import flowData from '../../flow_data.json'
-import { addNode, addRoute, getNextNodeId, removeRoute, updateRoute } from './flowEditing.js'
+import {
+  addNode,
+  addRoute,
+  getNextNodeId,
+  removeNode,
+  removeRoute,
+  updateRoute,
+} from './flowEditing.js'
 
 describe('flow editing helpers', () => {
   it('creates connected question nodes without mutating the source flow', () => {
@@ -40,5 +47,17 @@ describe('flow editing helpers', () => {
     const nextFlow = addRoute(flowData, '4')
 
     expect(nextFlow.nodes.find((node) => node.id === '4').options).toEqual([])
+  })
+
+  it('removes question or terminal nodes and incoming routes that targeted them', () => {
+    const nextFlow = removeNode(flowData, '6')
+
+    expect(nextFlow.nodes.map((node) => node.id)).not.toContain('6')
+    expect(nextFlow.nodes.find((node) => node.id === '3').options).toEqual([])
+    expect(flowData.nodes.find((node) => node.id === '3').options).toHaveLength(2)
+  })
+
+  it('protects the start node from deletion', () => {
+    expect(removeNode(flowData, '1')).toBe(flowData)
   })
 })

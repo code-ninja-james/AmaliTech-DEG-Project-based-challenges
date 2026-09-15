@@ -21,7 +21,14 @@ import StatusBar from './components/layout/StatusBar.jsx'
 import PreviewRunner from './components/preview/PreviewRunner.jsx'
 import validateFlow from './domain/validateFlow.js'
 import getConnections from './domain/getConnections.js'
-import { addNode, addRoute, getNextNodeId, removeRoute, updateRoute } from './domain/flowEditing.js'
+import {
+  addNode,
+  addRoute,
+  getNextNodeId,
+  removeNode,
+  removeRoute,
+  updateRoute,
+} from './domain/flowEditing.js'
 import createXrayDemo from './domain/xrayDemo.js'
 import './styles/flow.css'
 import './styles/studio.css'
@@ -86,6 +93,20 @@ export default function App() {
 
   const handleRouteRemove = (nodeId, optionIndex) => {
     setFlow((currentFlow) => removeRoute(currentFlow, nodeId, optionIndex))
+    setSelectedConnectionId(null)
+  }
+
+  const handleNodeRemove = (nodeId) => {
+    const nextFlow = removeNode(flow, nodeId)
+
+    if (nextFlow === flow) {
+      return
+    }
+
+    setFlow(nextFlow)
+    setSelectedNodeId(
+      nextFlow.nodes.find((node) => node.type === 'start')?.id ?? nextFlow.nodes[0]?.id ?? null,
+    )
     setSelectedConnectionId(null)
   }
 
@@ -204,6 +225,7 @@ export default function App() {
             onRouteAdd={handleRouteAdd}
             onRouteChange={handleRouteChange}
             onRouteRemove={handleRouteRemove}
+            onNodeRemove={handleNodeRemove}
           />
         )}
 

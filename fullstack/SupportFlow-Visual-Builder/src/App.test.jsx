@@ -338,7 +338,7 @@ describe('SupportFlow application', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'Back to editor',
+        name: 'Back to Build',
       }),
     )
 
@@ -523,6 +523,13 @@ describe('SupportFlow application', () => {
     expect(screen.getByLabelText('Flow health')).toBeInTheDocument()
     expect(screen.getByText('No structural issues detected')).toBeInTheDocument()
     expect(screen.getByText(/X-RAY · 6\/6 reachable/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Back to Build' }))
+
+    expect(screen.queryByLabelText('Flow health')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Build', exact: true })).toHaveClass(
+      'app-mode-switch__button--active',
+    )
   })
 
   it('renders the Spatial topology mode', async () => {
@@ -538,6 +545,27 @@ describe('SupportFlow application', () => {
 
     expect(screen.getByLabelText('Spatial topology')).toBeInTheDocument()
     expect(screen.getByLabelText('Node inspector')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Back to Build' }))
+
+    expect(screen.queryByLabelText('Spatial topology')).not.toBeInTheDocument()
+    expect(screen.getByTestId('flow-canvas')).toBeInTheDocument()
+  })
+
+  it('uses Escape as a back action when no modal is open', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /Flow Health/ }))
+    expect(screen.getByLabelText('Flow health')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByLabelText('Flow health')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Build', exact: true })).toHaveClass(
+      'app-mode-switch__button--active',
+    )
   })
 
   it('selects a node from the navigator and updates the inspector', async () => {

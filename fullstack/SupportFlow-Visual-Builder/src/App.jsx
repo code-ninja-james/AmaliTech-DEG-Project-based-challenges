@@ -456,9 +456,34 @@ export default function App() {
       }
 
       if (event.key === 'Escape') {
+        const hasOpenOverlay =
+          isCommandPaletteOpen || isSpreadsheetImporterOpen || isWorkflowLibraryOpen
+
         setIsCommandPaletteOpen(false)
         setIsSpreadsheetImporterOpen(false)
         setIsWorkflowLibraryOpen(false)
+
+        if (hasOpenOverlay || isTextEditingTarget(event.target)) {
+          return
+        }
+
+        if (isPreviewing) {
+          event.preventDefault()
+          setIsPreviewing(false)
+          return
+        }
+
+        if (mode !== 'Build') {
+          event.preventDefault()
+          if (demoScenario !== 'current') {
+            setDemoScenario('current')
+            setSelectedConnectionId(null)
+            setRouteEditorFocusId(null)
+          }
+          setMode('Build')
+          setIsPreviewing(false)
+        }
+
         return
       }
 
@@ -498,6 +523,7 @@ export default function App() {
   }, [
     handleNodeRemove,
     handleRouteRemove,
+    demoScenario,
     isCommandPaletteOpen,
     isSpreadsheetImporterOpen,
     isWorkflowLibraryOpen,
@@ -517,6 +543,7 @@ export default function App() {
         isPreviewMode={isPreviewing}
         healthIssueCount={healthIssues.length}
         onModeChange={handleModeChange}
+        onBackToBuild={() => handleModeChange('Build')}
         onPreviewStart={handlePreviewStart}
         onSpreadsheetImport={() => setIsSpreadsheetImporterOpen(true)}
         onWorkflowLibrary={() => setIsWorkflowLibraryOpen(true)}

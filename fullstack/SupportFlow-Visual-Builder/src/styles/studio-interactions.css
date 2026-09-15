@@ -248,7 +248,24 @@
   font-size: 14px;
   font-weight: 600;
   line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.82);
+  transition:
+    opacity 0.16s ease-out,
+    transform 0.16s ease-out,
+    box-shadow 0.16s ease-out;
   user-select: none;
+}
+
+.flow-node:hover .flow-node__connect-handle,
+.flow-node:focus-within .flow-node__connect-handle,
+.flow-node--hovered .flow-node__connect-handle,
+.flow-node--selected .flow-node__connect-handle,
+.flow-node--connect-source .flow-node__connect-handle {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
 }
 
 .flow-node__connect-handle:hover,
@@ -927,6 +944,24 @@
   height: 5px;
   border-radius: 50%;
   background: var(--sf-node-start);
+}
+
+.studio-inspector__selected-route-delete {
+  width: 100%;
+  min-height: 30px;
+  margin-top: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.24);
+  border-radius: 3px;
+  background: rgba(239, 68, 68, 0.06);
+  color: rgba(255, 143, 143, 0.92);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+
+.studio-inspector__selected-route-delete:hover {
+  border-color: rgba(239, 68, 68, 0.42);
+  background: rgba(239, 68, 68, 0.12);
 }
 
 /* X-Ray rail -------------------------------------------------------------- */

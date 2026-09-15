@@ -189,6 +189,28 @@ export default function App() {
     setRouteEditorFocusId(routeEditorFocusId === selectedConnection?.id ? nextConnectionId : null)
   }
 
+  const handleRouteReconnect = (nodeId, optionIndex, targetNodeId) => {
+    const sourceNode = flow.nodes.find((node) => node.id === nodeId)
+    const targetNode = flow.nodes.find((node) => node.id === targetNodeId)
+    const route = sourceNode?.options[optionIndex]
+
+    if (!sourceNode || sourceNode.type === 'end' || !targetNode || !route) {
+      return
+    }
+
+    const nextConnectionId = `${nodeId}-${optionIndex}-${targetNodeId}`
+
+    setDeleteUndo(null)
+    setImportNotice(null)
+    setWorkflowNotice(null)
+    setFlow((currentFlow) =>
+      updateRoute(currentFlow, nodeId, optionIndex, { nextId: targetNodeId }),
+    )
+    setSelectedNodeId(targetNodeId)
+    setSelectedConnectionId(nextConnectionId)
+    setRouteEditorFocusId(null)
+  }
+
   const handleRouteRemove = useCallback(
     (nodeId, optionIndex) => {
       const sourceNode = flow.nodes.find((node) => node.id === nodeId)
@@ -521,6 +543,7 @@ export default function App() {
             onNodeSelect={handleNodeSelect}
             onConnectionSelect={handleConnectionSelect}
             onRouteConnect={handleRouteConnect}
+            onRouteReconnect={handleRouteReconnect}
           />
         )}
 

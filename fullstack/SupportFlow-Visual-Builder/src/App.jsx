@@ -21,10 +21,12 @@ import StatusBar from './components/layout/StatusBar.jsx'
 import PreviewRunner from './components/preview/PreviewRunner.jsx'
 import validateFlow from './domain/validateFlow.js'
 import getConnections from './domain/getConnections.js'
+import createXrayDemo from './domain/xrayDemo.js'
 import './styles/flow.css'
 import './styles/studio.css'
 import './styles/studio-interactions.css'
 import './styles/command-palette.css'
+import './styles/xray-demo.css'
 
 export default function App() {
   const [flow, setFlow] = useState(flowData)
@@ -33,14 +35,21 @@ export default function App() {
   const [mode, setMode] = useState('Build')
   const [isPreviewing, setIsPreviewing] = useState(false)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
+  const [demoScenario, setDemoScenario] = useState('current')
+
+  const displayFlow = useMemo(
+    () => (mode === 'X-Ray' ? createXrayDemo(flow, demoScenario) : flow),
+    [flow, mode, demoScenario],
+  )
+  const isDemo = mode === 'X-Ray' && demoScenario !== 'current'
 
   const selectedNode = flow.nodes.find((node) => node.id === selectedNodeId) ?? null
-  const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
+  const connections = useMemo(() => getConnections(displayFlow.nodes), [displayFlow.nodes])
 
   const selectedConnection =
     connections.find((connection) => connection.id === selectedConnectionId) ?? null
 
-  const healthIssues = useMemo(() => validateFlow(flow.nodes), [flow.nodes])
+  const healthIssues = useMemo(() => validateFlow(displayFlow.nodes), [displayFlow.nodes])
 
   const handleNodeTextChange = (nodeId, nextText) => {
     setFlow((currentFlow) => ({
@@ -63,15 +72,26 @@ export default function App() {
 
   const handleConnectionSelect = (connection) => {
     setSelectedConnectionId(connection.id)
-    setSelectedNodeId(connection.targetId)
+    setSelectedNodeId(
+      displayFlow.nodes.some((node) => node.id === connection.targetId)
+        ? connection.targetId
+        : connection.sourceId,
+    )
+  }
+
+  const handleDemoChange = (scenarioId) => {
+    setDemoScenario(scenarioId)
+    setSelectedConnectionId(null)
   }
 
   const handleModeChange = (nextMode) => {
+    if (nextMode !== 'X-Ray' && demoScenario !== 'current') handleDemoChange('current')
     setMode(nextMode)
     setIsPreviewing(false)
   }
 
   const handlePreviewStart = () => {
+    handleDemoChange('current')
     const startNode = flow.nodes.find((node) => node.type === 'start')
 
     if (startNode) {
@@ -120,7 +140,7 @@ export default function App() {
 
       <div className="editor-layout">
         <NodeNavigator
-          flow={flow}
+          flow={displayFlow}
           selectedNodeId={selectedNodeId}
           onNodeSelect={handleNodeSelect}
         />
@@ -135,8 +155,9 @@ export default function App() {
 
         {mode !== 'Spatial' && !isPreviewing && (
           <FlowCanvas
-            flow={flow}
+            flow={displayFlow}
             mode={mode}
+            isDemo={isDemo}
             selectedNodeId={selectedNodeId}
             selectedConnectionId={selectedConnectionId}
             onNodeSelect={handleNodeSelect}
@@ -158,11 +179,20 @@ export default function App() {
           />
         )}
 
-        {mode === 'X-Ray' && !isPreviewing && <FlowHealthPanel flow={flow} issues={healthIssues} />}
+        {mode === 'X-Ray' && !isPreviewing && (
+          <FlowHealthPanel
+            flow={displayFlow}
+            issues={healthIssues}
+            demoScenario={demoScenario}
+            onDemoChange={handleDemoChange}
+            onNodeSelect={handleNodeSelect}
+          />
+        )}
       </div>
 
       <StatusBar
-        flow={flow}
+        flow={displayFlow}
+        isDemo={isDemo}
         selectedNodeId={selectedNodeId}
         mode={displayMode}
         onCommandPalette={() => setIsCommandPaletteOpen(true)}

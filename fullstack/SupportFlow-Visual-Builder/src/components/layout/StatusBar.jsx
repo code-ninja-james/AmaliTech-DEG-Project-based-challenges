@@ -6,14 +6,20 @@
  * wired to a real application action rather than being decorative chrome.
  */
 
-export default function StatusBar({ flow, selectedNodeId, mode, onCommandPalette = null }) {
+export default function StatusBar({
+  flow,
+  selectedNodeId,
+  mode,
+  isDemo = false,
+  onCommandPalette = null,
+}) {
   const edgeCount = flow.nodes.reduce((count, node) => count + node.options.length, 0)
 
   const modeClass = mode.toLowerCase().replaceAll(' ', '-')
 
   return (
     <footer className="status-bar">
-      <span>flow_data.json</span>
+      <span>{isDemo ? 'Diagnostic demo · temporary' : 'flow_data.json'}</span>
       <span className="status-bar__divider" />
       <span>
         {flow.nodes.length} nodes · {edgeCount} edges

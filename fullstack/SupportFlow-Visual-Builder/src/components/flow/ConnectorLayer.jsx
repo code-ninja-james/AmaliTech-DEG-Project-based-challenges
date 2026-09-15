@@ -85,6 +85,7 @@ export default function ConnectorLayer({
   onConnectionSelect = () => {},
   mode = 'Build',
   reachableIds = new Set(),
+  cycleParticipantIds = new Set(),
 }) {
   const incomingPositions = getIncomingPositions(connections)
   const parallelRoutePositions = getParallelRoutePositions(connections)
@@ -132,6 +133,22 @@ export default function ConnectorLayer({
         >
           <path d="M 0 0 L 7 3.5 L 0 7 Z" fill="rgba(16,185,129,0.48)" />
         </marker>
+        {[
+          ['error', '#ef4444'],
+          ['cycle', '#4f8ff7'],
+        ].map(([kind, color]) => (
+          <marker
+            key={kind}
+            id={`supportflow-arrow-${kind}`}
+            markerWidth="7"
+            markerHeight="7"
+            refX="6"
+            refY="3.5"
+            orient="auto"
+          >
+            <path d="M 0 0 L 7 3.5 L 0 7 Z" fill={color} />
+          </marker>
+        ))}
 
         {connections.map((connection) => {
           const sourceNode = nodeMap.get(connection.sourceId)
@@ -187,7 +204,7 @@ export default function ConnectorLayer({
         const targetRect = nodeRects[connection.targetId]
         const sourceNode = nodeMap.get(connection.sourceId)
 
-        if (!sourceRect || !targetRect) {
+        if (!sourceRect) {
           return null
         }
 
@@ -198,6 +215,37 @@ export default function ConnectorLayer({
           connection.sourceOptionCount,
           'bottom',
         )
+
+        if (!targetRect) {
+          if (!isXray || nodeMap.has(connection.targetId)) return null
+
+          // A missing target has no DOM rectangle. Show an explicit dangling
+          // route instead of silently dropping the edge from the diagnostic view.
+          const end = { x: source.x + 64, y: source.y + 68 }
+          return (
+            <g
+              key={connection.id}
+              className="connector-broken"
+              data-testid={`broken-connection-${connection.id}`}
+            >
+              <title>
+                {connection.label}: missing node #{connection.targetId}
+              </title>
+              <path
+                d={createBezierPath(source, end)}
+                fill="none"
+                stroke="#ef4444"
+                strokeWidth="1.5"
+                strokeDasharray="5 3"
+              />
+              <circle cx={end.x} cy={end.y} r="4" fill="#1a0505" stroke="#ef4444" />
+              <text x={end.x + 9} y={end.y + 3}>
+                Missing target
+              </text>
+            </g>
+          )
+        }
+
         const target = getBoundaryAnchor(
           targetRect,
           incomingPosition.index,
@@ -205,8 +253,15 @@ export default function ConnectorLayer({
           'top',
         )
 
-        const path = createBezierPath(source, target)
-        const labelPosition = getBezierPoint(source, target, 0.46)
+        const isSelfLoop = connection.sourceId === connection.targetId
+        const loopX = sourceRect.x + sourceRect.width + 76
+        const loopY = (source.y + target.y) / 2
+        const path = isSelfLoop
+          ? `M ${source.x} ${source.y} C ${source.x} ${source.y + 60}, ${loopX} ${source.y + 60}, ${loopX} ${loopY} C ${loopX} ${target.y - 60}, ${target.x} ${target.y - 60}, ${target.x} ${target.y}`
+          : createBezierPath(source, target)
+        const labelPosition = isSelfLoop
+          ? { x: loopX, y: loopY }
+          : getBezierPoint(source, target, 0.46)
         const parallelPosition = parallelRoutePositions.get(connection.id) ?? {
           index: 0,
           count: 1,
@@ -225,18 +280,23 @@ export default function ConnectorLayer({
           selectedNodeId === connection.targetId
         const xrayReachable =
           reachableIds.has(connection.sourceId) && reachableIds.has(connection.targetId)
+        const isCycleRoute =
+          cycleParticipantIds.has(connection.sourceId) &&
+          cycleParticipantIds.has(connection.targetId)
         const sourceColor = TYPE_COLOR[sourceNode?.type] ?? '#4f8ff7'
         const pathLength = Math.hypot(target.x - source.x, target.y - source.y)
         const packetDuration = `${(2.8 + pathLength / 380).toFixed(2)}s`
         const showPacket =
           !noMotion && ((!isXray && isRelated) || (isXray && isRelated && xrayReachable))
 
-        const stroke = isRelated
-          ? `url(#connector-gradient-${connection.id})`
-          : isXray
-            ? xrayReachable
-              ? 'rgba(16,185,129,0.22)'
-              : 'rgba(239,68,68,0.35)'
+        const stroke = isXray
+          ? !xrayReachable
+            ? 'rgba(239,68,68,0.65)'
+            : isCycleRoute
+              ? 'rgba(79,143,247,0.8)'
+              : 'rgba(16,185,129,0.45)'
+          : isRelated
+            ? `url(#connector-gradient-${connection.id})`
             : 'rgba(255,255,255,0.08)'
 
         return (
@@ -250,10 +310,14 @@ export default function ConnectorLayer({
               strokeWidth={isRelated ? 1.7 : 1}
               strokeDasharray={isXray && !xrayReachable ? '5 3' : undefined}
               markerEnd={
-                isRelated
-                  ? 'url(#supportflow-arrow-related)'
-                  : isXray
-                    ? 'url(#supportflow-arrow-xray)'
+                isXray
+                  ? !xrayReachable
+                    ? 'url(#supportflow-arrow-error)'
+                    : isCycleRoute
+                      ? 'url(#supportflow-arrow-cycle)'
+                      : 'url(#supportflow-arrow-xray)'
+                  : isRelated
+                    ? 'url(#supportflow-arrow-related)'
                     : 'url(#supportflow-arrow)'
               }
             />
@@ -278,7 +342,7 @@ export default function ConnectorLayer({
 
             <circle className="connector-port" cx={source.x} cy={source.y} r="3" />
 
-            {(isRelated || !selectedNodeId) && (
+            {(isRelated || !selectedNodeId || (isXray && isCycleRoute)) && (
               <g
                 className={[
                   'connector-label',

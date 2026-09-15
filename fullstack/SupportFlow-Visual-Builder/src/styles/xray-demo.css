@@ -1,0 +1,94 @@
+.studio-xray__demo {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.studio-xray__demo label {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.studio-xray__demo select {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+  background: #14141e;
+  color: #e2e2ea;
+  font: inherit;
+  font-size: 11px;
+  color-scheme: dark;
+}
+
+.studio-xray__demo p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.studio-xray__demo .studio-xray__demo-notice {
+  color: #e0b76b;
+}
+
+.studio-xray__demo button,
+.studio-xray__validation-list button {
+  justify-self: start;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  background: transparent;
+  color: #dcdce6;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.studio-xray__demo button:hover,
+.studio-xray__validation-list button:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.studio-xray__demo :focus-visible,
+.studio-xray__validation-list button:focus-visible {
+  outline: 2px solid #4f8ff7;
+  outline-offset: 3px;
+}
+
+.flow-node.flow-node--xray-cycle:not(.flow-node--xray-error):not(.flow-node--xray-broken) {
+  border-color: #4f8ff7 !important;
+  background: #081326 !important;
+}
+
+.flow-node.flow-node--xray-broken {
+  border-color: #ef4444 !important;
+  background: #1a0505 !important;
+}
+
+.flow-node__diagnostic {
+  margin: 6px 0;
+  color: #ff8f8f;
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+}
+
+.flow-node--xray-cycle:not(.flow-node--xray-error):not(.flow-node--xray-broken)
+  .flow-node__diagnostic {
+  color: #9ac1ff;
+}
+
+.connector-broken text {
+  fill: #ff8f8f;
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+}
+
+.minimap__node.minimap__node--cycle:not(.minimap__node--error) {
+  fill: #4f8ff7;
+  stroke: #9ac1ff;
+}

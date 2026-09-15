@@ -94,10 +94,10 @@ export default function PreviewRunner({ flow, onBack = null, onNodeSelect = () =
           <button
             type="button"
             className="studio-preview__back"
-            aria-label="Back to Build"
+            aria-label="Back to editor"
             onClick={onBack}
           >
-            ← Back to Build
+            ← Back to editor
           </button>
         ) : (
           <span />

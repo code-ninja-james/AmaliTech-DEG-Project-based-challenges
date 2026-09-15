@@ -338,7 +338,7 @@ describe('SupportFlow application', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'Back to Build',
+        name: 'Back to editor',
       }),
     )
 
@@ -523,13 +523,6 @@ describe('SupportFlow application', () => {
     expect(screen.getByLabelText('Flow health')).toBeInTheDocument()
     expect(screen.getByText('No structural issues detected')).toBeInTheDocument()
     expect(screen.getByText(/X-RAY · 6\/6 reachable/)).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Back to Build' }))
-
-    expect(screen.queryByLabelText('Flow health')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Build', exact: true })).toHaveClass(
-      'app-mode-switch__button--active',
-    )
   })
 
   it('renders the Spatial topology mode', async () => {
@@ -545,27 +538,51 @@ describe('SupportFlow application', () => {
 
     expect(screen.getByLabelText('Spatial topology')).toBeInTheDocument()
     expect(screen.getByLabelText('Node inspector')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Back to Build' }))
-
-    expect(screen.queryByLabelText('Spatial topology')).not.toBeInTheDocument()
-    expect(screen.getByTestId('flow-canvas')).toBeInTheDocument()
   })
 
-  it('uses Escape as a back action when no modal is open', async () => {
+  it('returns from the inspector area to the build canvas', async () => {
+    const user = userEvent.setup()
+    const scrollIntoView = vi.fn()
+    const originalScrollIntoView = window.HTMLElement.prototype.scrollIntoView
+
+    Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    })
+
+    try {
+      render(<App />)
+
+      await user.click(screen.getByTestId('flow-node-2'))
+      await user.click(screen.getByRole('button', { name: 'Routes' }))
+      await user.click(screen.getByRole('button', { name: 'Back to canvas' }))
+
+      expect(scrollIntoView).toHaveBeenCalled()
+      expect(screen.getByTestId('flow-canvas')).toBeInTheDocument()
+    } finally {
+      if (originalScrollIntoView) {
+        Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+          configurable: true,
+          value: originalScrollIntoView,
+        })
+      } else {
+        delete window.HTMLElement.prototype.scrollIntoView
+      }
+    }
+  })
+
+  it('returns from preview to the build canvas from the inspector area', async () => {
     const user = userEvent.setup()
 
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: /Flow Health/ }))
-    expect(screen.getByLabelText('Flow health')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Play preview' }))
+    expect(screen.getByRole('region', { name: 'Flow preview' })).toBeInTheDocument()
 
-    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: 'Back to canvas' }))
 
-    expect(screen.queryByLabelText('Flow health')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Build', exact: true })).toHaveClass(
-      'app-mode-switch__button--active',
-    )
+    expect(screen.queryByRole('region', { name: 'Flow preview' })).not.toBeInTheDocument()
+    expect(screen.getByTestId('flow-canvas')).toBeInTheDocument()
   })
 
   it('selects a node from the navigator and updates the inspector', async () => {

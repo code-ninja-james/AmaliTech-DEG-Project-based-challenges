@@ -456,34 +456,9 @@ export default function App() {
       }
 
       if (event.key === 'Escape') {
-        const hasOpenOverlay =
-          isCommandPaletteOpen || isSpreadsheetImporterOpen || isWorkflowLibraryOpen
-
         setIsCommandPaletteOpen(false)
         setIsSpreadsheetImporterOpen(false)
         setIsWorkflowLibraryOpen(false)
-
-        if (hasOpenOverlay || isTextEditingTarget(event.target)) {
-          return
-        }
-
-        if (isPreviewing) {
-          event.preventDefault()
-          setIsPreviewing(false)
-          return
-        }
-
-        if (mode !== 'Build') {
-          event.preventDefault()
-          if (demoScenario !== 'current') {
-            setDemoScenario('current')
-            setSelectedConnectionId(null)
-            setRouteEditorFocusId(null)
-          }
-          setMode('Build')
-          setIsPreviewing(false)
-        }
-
         return
       }
 
@@ -523,7 +498,6 @@ export default function App() {
   }, [
     handleNodeRemove,
     handleRouteRemove,
-    demoScenario,
     isCommandPaletteOpen,
     isSpreadsheetImporterOpen,
     isWorkflowLibraryOpen,
@@ -535,6 +509,33 @@ export default function App() {
 
   const displayMode = isPreviewing ? 'Preview' : mode
 
+  const handleInspectorBackToCanvas = () => {
+    if (mode !== 'Build' || isPreviewing) {
+      handleModeChange('Build')
+    }
+
+    const scrollToCanvas = () => {
+      const canvas = document.querySelector('.flow-workspace')
+
+      if (typeof canvas?.scrollIntoView !== 'function') {
+        return
+      }
+
+      canvas.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'smooth' })
+    }
+
+    if (mode !== 'Build' || isPreviewing) {
+      if (typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(scrollToCanvas)
+      } else {
+        window.setTimeout(scrollToCanvas, 0)
+      }
+      return
+    }
+
+    scrollToCanvas()
+  }
+
   return (
     <main className="app-shell">
       <AppToolbar
@@ -543,7 +544,6 @@ export default function App() {
         isPreviewMode={isPreviewing}
         healthIssueCount={healthIssues.length}
         onModeChange={handleModeChange}
-        onBackToBuild={() => handleModeChange('Build')}
         onPreviewStart={handlePreviewStart}
         onSpreadsheetImport={() => setIsSpreadsheetImporterOpen(true)}
         onWorkflowLibrary={() => setIsWorkflowLibraryOpen(true)}
@@ -598,6 +598,7 @@ export default function App() {
             onRouteChange={handleRouteChange}
             onRouteRemove={handleRouteRemove}
             onNodeRemove={handleNodeRemove}
+            onBackToCanvas={handleInspectorBackToCanvas}
           />
         )}
 

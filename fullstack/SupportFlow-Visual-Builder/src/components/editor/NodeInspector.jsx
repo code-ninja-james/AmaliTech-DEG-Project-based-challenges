@@ -385,6 +385,7 @@ export default function NodeInspector({
   onRouteChange = () => {},
   onRouteRemove = () => {},
   onNodeRemove = () => {},
+  onBackToCanvas = () => {},
 }) {
   const [tab, setTab] = useState('Properties')
   const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
@@ -411,6 +412,14 @@ export default function NodeInspector({
         <span style={{ color: meta.color }}>{meta.glyph}</span>
         <strong style={{ color: meta.color }}>{meta.label}</strong>
         <code style={{ color: meta.color }}>#{node.id}</code>
+        <button
+          type="button"
+          className="studio-inspector__canvas-back"
+          aria-label="Back to canvas"
+          onClick={onBackToCanvas}
+        >
+          ← Canvas
+        </button>
       </header>
       {selectedConnection && (
         <section className="studio-inspector__selected-route">

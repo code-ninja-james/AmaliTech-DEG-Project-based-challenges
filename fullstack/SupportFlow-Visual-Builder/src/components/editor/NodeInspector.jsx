@@ -9,6 +9,7 @@
 import { useMemo, useState } from 'react'
 
 import analyzeFlow from '../../domain/analyzeFlow.js'
+import { getDefaultRouteTargetId } from '../../domain/flowEditing.js'
 
 const NODE_META = {
   start: { label: 'START', glyph: '▶', color: '#10b981' },
@@ -146,6 +147,14 @@ function RoutesTab({
   const meta = NODE_META[node.type] ?? NODE_META.question
   const nodeMap = new Map(flow.nodes.map((candidate) => [candidate.id, candidate]))
   const canAddRoutes = node.type !== 'end'
+  const defaultNewRouteTargetId = useMemo(
+    () => getDefaultRouteTargetId(flow.nodes, node.id),
+    [flow.nodes, node.id],
+  )
+  const [newRouteTargetId, setNewRouteTargetId] = useState(defaultNewRouteTargetId)
+  const selectedNewRouteTargetId = nodeMap.has(newRouteTargetId)
+    ? newRouteTargetId
+    : defaultNewRouteTargetId
 
   return (
     <div className="studio-inspector__tab-content">
@@ -238,9 +247,25 @@ function RoutesTab({
 
       {canAddRoutes ? (
         <div className="studio-inspector__route-actions">
-          <button type="button" onClick={() => onRouteAdd(node.id)}>
-            Add route
-          </button>
+          <div className="studio-inspector__route-creator">
+            <label>
+              <span>New route target</span>
+              <select
+                aria-label="New route target"
+                value={selectedNewRouteTargetId}
+                onChange={(event) => setNewRouteTargetId(event.target.value)}
+              >
+                {flow.nodes.map((targetNode) => (
+                  <option key={targetNode.id} value={targetNode.id}>
+                    #{targetNode.id} {NODE_META[targetNode.type]?.label ?? targetNode.type}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="button" onClick={() => onRouteAdd(node.id, selectedNewRouteTargetId)}>
+              Add route
+            </button>
+          </div>
           <button
             type="button"
             onClick={() => onNodeAdd({ type: 'question', sourceNodeId: node.id })}

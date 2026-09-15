@@ -21,6 +21,7 @@ import StatusBar from './components/layout/StatusBar.jsx'
 import PreviewRunner from './components/preview/PreviewRunner.jsx'
 import validateFlow from './domain/validateFlow.js'
 import getConnections from './domain/getConnections.js'
+import { addNode, addRoute, getNextNodeId, removeRoute, updateRoute } from './domain/flowEditing.js'
 import createXrayDemo from './domain/xrayDemo.js'
 import './styles/flow.css'
 import './styles/studio.css'
@@ -63,6 +64,29 @@ export default function App() {
           : node,
       ),
     }))
+  }
+
+  const handleNodeAdd = ({ type, sourceNodeId = selectedNodeId }) => {
+    const nextNodeId = getNextNodeId(flow.nodes)
+
+    setFlow((currentFlow) => addNode(currentFlow, { id: nextNodeId, type, sourceNodeId }))
+    setSelectedNodeId(nextNodeId)
+    setSelectedConnectionId(null)
+  }
+
+  const handleRouteAdd = (nodeId) => {
+    setFlow((currentFlow) => addRoute(currentFlow, nodeId))
+    setSelectedConnectionId(null)
+  }
+
+  const handleRouteChange = (nodeId, optionIndex, patch) => {
+    setFlow((currentFlow) => updateRoute(currentFlow, nodeId, optionIndex, patch))
+    setSelectedConnectionId(null)
+  }
+
+  const handleRouteRemove = (nodeId, optionIndex) => {
+    setFlow((currentFlow) => removeRoute(currentFlow, nodeId, optionIndex))
+    setSelectedConnectionId(null)
   }
 
   const handleNodeSelect = (nodeId) => {
@@ -176,6 +200,10 @@ export default function App() {
             flow={flow}
             selectedConnection={selectedConnection}
             onTextChange={handleNodeTextChange}
+            onNodeAdd={handleNodeAdd}
+            onRouteAdd={handleRouteAdd}
+            onRouteChange={handleRouteChange}
+            onRouteRemove={handleRouteRemove}
           />
         )}
 

@@ -59,6 +59,51 @@ describe('SupportFlow application', () => {
     ).toBeInTheDocument()
   })
 
+  it('adds a connected question node from the Routes tab', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Routes' }))
+    await user.click(screen.getByRole('button', { name: 'Add question node' }))
+
+    expect(screen.getByTestId('flow-node-7')).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-7')).toHaveClass('flow-node--selected')
+    expect(screen.getByLabelText('Question Text')).toHaveValue('New question')
+    expect(
+      within(screen.getByTestId('flow-node-2')).getByText('New question route'),
+    ).toBeInTheDocument()
+
+    await user.clear(screen.getByLabelText('Question Text'))
+    await user.type(screen.getByLabelText('Question Text'), 'Do you see router lights?')
+
+    expect(
+      within(screen.getByTestId('flow-node-7')).getByText('Do you see router lights?'),
+    ).toBeInTheDocument()
+  })
+
+  it('adds, edits and removes routes from an existing question node', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Routes' }))
+    await user.click(screen.getByRole('button', { name: 'Add route' }))
+    await user.clear(screen.getByLabelText('Route 2 label'))
+    await user.type(screen.getByLabelText('Route 2 label'), 'Escalate')
+    await user.selectOptions(screen.getByLabelText('Route 2 target'), '6')
+
+    expect(within(screen.getByTestId('flow-node-2')).getByText('Escalate')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Escalate, route to node 6' })).toBeInTheDocument()
+
+    await user.click(screen.getAllByRole('button', { name: 'Remove' })[2])
+
+    expect(
+      within(screen.getByTestId('flow-node-2')).queryByText('Escalate'),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Route 2 label')).not.toBeInTheDocument()
+  })
+
   it('switches from the graph to the Make-style preview and back', async () => {
     const user = userEvent.setup()
 

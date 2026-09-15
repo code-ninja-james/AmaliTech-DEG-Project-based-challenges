@@ -585,6 +585,21 @@
   font-size: 8px;
 }
 
+.studio-inspector__route-card header button {
+  padding: 3px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.42);
+  cursor: pointer;
+  font-size: 9px;
+}
+
+.studio-inspector__route-card header button:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: rgba(255, 143, 143, 0.92);
+}
+
 .studio-inspector__route-accent {
   width: 2px;
   height: 10px;
@@ -616,6 +631,75 @@
 
 .studio-inspector__route-missing {
   color: rgba(239, 68, 68, 0.76) !important;
+}
+
+.studio-inspector__route-fields {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+.studio-inspector__route-fields label {
+  display: grid;
+  gap: 5px;
+}
+
+.studio-inspector__route-fields label span {
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.studio-inspector__route-fields input,
+.studio-inspector__route-fields select {
+  width: 100%;
+  min-height: 30px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.7);
+  font: inherit;
+  font-size: 11px;
+}
+
+.studio-inspector__route-fields input:focus,
+.studio-inspector__route-fields select:focus {
+  border-color: rgba(79, 143, 247, 0.5);
+  outline: 0;
+}
+
+.studio-inspector__route-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.studio-inspector__route-actions button {
+  min-height: 31px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.66);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+
+.studio-inspector__route-actions button:hover {
+  border-color: rgba(79, 143, 247, 0.42);
+  background: rgba(79, 143, 247, 0.08);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.studio-inspector__route-help {
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 10px;
+  line-height: 1.6;
 }
 
 .studio-inspector__metrics {

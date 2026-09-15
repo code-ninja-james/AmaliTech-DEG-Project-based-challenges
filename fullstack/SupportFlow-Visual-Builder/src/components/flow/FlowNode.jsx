@@ -108,10 +108,10 @@ export default function FlowNode({
 
         {node.options.length > 0 && (
           <div className="flow-node__route-list">
-            {node.options.map((option) => (
+            {node.options.map((option, optionIndex) => (
               <div
                 className="flow-node__route-preview"
-                key={`${node.id}-${option.nextId}-${option.label}`}
+                key={`${node.id}-${optionIndex}-${option.nextId}-${option.label}`}
               >
                 <span className="flow-node__route-accent" aria-hidden="true" />
                 <span>{option.label}</span>

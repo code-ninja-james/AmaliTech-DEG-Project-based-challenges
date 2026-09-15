@@ -695,6 +695,34 @@
   color: rgba(255, 255, 255, 0.86);
 }
 
+.studio-inspector__node-actions {
+  display: grid;
+  gap: 7px;
+}
+
+.studio-inspector__node-actions button {
+  min-height: 31px;
+  border: 1px solid rgba(239, 68, 68, 0.24);
+  border-radius: 3px;
+  background: rgba(239, 68, 68, 0.06);
+  color: rgba(255, 143, 143, 0.92);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+
+.studio-inspector__node-actions button:hover {
+  border-color: rgba(239, 68, 68, 0.42);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.studio-inspector__node-actions p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
 .studio-inspector__route-help {
   margin: 10px 0 0;
   color: rgba(255, 255, 255, 0.34);

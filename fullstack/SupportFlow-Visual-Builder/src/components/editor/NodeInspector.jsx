@@ -35,9 +35,10 @@ function PropertyRow({ label, value, mono = false }) {
   )
 }
 
-function PropertiesTab({ node, analysis, onTextChange }) {
+function PropertiesTab({ node, analysis, onTextChange, onNodeRemove }) {
   const size = NODE_SIZE[node.type] ?? { width: 180, height: 80 }
   const textFieldLabel = node.type === 'end' ? 'Message Text' : 'Question Text'
+  const canDeleteNode = node.type !== 'start'
 
   return (
     <div className="studio-inspector__tab-content">
@@ -69,6 +70,22 @@ function PropertiesTab({ node, analysis, onTextChange }) {
       <PropertyRow label="Size" value={`${size.width} × ${size.height}`} mono />
       <PropertyRow label="Routes" value={String(node.options.length)} />
       <PropertyRow label="Storage" value="In-memory session" />
+
+      <div className="studio-inspector__separator" />
+      <SectionLabel>Node Actions</SectionLabel>
+
+      {canDeleteNode ? (
+        <div className="studio-inspector__node-actions">
+          <button type="button" onClick={() => onNodeRemove(node.id)}>
+            Delete node
+          </button>
+          <p>Removes this node and any routes that point to it.</p>
+        </div>
+      ) : (
+        <p className="studio-inspector__route-help">
+          Start is the entry point and cannot be deleted.
+        </p>
+      )}
     </div>
   )
 }
@@ -294,6 +311,7 @@ export default function NodeInspector({
   onRouteAdd = () => {},
   onRouteChange = () => {},
   onRouteRemove = () => {},
+  onNodeRemove = () => {},
 }) {
   const [tab, setTab] = useState('Properties')
   const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
@@ -356,7 +374,12 @@ export default function NodeInspector({
 
       <div key={`${node.id}-${tab}`} className="studio-inspector__content">
         {tab === 'Properties' && (
-          <PropertiesTab node={node} analysis={analysis} onTextChange={onTextChange} />
+          <PropertiesTab
+            node={node}
+            analysis={analysis}
+            onTextChange={onTextChange}
+            onNodeRemove={onNodeRemove}
+          />
         )}
         {tab === 'Routes' && (
           <RoutesTab

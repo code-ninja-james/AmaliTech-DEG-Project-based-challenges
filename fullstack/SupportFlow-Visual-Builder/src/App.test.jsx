@@ -104,6 +104,44 @@ describe('SupportFlow application', () => {
     expect(screen.queryByLabelText('Route 2 label')).not.toBeInTheDocument()
   })
 
+  it('deletes a terminal node and removes routes that targeted it', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('navigator-node-6'))
+    expect(screen.getByLabelText('Message Text')).toHaveValue(
+      'Connecting you to a Billing Agent...',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Delete node' }))
+
+    expect(screen.queryByTestId('flow-node-6')).not.toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-1')).toHaveClass('flow-node--selected')
+
+    await user.click(screen.getByTestId('navigator-node-3'))
+    await user.click(screen.getByRole('button', { name: 'Routes' }))
+
+    expect(screen.getByText('No outbound routes yet')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Personal, route to node 6' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Business, route to node 6' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not expose node deletion for the Start node', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('navigator-node-1'))
+
+    expect(screen.queryByRole('button', { name: 'Delete node' })).not.toBeInTheDocument()
+    expect(screen.getByText('Start is the entry point and cannot be deleted.')).toBeInTheDocument()
+  })
+
   it('switches from the graph to the Make-style preview and back', async () => {
     const user = userEvent.setup()
 

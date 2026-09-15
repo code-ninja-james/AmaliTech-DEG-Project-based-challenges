@@ -30,6 +30,7 @@ export default function FlowCanvas({
   isDemo = false,
   selectedNodeId = null,
   selectedConnectionId = null,
+  issues = [],
   onNodeSelect = () => {},
   onConnectionSelect = () => {},
   onRouteConnect = () => {},
@@ -43,6 +44,19 @@ export default function FlowCanvas({
   const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
   const analysis = useMemo(() => analyzeFlow(flow.nodes), [flow.nodes])
   const brokenRouteNodeIds = new Set(analysis.brokenReferences.map(({ sourceId }) => sourceId))
+  const issuesByNodeId = useMemo(() => {
+    const groupedIssues = new Map()
+
+    issues.forEach((issue) => {
+      if (!issue.nodeId) {
+        return
+      }
+
+      groupedIssues.set(issue.nodeId, [...(groupedIssues.get(issue.nodeId) ?? []), issue])
+    })
+
+    return groupedIssues
+  }, [issues])
   const incomingCounts = useMemo(() => {
     const counts = new Map(flow.nodes.map((node) => [node.id, 0]))
 
@@ -259,6 +273,7 @@ export default function FlowCanvas({
                 isCycleParticipant={analysis.cycleParticipants.has(node.id)}
                 hasBrokenRoute={brokenRouteNodeIds.has(node.id)}
                 incomingCount={incomingCounts.get(node.id) ?? 0}
+                issues={issuesByNodeId.get(node.id) ?? []}
                 isConnectable={mode === 'Build' && node.type !== 'end'}
                 isConnectionTarget={draftRoute?.targetId === node.id}
                 isConnectionSource={draftRoute?.sourceId === node.id}

@@ -35,6 +35,51 @@ function PropertyRow({ label, value, mono = false }) {
   )
 }
 
+function ValidationSummary({ node, issues = [], onIssueSelect = () => {} }) {
+  if (issues.length === 0) {
+    return null
+  }
+
+  const nodeIssues = issues.filter((issue) => issue.nodeId === node.id)
+  const visibleIssues = nodeIssues.length > 0 ? nodeIssues : issues.slice(0, 3)
+  const errorCount = issues.filter((issue) => issue.severity === 'error').length
+  const warningCount = issues.length - errorCount
+
+  return (
+    <section className="studio-inspector__validation" aria-label="Editor validation hints">
+      <header>
+        <span>Flow checks</span>
+        <strong>
+          {errorCount} errors · {warningCount} warnings
+        </strong>
+      </header>
+
+      {nodeIssues.length === 0 && (
+        <p className="studio-inspector__validation-note">
+          Selected node is clean. Other flow issues need attention.
+        </p>
+      )}
+
+      <div className="studio-inspector__validation-list">
+        {visibleIssues.map((issue) => (
+          <article
+            className={`studio-inspector__validation-item studio-inspector__validation-item--${issue.severity}`}
+            key={issue.id}
+          >
+            <span>{issue.severity}</span>
+            <p>{issue.message}</p>
+            {issue.nodeId && issue.nodeId !== node.id && (
+              <button type="button" onClick={() => onIssueSelect(issue.nodeId)}>
+                Select node #{issue.nodeId}
+              </button>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function PropertiesTab({ node, analysis, onTextChange, onNodeRemove }) {
   const size = NODE_SIZE[node.type] ?? { width: 180, height: 80 }
   const textFieldLabel = node.type === 'end' ? 'Message Text' : 'Question Text'
@@ -306,6 +351,8 @@ export default function NodeInspector({
   node,
   flow,
   selectedConnection = null,
+  issues = [],
+  onIssueSelect = () => {},
   onTextChange = () => {},
   onNodeAdd = () => {},
   onRouteAdd = () => {},
@@ -367,6 +414,8 @@ export default function NodeInspector({
           </button>
         </section>
       )}
+
+      <ValidationSummary node={node} issues={issues} onIssueSelect={onIssueSelect} />
 
       <nav className="studio-inspector__tabs" aria-label="Inspector sections">
         {['Properties', 'Routes', 'Health'].map((item) => (

@@ -65,6 +65,8 @@ A flow can look visually correct while still containing structural mistakes that
 - Terminal nodes with outgoing routes; and
 - cycles that can trap a customer in an endless journey.
 
+Build mode surfaces the same validation results while editing: affected nodes get compact warning badges, and the inspector shows node-specific fixes plus jump buttons for issues elsewhere in the flow.
+
 **Business value:** Flow Health acts as an editor-side quality gate before publish. It reduces broken customer journeys, configuration mistakes, and avoidable support tickets that are difficult for non-technical authors to spot visually.
 
 #### Diagnostic demo

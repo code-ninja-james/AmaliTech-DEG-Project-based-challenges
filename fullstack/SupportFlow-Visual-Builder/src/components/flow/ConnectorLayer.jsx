@@ -15,6 +15,9 @@ const TYPE_COLOR = {
 }
 const LABEL_HEIGHT = 22
 const LABEL_NODE_GAP = 8
+const LABEL_PREFERRED_T = 0.46
+const LABEL_T_CANDIDATES = [0.46, 0.38, 0.54, 0.3, 0.62, 0.24, 0.7, 0.78]
+const LABEL_NORMAL_FALLBACKS = [0, -16, 16]
 const MAX_LABEL_CHARACTERS = 42
 
 function getIncomingPositions(connections) {
@@ -108,48 +111,64 @@ function clampLabelPosition(position, labelWidth, canvasWidth, canvasHeight) {
   }
 }
 
-function getReadableLabelPosition(position, labelWidth, nodeRects, canvasWidth, canvasHeight) {
+function getBezierNormal(source, target, t) {
+  const before = getBezierPoint(source, target, Math.max(0, t - 0.01))
+  const after = getBezierPoint(source, target, Math.min(1, t + 0.01))
+  const dx = after.x - before.x
+  const dy = after.y - before.y
+  const length = Math.hypot(dx, dy) || 1
+
+  return {
+    x: -dy / length,
+    y: dx / length,
+  }
+}
+
+function overlapsAnyNode(position, labelWidth, nodeRectList) {
+  const labelRect = getLabelRect(position, labelWidth)
+
+  return nodeRectList.some((nodeRect) => doRectsOverlap(labelRect, nodeRect, LABEL_NODE_GAP))
+}
+
+function getReadablePathLabelPosition(
+  source,
+  target,
+  labelWidth,
+  labelSpacing,
+  nodeRects,
+  canvasWidth,
+  canvasHeight,
+) {
   const nodeRectList = Object.values(nodeRects)
-  const offsets = [
-    { x: 0, y: 0 },
-    { x: 0, y: -34 },
-    { x: 0, y: 34 },
-    { x: 46, y: 0 },
-    { x: -46, y: 0 },
-    { x: 46, y: -34 },
-    { x: -46, y: -34 },
-    { x: 46, y: 34 },
-    { x: -46, y: 34 },
-    { x: 0, y: -68 },
-    { x: 0, y: 68 },
-    { x: 92, y: 0 },
-    { x: -92, y: 0 },
-  ]
+  const preferredPoint = getBezierPoint(source, target, LABEL_PREFERRED_T)
+  const preferredNormal = getBezierNormal(source, target, LABEL_PREFERRED_T)
 
-  for (const offset of offsets) {
-    const candidate = clampLabelPosition(
-      {
-        x: position.x + offset.x,
-        y: position.y + offset.y,
-      },
-      labelWidth,
-      canvasWidth,
-      canvasHeight,
-    )
-    const labelRect = getLabelRect(candidate, labelWidth)
-    const overlapsNode = nodeRectList.some((nodeRect) =>
-      doRectsOverlap(labelRect, nodeRect, LABEL_NODE_GAP),
-    )
+  for (const t of LABEL_T_CANDIDATES) {
+    const point = getBezierPoint(source, target, t)
+    const normal = getBezierNormal(source, target, t)
 
-    if (!overlapsNode) {
-      return candidate
+    for (const fallbackOffset of LABEL_NORMAL_FALLBACKS) {
+      const totalOffset = labelSpacing + fallbackOffset
+      const candidate = clampLabelPosition(
+        {
+          x: point.x + normal.x * totalOffset,
+          y: point.y + normal.y * totalOffset,
+        },
+        labelWidth,
+        canvasWidth,
+        canvasHeight,
+      )
+
+      if (!overlapsAnyNode(candidate, labelWidth, nodeRectList)) {
+        return candidate
+      }
     }
   }
 
   return clampLabelPosition(
     {
-      x: position.x,
-      y: position.y - 68,
+      x: preferredPoint.x + preferredNormal.x * labelSpacing,
+      y: preferredPoint.y + preferredNormal.y * labelSpacing,
     },
     labelWidth,
     canvasWidth,
@@ -363,9 +382,6 @@ export default function ConnectorLayer({
         const path = isSelfLoop
           ? `M ${source.x} ${source.y} C ${source.x} ${source.y + 60}, ${loopX} ${source.y + 60}, ${loopX} ${loopY} C ${loopX} ${target.y - 60}, ${target.x} ${target.y - 60}, ${target.x} ${target.y}`
           : createBezierPath(source, target)
-        const labelPosition = isSelfLoop
-          ? { x: loopX, y: loopY }
-          : getBezierPoint(source, target, 0.46)
         const parallelPosition = parallelRoutePositions.get(connection.id) ?? {
           index: 0,
           count: 1,
@@ -377,10 +393,12 @@ export default function ConnectorLayer({
             : 0
         const labelWidth = getLabelWidth(connection.label)
         const readableLabelPosition = isSelfLoop
-          ? { x: labelPosition.x + labelSpacing, y: labelPosition.y }
-          : getReadableLabelPosition(
-              { x: labelPosition.x + labelSpacing, y: labelPosition.y },
+          ? { x: loopX + labelSpacing, y: loopY }
+          : getReadablePathLabelPosition(
+              source,
+              target,
               labelWidth,
+              labelSpacing,
               nodeRects,
               width,
               height,

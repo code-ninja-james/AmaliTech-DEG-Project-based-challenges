@@ -21,6 +21,28 @@ function getDistance(left, right) {
   return Math.hypot(left.x - right.x, left.y - right.y)
 }
 
+function getLabelBounds(label) {
+  const labelGroup = screen.getByRole('button', { name: label })
+  const position = parseTranslate(labelGroup.getAttribute('transform'))
+  const background = labelGroup.querySelector('.connector-label__background')
+
+  return {
+    x: position.x + Number(background.getAttribute('x')),
+    y: position.y + Number(background.getAttribute('y')),
+    width: Number(background.getAttribute('width')),
+    height: Number(background.getAttribute('height')),
+  }
+}
+
+function overlaps(left, right, gap = 0) {
+  return !(
+    left.x + left.width < right.x - gap ||
+    left.x > right.x + right.width + gap ||
+    left.y + left.height < right.y - gap ||
+    left.y > right.y + right.height + gap
+  )
+}
+
 function renderDemo(scenario) {
   const flow = createXrayDemo(flowData, scenario)
   const analysis = analyzeFlow(flow.nodes)
@@ -119,5 +141,45 @@ describe('diagnostic connectors', () => {
     ).reduce((nearest, distance) => Math.min(nearest, distance), Infinity)
 
     expect(nearestCurveDistance).toBeLessThan(3)
+  })
+
+  it('separates route labels that share the same source and target', () => {
+    render(
+      <ConnectorLayer
+        connections={[
+          {
+            id: '3-0-6',
+            sourceId: '3',
+            targetId: '6',
+            optionIndex: 0,
+            sourceOptionCount: 2,
+            label: 'Personal',
+          },
+          {
+            id: '3-1-6',
+            sourceId: '3',
+            targetId: '6',
+            optionIndex: 1,
+            sourceOptionCount: 2,
+            label: 'Business',
+          },
+        ]}
+        nodes={[
+          { id: '3', type: 'question', options: [], position: { x: 180, y: 50 } },
+          { id: '6', type: 'end', options: [], position: { x: 180, y: 550 } },
+        ]}
+        nodeRects={{
+          3: { x: 180, y: 50, width: 196, height: 100 },
+          6: { x: 180, y: 550, width: 180, height: 100 },
+        }}
+        width={700}
+        height={760}
+      />,
+    )
+
+    const personalBounds = getLabelBounds('Personal, route to node 6')
+    const businessBounds = getLabelBounds('Business, route to node 6')
+
+    expect(overlaps(personalBounds, businessBounds, 8)).toBe(false)
   })
 })

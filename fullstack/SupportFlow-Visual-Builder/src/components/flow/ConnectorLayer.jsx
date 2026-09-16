@@ -15,9 +15,10 @@ const TYPE_COLOR = {
 }
 const LABEL_HEIGHT = 22
 const LABEL_NODE_GAP = 8
+const LABEL_LABEL_GAP = 8
 const LABEL_PREFERRED_T = 0.46
 const LABEL_T_CANDIDATES = [0.46, 0.38, 0.54, 0.3, 0.62, 0.24, 0.7, 0.78]
-const LABEL_NORMAL_FALLBACKS = [0, -16, 16]
+const LABEL_NORMAL_FALLBACKS = [0, -16, 16, -32, 32]
 const MAX_LABEL_CHARACTERS = 42
 
 function getIncomingPositions(connections) {
@@ -124,10 +125,17 @@ function getBezierNormal(source, target, t) {
   }
 }
 
-function overlapsAnyNode(position, labelWidth, nodeRectList) {
+function overlapsAnyRect(position, labelWidth, rects, gap) {
   const labelRect = getLabelRect(position, labelWidth)
 
-  return nodeRectList.some((nodeRect) => doRectsOverlap(labelRect, nodeRect, LABEL_NODE_GAP))
+  return rects.some((rect) => doRectsOverlap(labelRect, rect, gap))
+}
+
+function isLabelPositionClear(position, labelWidth, nodeRectList, placedLabelRects) {
+  return (
+    !overlapsAnyRect(position, labelWidth, nodeRectList, LABEL_NODE_GAP) &&
+    !overlapsAnyRect(position, labelWidth, placedLabelRects, LABEL_LABEL_GAP)
+  )
 }
 
 function getReadablePathLabelPosition(
@@ -136,6 +144,7 @@ function getReadablePathLabelPosition(
   labelWidth,
   labelSpacing,
   nodeRects,
+  placedLabelRects,
   canvasWidth,
   canvasHeight,
 ) {
@@ -143,11 +152,10 @@ function getReadablePathLabelPosition(
   const preferredPoint = getBezierPoint(source, target, LABEL_PREFERRED_T)
   const preferredNormal = getBezierNormal(source, target, LABEL_PREFERRED_T)
 
-  for (const t of LABEL_T_CANDIDATES) {
-    const point = getBezierPoint(source, target, t)
-    const normal = getBezierNormal(source, target, t)
-
-    for (const fallbackOffset of LABEL_NORMAL_FALLBACKS) {
+  for (const fallbackOffset of LABEL_NORMAL_FALLBACKS) {
+    for (const t of LABEL_T_CANDIDATES) {
+      const point = getBezierPoint(source, target, t)
+      const normal = getBezierNormal(source, target, t)
       const totalOffset = labelSpacing + fallbackOffset
       const candidate = clampLabelPosition(
         {
@@ -159,7 +167,7 @@ function getReadablePathLabelPosition(
         canvasHeight,
       )
 
-      if (!overlapsAnyNode(candidate, labelWidth, nodeRectList)) {
+      if (isLabelPositionClear(candidate, labelWidth, nodeRectList, placedLabelRects)) {
         return candidate
       }
     }
@@ -197,6 +205,7 @@ export default function ConnectorLayer({
   const incomingPositions = getIncomingPositions(connections)
   const parallelRoutePositions = getParallelRoutePositions(connections)
   const nodeMap = new Map(nodes.map((node) => [node.id, node]))
+  const placedLabelRects = []
   const isXray = mode === 'X-Ray'
   const noMotion =
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -392,18 +401,6 @@ export default function ConnectorLayer({
             ? (parallelPosition.index - (parallelPosition.count - 1) / 2) * 30
             : 0
         const labelWidth = getLabelWidth(connection.label)
-        const readableLabelPosition = isSelfLoop
-          ? { x: loopX + labelSpacing, y: loopY }
-          : getReadablePathLabelPosition(
-              source,
-              target,
-              labelWidth,
-              labelSpacing,
-              nodeRects,
-              width,
-              height,
-            )
-        const displayLabel = getConnectorLabelText(connection.label)
         const isConnectionSelected = selectedConnectionId === connection.id
         const canRewire = mode === 'Build'
 
@@ -416,6 +413,26 @@ export default function ConnectorLayer({
         const isCycleRoute =
           cycleParticipantIds.has(connection.sourceId) &&
           cycleParticipantIds.has(connection.targetId)
+        const shouldShowLabel =
+          showLabels &&
+          (mode === 'Build' || isRelated || !selectedNodeId || (isXray && isCycleRoute))
+        const readableLabelPosition = isSelfLoop
+          ? { x: loopX + labelSpacing, y: loopY }
+          : getReadablePathLabelPosition(
+              source,
+              target,
+              labelWidth,
+              labelSpacing,
+              nodeRects,
+              placedLabelRects,
+              width,
+              height,
+            )
+        if (shouldShowLabel) {
+          placedLabelRects.push(getLabelRect(readableLabelPosition, labelWidth))
+        }
+
+        const displayLabel = getConnectorLabelText(connection.label)
         const sourceColor = TYPE_COLOR[sourceNode?.type] ?? '#4f8ff7'
         const pathLength = Math.hypot(target.x - source.x, target.y - source.y)
         const packetDuration = `${(2.8 + pathLength / 380).toFixed(2)}s`
@@ -479,66 +496,65 @@ export default function ConnectorLayer({
               </>
             )}
 
-            {showLabels &&
-              (mode === 'Build' || isRelated || !selectedNodeId || (isXray && isCycleRoute)) && (
-                <g
-                  className={[
-                    'connector-label',
-                    isConnectionSelected ? 'connector-label--selected' : '',
-                    canRewire ? 'connector-label--draggable' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  transform={`translate(${readableLabelPosition.x} ${readableLabelPosition.y})`}
-                  role="button"
-                  tabIndex="0"
-                  aria-pressed={isConnectionSelected}
-                  aria-label={`${connection.label}, route to node ${connection.targetId}`}
-                  data-testid={`connector-label-${connection.id}`}
-                  onPointerDown={(event) => {
-                    if (!canRewire) {
-                      return
-                    }
+            {shouldShowLabel && (
+              <g
+                className={[
+                  'connector-label',
+                  isConnectionSelected ? 'connector-label--selected' : '',
+                  canRewire ? 'connector-label--draggable' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                transform={`translate(${readableLabelPosition.x} ${readableLabelPosition.y})`}
+                role="button"
+                tabIndex="0"
+                aria-pressed={isConnectionSelected}
+                aria-label={`${connection.label}, route to node ${connection.targetId}`}
+                data-testid={`connector-label-${connection.id}`}
+                onPointerDown={(event) => {
+                  if (!canRewire) {
+                    return
+                  }
 
-                    event.preventDefault()
-                    event.stopPropagation()
-                    onRouteRewireStart(connection, event)
-                  }}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    onConnectionSelect(connection)
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key !== 'Enter' && event.key !== ' ') {
-                      return
-                    }
+                  event.preventDefault()
+                  event.stopPropagation()
+                  onRouteRewireStart(connection, event)
+                }}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onConnectionSelect(connection)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter' && event.key !== ' ') {
+                    return
+                  }
 
-                    event.preventDefault()
-                    onConnectionSelect(connection)
-                  }}
+                  event.preventDefault()
+                  onConnectionSelect(connection)
+                }}
+              >
+                <title>
+                  {canRewire
+                    ? `${connection.label}: click to edit, drag to change target`
+                    : `${connection.label}: route to node ${connection.targetId}`}
+                </title>
+                <rect
+                  className="connector-label__background"
+                  x={-labelWidth / 2}
+                  y="-10"
+                  width={labelWidth}
+                  height="20"
+                  rx="3"
+                />
+                <text
+                  className="connector-label__text"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
                 >
-                  <title>
-                    {canRewire
-                      ? `${connection.label}: click to edit, drag to change target`
-                      : `${connection.label}: route to node ${connection.targetId}`}
-                  </title>
-                  <rect
-                    className="connector-label__background"
-                    x={-labelWidth / 2}
-                    y="-10"
-                    width={labelWidth}
-                    height="20"
-                    rx="3"
-                  />
-                  <text
-                    className="connector-label__text"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                  >
-                    {displayLabel}
-                  </text>
-                </g>
-              )}
+                  {displayLabel}
+                </text>
+              </g>
+            )}
           </g>
         )
       })}

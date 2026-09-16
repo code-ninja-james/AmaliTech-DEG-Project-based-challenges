@@ -4,10 +4,14 @@ SupportFlow Studio is a visual decision-tree editor for customer-support flows. 
 
 The implementation is deliberately built without graph or component libraries. Node positions come directly from the provided JSON, while relationships are measured from the DOM and rendered with native SVG.
 
+The current build also covers the real workflow around the editor: importing old spreadsheet configurations, saving reusable workflows, auditing who changed what, and validating the flow before it is tested or shared.
+
 ## Design
 
 **Figma design system and product design**  
 https://www.figma.com/design/h6kKHcwHrkwz2CKxqu7CGh/SupportFlow-Studio---Design-System---Product
+
+The Figma file has been updated to match the implemented product instead of standing apart from the code. It includes the Build editor, route editing state, Import Flow, Workflow Library, Audit Log, Preview runner, X-Ray diagnostics, Spatial mode, and the supporting design-system page.
 
 The design uses a restrained dark workspace with semantic states:
 
@@ -17,6 +21,30 @@ The design uses a restrained dark workspace with semantic states:
 - **Error** — muted red
 
 The product shell includes a searchable node navigator, visual graph, inspector rail, minimap, mode controls, and compact status information.
+
+The latest design-system pass also documents the newer product controls:
+
+- **Import Flow** — JSON, Excel, CSV, and TSV migration entry point.
+- **Workflow Library** — save, search, rename, use, and delete saved flows.
+- **Security Audit** — current-user identity, searchable history, and export actions.
+- **Route Authoring** — editable labels, target selectors, delete actions, and draggable route handles.
+
+## Beyond the brief
+
+The required assignment asks for a visual graph, editing, Preview mode, and one wildcard feature. SupportFlow Studio goes further by adding the surrounding workflow a support manager would need before using this in practice.
+
+| Added feature               | What it does                                                        | Why it matters                                                     |
+| --------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Spreadsheet and JSON import | Converts `.json`, `.xlsx`, `.csv`, and `.tsv` flow data into nodes. | Gives teams a migration path from messy Excel configuration files. |
+| Workflow Library            | Saves, searches, renames, uses, and deletes browser-stored flows.   | Lets managers keep multiple support flows without rebuilding them. |
+| Workflow readiness rating   | Scores each workflow and lists the top improvement suggestions.     | Helps managers compare saved flows and fix weak spots quickly.     |
+| Security Audit Log          | Tracks who added, edited, deleted, imported, saved, or reused data. | Makes the demo credible for teams that care about accountability.  |
+| Canvas layout editing       | Lets users drag node cards into clearer positions.                  | Gives managers control over readability without editing JSON.      |
+| Route authoring tools       | Adds, names, retargets, drags, and deletes routes visually.         | Allows non-technical users to change flow logic without JSON.      |
+| Delete safety               | Offers Undo after deletion, plus minimize and close controls.       | Reduces the risk of accidental destructive edits.                  |
+| Diagnostic demo scenarios   | Shows broken reference, unreachable branch, and cycle examples.     | Makes the X-Ray feature easy to evaluate during a review.          |
+| Spatial mode and minimap    | Provides alternate navigation and topology views.                   | Helps larger flows remain understandable as they grow.             |
+| Command palette             | Opens key actions with `⌘K` / `Ctrl+K`.                             | Speeds up navigation for power users and reviewers.                |
 
 ## Features
 
@@ -29,6 +57,7 @@ The product shell includes a searchable node navigator, visual graph, inspector 
 - Draws custom cubic Bézier connectors with native SVG.
 - Supports route labels, selection states, execution packets, minimap navigation, and canvas zoom controls.
 - Includes a searchable/collapsible node navigator.
+- Allows node cards to be moved by dragging the card header or the Move handle in Build mode; moved positions are kept in state, saved with workflows, and recorded in the audit log.
 
 ### Flow import
 
@@ -54,6 +83,8 @@ Accepted table shape for Excel, CSV/TSV, and flat JSON rows:
 Workflows can be saved in the browser and reused later without a backend database. Open **Workflows** in Build mode to name and save the current flow, search saved workflows, rename them, delete old ones, or click **Use workflow** to load a saved flow back onto the canvas.
 
 Search checks workflow names, node IDs, node text, route labels, and route targets. When a saved workflow is used, the editor switches back to Build mode, selects the Start node, and all normal editing, validation, import, and Preview behavior continues against that loaded workflow.
+
+Each workflow also receives a readiness rating, such as **100/100 · Launch ready** or **Needs review**, plus short improvement suggestions generated from the same structural checks used by Flow Health. Saved flows can therefore be compared quickly before a manager chooses which one to use.
 
 **Business value:** support managers can keep separate flows for billing, technical support, onboarding, or seasonal campaigns and switch between them without rebuilding from scratch.
 
@@ -105,6 +136,8 @@ A flow can look visually correct while still containing structural mistakes that
 Build mode surfaces the same validation results while editing: affected nodes get compact warning badges, and the inspector shows node-specific fixes plus jump buttons for issues elsewhere in the flow.
 
 **Business value:** Flow Health acts as an editor-side quality gate before publish. It reduces broken customer journeys, configuration mistakes, and avoidable support tickets that are difficult for non-technical authors to spot visually.
+
+This is also where light gamification belongs. Instead of adding playful game mechanics, SupportFlow uses professional progress feedback: issue counts, node health checks, route warnings, and readiness language that helps a manager know whether a workflow is safe to preview or publish. A future iteration can turn the same validation data into a simple **Launch Readiness Score** without changing the editor's serious support-operations tone.
 
 #### Diagnostic demo
 
@@ -257,7 +290,7 @@ Git hooks also enforce quality locally:
 
 ## Tests
 
-The suite covers node rendering, exact challenge coordinates, connector extraction, Bézier geometry, selection and editing, workflow saving/searching/loading/deletion, mode switching, Preview traversal/restart, JSON/Excel/Spreadsheet Import parsing, Flow Health rules, and navigator interactions.
+The suite covers node rendering, exact challenge coordinates, connector extraction, Bézier geometry, route dragging, selection and editing, delete undo behavior, workflow saving/searching/loading/renaming/deletion, workflow readiness ratings, audit history storage/search/export, mode switching, Preview traversal/restart, JSON/Excel/Spreadsheet Import parsing, Flow Health rules, and navigator interactions.
 
 Run tests independently with:
 

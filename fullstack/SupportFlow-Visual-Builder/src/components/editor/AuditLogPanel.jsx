@@ -8,6 +8,7 @@ const ACTION_LABELS = {
   'node.added': 'Add node',
   'node.deleted': 'Delete node',
   'node.edited': 'Edit node',
+  'node.moved': 'Move node',
   'route.added': 'Add route',
   'route.deleted': 'Delete route',
   'route.edited': 'Edit route',

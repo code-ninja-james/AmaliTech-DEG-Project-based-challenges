@@ -40,4 +40,36 @@ describe('FlowCanvas', () => {
       top: '500px',
     })
   })
+
+  it('keeps editable route labels layered above node cards', () => {
+    render(<FlowCanvas flow={flowData} />)
+
+    const canvas = screen.getByTestId('flow-canvas')
+    const pathLayer = canvas.querySelector('.connector-layer--paths:not(.connector-layer--labels)')
+    const labelLayer = canvas.querySelector('.connector-layer--labels:not(.connector-layer--paths)')
+    const firstNode = screen.getByTestId('flow-node-1')
+    const canvasChildren = [...canvas.children]
+
+    expect(pathLayer).toBeInTheDocument()
+    expect(labelLayer).toBeInTheDocument()
+    expect(canvasChildren.indexOf(pathLayer)).toBeLessThan(canvasChildren.indexOf(firstNode))
+    expect(canvasChildren.indexOf(labelLayer)).toBeGreaterThan(canvasChildren.indexOf(firstNode))
+  })
+
+  it('keeps route labels visible when another node is selected', () => {
+    render(<FlowCanvas flow={flowData} selectedNodeId="2" />)
+
+    expect(screen.getByRole('button', { name: 'Personal, route to node 6' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Business, route to node 6' })).toBeInTheDocument()
+  })
+
+  it('only exposes node move handles in Build mode', () => {
+    const { rerender } = render(<FlowCanvas flow={flowData} />)
+
+    expect(screen.getByRole('button', { name: 'Move node 2' })).toBeInTheDocument()
+
+    rerender(<FlowCanvas flow={flowData} mode="X-Ray" />)
+
+    expect(screen.queryByRole('button', { name: 'Move node 2' })).not.toBeInTheDocument()
+  })
 })

@@ -262,6 +262,45 @@ export default function App() {
     })
   }
 
+  const handleNodeMove = useCallback((nodeId, nextPosition) => {
+    setFlow((currentFlow) => ({
+      ...currentFlow,
+      nodes: currentFlow.nodes.map((node) =>
+        node.id === nodeId
+          ? {
+              ...node,
+              position: nextPosition,
+            }
+          : node,
+      ),
+    }))
+  }, [])
+
+  const handleNodeMoveCommit = (nodeId, previousPosition, nextPosition) => {
+    const node = flow.nodes.find((currentNode) => currentNode.id === nodeId)
+
+    if (!node || (previousPosition.x === nextPosition.x && previousPosition.y === nextPosition.y)) {
+      return
+    }
+
+    setDeleteUndo(null)
+    setImportNotice(null)
+    setWorkflowNotice(null)
+    recordAuditEvent({
+      action: 'node.moved',
+      targetType: 'node',
+      targetId: node.id,
+      targetLabel: getNodeTargetLabel(node),
+      summary: `Moved ${getNodeTypeLabel(node)} node #${node.id}.`,
+      details: `Position changed from (${previousPosition.x}, ${previousPosition.y}) to (${nextPosition.x}, ${nextPosition.y}).`,
+      meta: {
+        field: 'position',
+        before: previousPosition,
+        after: nextPosition,
+      },
+    })
+  }
+
   const handleNodeAdd = ({ type, sourceNodeId = selectedNodeId }) => {
     const nextNodeId = getNextNodeId(flow.nodes)
     const sourceNode = flow.nodes.find((node) => node.id === sourceNodeId)
@@ -970,6 +1009,8 @@ export default function App() {
             onConnectionSelect={handleConnectionSelect}
             onRouteConnect={handleRouteConnect}
             onRouteReconnect={handleRouteReconnect}
+            onNodeMove={handleNodeMove}
+            onNodeMoveCommit={handleNodeMoveCommit}
           />
         )}
 

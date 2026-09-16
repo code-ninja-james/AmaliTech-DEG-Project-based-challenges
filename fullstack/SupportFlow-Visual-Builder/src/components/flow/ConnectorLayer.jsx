@@ -13,6 +13,9 @@ const TYPE_COLOR = {
   question: '#4f8ff7',
   end: '#f59e0b',
 }
+const LABEL_HEIGHT = 22
+const LABEL_NODE_GAP = 8
+const MAX_LABEL_CHARACTERS = 42
 
 function getIncomingPositions(connections) {
   const groupedConnections = new Map()
@@ -70,8 +73,88 @@ function getBoundaryAnchor(rect, index, count, edge) {
   }
 }
 
+function getConnectorLabelText(label) {
+  return label.length > MAX_LABEL_CHARACTERS
+    ? `${label.slice(0, MAX_LABEL_CHARACTERS - 1)}…`
+    : label
+}
+
 function getLabelWidth(label) {
-  return Math.min(170, Math.max(72, label.length * 6.2 + 18))
+  return Math.min(280, Math.max(86, getConnectorLabelText(label).length * 6.6 + 24))
+}
+
+function getLabelRect(position, labelWidth) {
+  return {
+    x: position.x - labelWidth / 2,
+    y: position.y - LABEL_HEIGHT / 2,
+    width: labelWidth,
+    height: LABEL_HEIGHT,
+  }
+}
+
+function doRectsOverlap(left, right, gap = 0) {
+  return !(
+    left.x + left.width < right.x - gap ||
+    left.x > right.x + right.width + gap ||
+    left.y + left.height < right.y - gap ||
+    left.y > right.y + right.height + gap
+  )
+}
+
+function clampLabelPosition(position, labelWidth, canvasWidth, canvasHeight) {
+  return {
+    x: Math.min(canvasWidth - labelWidth / 2, Math.max(labelWidth / 2, position.x)),
+    y: Math.min(canvasHeight - LABEL_HEIGHT / 2, Math.max(LABEL_HEIGHT / 2, position.y)),
+  }
+}
+
+function getReadableLabelPosition(position, labelWidth, nodeRects, canvasWidth, canvasHeight) {
+  const nodeRectList = Object.values(nodeRects)
+  const offsets = [
+    { x: 0, y: 0 },
+    { x: 0, y: -34 },
+    { x: 0, y: 34 },
+    { x: 46, y: 0 },
+    { x: -46, y: 0 },
+    { x: 46, y: -34 },
+    { x: -46, y: -34 },
+    { x: 46, y: 34 },
+    { x: -46, y: 34 },
+    { x: 0, y: -68 },
+    { x: 0, y: 68 },
+    { x: 92, y: 0 },
+    { x: -92, y: 0 },
+  ]
+
+  for (const offset of offsets) {
+    const candidate = clampLabelPosition(
+      {
+        x: position.x + offset.x,
+        y: position.y + offset.y,
+      },
+      labelWidth,
+      canvasWidth,
+      canvasHeight,
+    )
+    const labelRect = getLabelRect(candidate, labelWidth)
+    const overlapsNode = nodeRectList.some((nodeRect) =>
+      doRectsOverlap(labelRect, nodeRect, LABEL_NODE_GAP),
+    )
+
+    if (!overlapsNode) {
+      return candidate
+    }
+  }
+
+  return clampLabelPosition(
+    {
+      x: position.x,
+      y: position.y - 68,
+    },
+    labelWidth,
+    canvasWidth,
+    canvasHeight,
+  )
 }
 
 export default function ConnectorLayer({
@@ -80,6 +163,9 @@ export default function ConnectorLayer({
   nodes = [],
   width,
   height,
+  showPaths = true,
+  showLabels = true,
+  showDraft = true,
   selectedNodeId = null,
   selectedConnectionId = null,
   onConnectionSelect = () => {},
@@ -98,11 +184,17 @@ export default function ConnectorLayer({
 
   return (
     <svg
-      className="connector-layer"
+      className={[
+        'connector-layer',
+        showPaths ? 'connector-layer--paths' : '',
+        showLabels ? 'connector-layer--labels' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       viewBox={`0 0 ${width} ${height}`}
       width={width}
       height={height}
-      aria-label="Flow connections"
+      aria-label={showPaths ? 'Flow connections' : 'Editable route labels'}
     >
       <defs>
         <marker
@@ -168,7 +260,7 @@ export default function ConnectorLayer({
           const sourceRect = nodeRects[connection.sourceId]
           const targetRect = nodeRects[connection.targetId]
 
-          if (!sourceNode || !targetNode || !sourceRect || !targetRect) {
+          if (!showPaths || !sourceNode || !targetNode || !sourceRect || !targetRect) {
             return null
           }
 
@@ -229,7 +321,7 @@ export default function ConnectorLayer({
         )
 
         if (!targetRect) {
-          if (!isXray || nodeMap.has(connection.targetId)) return null
+          if (!showPaths || !isXray || nodeMap.has(connection.targetId)) return null
 
           // A missing target has no DOM rectangle. Show an explicit dangling
           // route instead of silently dropping the edge from the diagnostic view.
@@ -284,6 +376,16 @@ export default function ConnectorLayer({
             ? (parallelPosition.index - (parallelPosition.count - 1) / 2) * 30
             : 0
         const labelWidth = getLabelWidth(connection.label)
+        const readableLabelPosition = isSelfLoop
+          ? { x: labelPosition.x + labelSpacing, y: labelPosition.y }
+          : getReadableLabelPosition(
+              { x: labelPosition.x + labelSpacing, y: labelPosition.y },
+              labelWidth,
+              nodeRects,
+              width,
+              height,
+            )
+        const displayLabel = getConnectorLabelText(connection.label)
         const isConnectionSelected = selectedConnectionId === connection.id
         const canRewire = mode === 'Build'
 
@@ -314,113 +416,116 @@ export default function ConnectorLayer({
 
         return (
           <g key={connection.id}>
-            <path
-              className="connector-path"
-              data-connection-id={connection.id}
-              d={path}
-              fill="none"
-              stroke={stroke}
-              strokeWidth={isRelated ? 1.7 : 1}
-              strokeDasharray={isXray && !xrayReachable ? '5 3' : undefined}
-              markerEnd={
-                isXray
-                  ? !xrayReachable
-                    ? 'url(#supportflow-arrow-error)'
-                    : isCycleRoute
-                      ? 'url(#supportflow-arrow-cycle)'
-                      : 'url(#supportflow-arrow-xray)'
-                  : isRelated
-                    ? 'url(#supportflow-arrow-related)'
-                    : 'url(#supportflow-arrow)'
-              }
-            />
+            {showPaths && (
+              <>
+                <path
+                  className="connector-path"
+                  data-connection-id={connection.id}
+                  d={path}
+                  fill="none"
+                  stroke={stroke}
+                  strokeWidth={isRelated ? 1.7 : 1}
+                  strokeDasharray={isXray && !xrayReachable ? '5 3' : undefined}
+                  markerEnd={
+                    isXray
+                      ? !xrayReachable
+                        ? 'url(#supportflow-arrow-error)'
+                        : isCycleRoute
+                          ? 'url(#supportflow-arrow-cycle)'
+                          : 'url(#supportflow-arrow-xray)'
+                      : isRelated
+                        ? 'url(#supportflow-arrow-related)'
+                        : 'url(#supportflow-arrow)'
+                  }
+                />
 
-            {showPacket && (
-              <circle r="2.5" fill={sourceColor} className="connector-packet">
-                <animateMotion
-                  dur={packetDuration}
-                  repeatCount="indefinite"
-                  path={path}
-                  calcMode="linear"
-                />
-                <animate
-                  attributeName="opacity"
-                  values="0;0.65;0.65;0"
-                  keyTimes="0;0.10;0.88;1"
-                  dur={packetDuration}
-                  repeatCount="indefinite"
-                />
-              </circle>
+                {showPacket && (
+                  <circle r="2.5" fill={sourceColor} className="connector-packet">
+                    <animateMotion
+                      dur={packetDuration}
+                      repeatCount="indefinite"
+                      path={path}
+                      calcMode="linear"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      values="0;0.65;0.65;0"
+                      keyTimes="0;0.10;0.88;1"
+                      dur={packetDuration}
+                      repeatCount="indefinite"
+                    />
+                  </circle>
+                )}
+
+                <circle className="connector-port" cx={source.x} cy={source.y} r="3" />
+              </>
             )}
 
-            <circle className="connector-port" cx={source.x} cy={source.y} r="3" />
+            {showLabels &&
+              (mode === 'Build' || isRelated || !selectedNodeId || (isXray && isCycleRoute)) && (
+                <g
+                  className={[
+                    'connector-label',
+                    isConnectionSelected ? 'connector-label--selected' : '',
+                    canRewire ? 'connector-label--draggable' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  transform={`translate(${readableLabelPosition.x} ${readableLabelPosition.y})`}
+                  role="button"
+                  tabIndex="0"
+                  aria-pressed={isConnectionSelected}
+                  aria-label={`${connection.label}, route to node ${connection.targetId}`}
+                  data-testid={`connector-label-${connection.id}`}
+                  onPointerDown={(event) => {
+                    if (!canRewire) {
+                      return
+                    }
 
-            {(isRelated || !selectedNodeId || (isXray && isCycleRoute)) && (
-              <g
-                className={[
-                  'connector-label',
-                  isConnectionSelected ? 'connector-label--selected' : '',
-                  canRewire ? 'connector-label--draggable' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                transform={`translate(${labelPosition.x + labelSpacing} ${labelPosition.y})`}
-                role="button"
-                tabIndex="0"
-                aria-pressed={isConnectionSelected}
-                aria-label={`${connection.label}, route to node ${connection.targetId}`}
-                data-testid={`connector-label-${connection.id}`}
-                onPointerDown={(event) => {
-                  if (!canRewire) {
-                    return
-                  }
+                    event.preventDefault()
+                    event.stopPropagation()
+                    onRouteRewireStart(connection, event)
+                  }}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onConnectionSelect(connection)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                      return
+                    }
 
-                  event.preventDefault()
-                  event.stopPropagation()
-                  onRouteRewireStart(connection, event)
-                }}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onConnectionSelect(connection)
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== 'Enter' && event.key !== ' ') {
-                    return
-                  }
-
-                  event.preventDefault()
-                  onConnectionSelect(connection)
-                }}
-              >
-                <title>
-                  {canRewire
-                    ? `${connection.label}: click to edit, drag to change target`
-                    : `${connection.label}: route to node ${connection.targetId}`}
-                </title>
-                <rect
-                  className="connector-label__background"
-                  x={-labelWidth / 2}
-                  y="-10"
-                  width={labelWidth}
-                  height="20"
-                  rx="3"
-                />
-                <text
-                  className="connector-label__text"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
+                    event.preventDefault()
+                    onConnectionSelect(connection)
+                  }}
                 >
-                  {connection.label.length > 26
-                    ? `${connection.label.slice(0, 25)}…`
-                    : connection.label}
-                </text>
-              </g>
-            )}
+                  <title>
+                    {canRewire
+                      ? `${connection.label}: click to edit, drag to change target`
+                      : `${connection.label}: route to node ${connection.targetId}`}
+                  </title>
+                  <rect
+                    className="connector-label__background"
+                    x={-labelWidth / 2}
+                    y="-10"
+                    width={labelWidth}
+                    height="20"
+                    rx="3"
+                  />
+                  <text
+                    className="connector-label__text"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    {displayLabel}
+                  </text>
+                </g>
+              )}
           </g>
         )
       })}
 
-      {draftConnection && nodeRects[draftConnection.sourceId] && (
+      {showDraft && draftConnection && nodeRects[draftConnection.sourceId] && (
         <g className="connector-draft" data-testid="draft-connection">
           {(() => {
             const sourceRect = nodeRects[draftConnection.sourceId]

@@ -32,7 +32,10 @@ export default function FlowNode({
   isConnectable = false,
   isConnectionTarget = false,
   isConnectionSource = false,
+  isMovable = false,
+  isMoving = false,
   onRouteDraftStart = () => {},
+  onMoveStart = () => {},
   onSelect = () => {},
   onHover = () => {},
 }) {
@@ -65,6 +68,8 @@ export default function FlowNode({
         !isXray && issueCount > 0 ? `flow-node--has-${issueSeverity}` : '',
         isConnectionTarget ? 'flow-node--connect-target' : '',
         isConnectionSource ? 'flow-node--connect-source' : '',
+        isMovable ? 'flow-node--movable' : '',
+        isMoving ? 'flow-node--moving' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -84,12 +89,50 @@ export default function FlowNode({
     >
       {isSelected && <span className="flow-node__selection-ring" aria-hidden="true" />}
 
-      <header className="flow-node__header">
-        <span className="flow-node__type">
-          <span className="flow-node__glyph" aria-hidden="true">
-            {glyph}
+      <header
+        className={['flow-node__header', isMovable ? 'flow-node__header--movable' : '']
+          .filter(Boolean)
+          .join(' ')}
+        data-testid={`node-move-header-${node.id}`}
+        title={isMovable ? 'Drag this header to move the node' : undefined}
+        onPointerDown={(event) => {
+          if (!isMovable || event.target.closest('.flow-node__move-handle')) {
+            return
+          }
+
+          event.preventDefault()
+          event.stopPropagation()
+          onMoveStart(node.id, event)
+        }}
+      >
+        <span className="flow-node__header-left">
+          {isMovable && (
+            <span
+              className="flow-node__move-handle"
+              role="button"
+              tabIndex="0"
+              aria-label={`Move node ${node.id}`}
+              title="Drag to move this node"
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+              }}
+              onPointerDown={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                onMoveStart(node.id, event)
+              }}
+            >
+              Move
+            </span>
+          )}
+
+          <span className="flow-node__type">
+            <span className="flow-node__glyph" aria-hidden="true">
+              {glyph}
+            </span>
+            {nodeType}
           </span>
-          {nodeType}
         </span>
 
         <span className="flow-node__header-meta">

@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react'
 
-import { getWorkflowStats, searchWorkflows } from '../../domain/workflowLibrary.js'
+import {
+  getWorkflowRating,
+  getWorkflowStats,
+  searchWorkflows,
+} from '../../domain/workflowLibrary.js'
 
 function formatSavedDate(value) {
   return new Intl.DateTimeFormat('en', {
@@ -28,6 +32,7 @@ export default function WorkflowLibraryPanel({
   const [editingWorkflowId, setEditingWorkflowId] = useState(null)
   const [editingName, setEditingName] = useState('')
   const currentStats = getWorkflowStats(currentFlow)
+  const currentRating = getWorkflowRating(currentFlow)
   const visibleWorkflows = useMemo(() => searchWorkflows(workflows, search), [workflows, search])
 
   if (!open) {
@@ -82,7 +87,14 @@ export default function WorkflowLibraryPanel({
               />
             </div>
             <div className="workflow-library__current-stats">
-              {currentStats.nodeCount} nodes · {currentStats.routeCount} routes
+              <span>
+                {currentStats.nodeCount} nodes · {currentStats.routeCount} routes
+              </span>
+              <strong
+                className={`workflow-library__rating-pill workflow-library__rating-pill--${currentRating.tone}`}
+              >
+                {currentRating.score}/100 · {currentRating.label}
+              </strong>
             </div>
             <button type="button" onClick={onSaveCurrent}>
               Save current workflow
@@ -110,6 +122,7 @@ export default function WorkflowLibraryPanel({
 
             {visibleWorkflows.map((workflow) => {
               const stats = getWorkflowStats(workflow.flow)
+              const rating = getWorkflowRating(workflow.flow)
               const isActive = workflow.id === activeWorkflowId
               const isEditing = workflow.id === editingWorkflowId
 
@@ -128,11 +141,27 @@ export default function WorkflowLibraryPanel({
                   <div className="workflow-library__item-main">
                     {!isEditing && (
                       <>
-                        <strong>{workflow.name}</strong>
+                        <div className="workflow-library__item-title">
+                          <strong>{workflow.name}</strong>
+                          <span
+                            className={`workflow-library__rating-pill workflow-library__rating-pill--${rating.tone}`}
+                            aria-label={`${workflow.name} readiness rating ${rating.score} out of 100, ${rating.label}`}
+                          >
+                            {rating.score}/100 · {rating.label}
+                          </span>
+                        </div>
                         <span>
                           {stats.nodeCount} nodes · {stats.routeCount} routes · Saved{' '}
                           {formatSavedDate(workflow.updatedAt)}
                         </span>
+                        <ul
+                          className="workflow-library__suggestions"
+                          aria-label={`Suggestions for ${workflow.name}`}
+                        >
+                          {rating.suggestions.map((suggestion) => (
+                            <li key={suggestion}>{suggestion}</li>
+                          ))}
+                        </ul>
                       </>
                     )}
 

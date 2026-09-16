@@ -227,6 +227,43 @@ describe('SupportFlow application', () => {
     expect(within(audit).queryByText('Edited question node #2.')).not.toBeInTheDocument()
   })
 
+  it('moves node cards on the canvas and records the layout change', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    const node = screen.getByTestId('flow-node-2')
+
+    fireEvent.pointerDown(screen.getByTestId('node-move-header-2'), {
+      clientX: 260,
+      clientY: 260,
+    })
+    fireEvent.pointerMove(window, {
+      clientX: 340,
+      clientY: 324,
+    })
+    fireEvent.pointerUp(window, {
+      clientX: 340,
+      clientY: 324,
+    })
+
+    await waitFor(() => {
+      expect(node).toHaveStyle({
+        left: '336px',
+        top: '312px',
+      })
+    })
+
+    await user.click(screen.getByRole('button', { name: /Open audit log/ }))
+
+    const audit = screen.getByRole('dialog', { name: 'Audit log' })
+
+    expect(within(audit).getByText('Moved question node #2.')).toBeInTheDocument()
+    expect(
+      within(audit).getByText('Position changed from (250, 250) to (336, 312).'),
+    ).toBeInTheDocument()
+  })
+
   it('records delete undo actions in the audit log', async () => {
     const user = userEvent.setup()
 
@@ -594,6 +631,10 @@ describe('SupportFlow application', () => {
 
     expect(screen.getByText('Saved workflow "Router workflow".')).toBeInTheDocument()
     expect(within(library).getByText('Router workflow')).toBeInTheDocument()
+    expect(within(library).getAllByText('100/100 · Launch ready').length).toBeGreaterThan(0)
+    expect(within(library).getByLabelText('Suggestions for Router workflow')).toHaveTextContent(
+      'Ready to preview',
+    )
 
     await user.click(within(library).getByRole('button', { name: 'Close workflow library' }))
     await user.clear(screen.getByLabelText('Question Text'))

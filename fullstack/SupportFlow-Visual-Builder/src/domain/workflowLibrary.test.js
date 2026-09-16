@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   deleteWorkflow,
+  getWorkflowRating,
   loadWorkflowLibrary,
   persistWorkflowLibrary,
   renameWorkflow,
@@ -73,6 +74,34 @@ describe('workflowLibrary', () => {
     })
     expect(searchWorkflows(renamed.workflows, 'billing')).toHaveLength(1)
     expect(deleteWorkflow(renamed.workflows, 'workflow-1')).toEqual([])
+  })
+
+  it('rates workflows and returns improvement suggestions', () => {
+    expect(getWorkflowRating(flow)).toMatchObject({
+      score: 100,
+      label: 'Launch ready',
+      tone: 'excellent',
+      issueCount: 0,
+      suggestions: ['Ready to preview. Test each route once before sharing the workflow.'],
+    })
+
+    const brokenFlow = {
+      ...flow,
+      nodes: [
+        {
+          ...flow.nodes[0],
+          options: [{ label: 'Route', nextId: '99' }],
+        },
+        flow.nodes[1],
+      ],
+    }
+    const rating = getWorkflowRating(brokenFlow)
+
+    expect(rating.score).toBeLessThan(80)
+    expect(rating.label).toBe('Needs review')
+    expect(rating.suggestions).toContain('Reconnect routes that point to missing nodes.')
+    expect(rating.suggestions).toContain('Connect unreachable nodes back into the Start path.')
+    expect(rating.suggestions).toContain('Rename 1 generic route label.')
   })
 
   it('loads only valid workflows from localStorage', () => {

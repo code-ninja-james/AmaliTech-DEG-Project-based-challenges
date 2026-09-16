@@ -19,9 +19,38 @@ import Minimap from './Minimap.jsx'
 const MIN_ZOOM = 0.5
 const MAX_ZOOM = 1.4
 const ZOOM_STEP = 0.1
+const NODE_MOVE_GRID = 24
+const DEFAULT_NODE_WIDTH = 196
+const DEFAULT_NODE_HEIGHT = 96
 
 function clampZoom(value) {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function snapToGrid(value) {
+  return Math.round(value / NODE_MOVE_GRID) * NODE_MOVE_GRID
+}
+
+function getDraggedNodePosition(dragState, point, nodeRect, canvasSize) {
+  if (!point) {
+    return dragState.lastPosition
+  }
+
+  const width = nodeRect?.width ?? DEFAULT_NODE_WIDTH
+  const height = nodeRect?.height ?? DEFAULT_NODE_HEIGHT
+  const maxX = Math.max(0, canvasSize.w - width)
+  const maxY = Math.max(0, canvasSize.h - height)
+  const nextX = dragState.startPosition.x + (point.x - dragState.startPoint.x)
+  const nextY = dragState.startPosition.y + (point.y - dragState.startPoint.y)
+
+  return {
+    x: clamp(snapToGrid(nextX), 0, maxX),
+    y: clamp(snapToGrid(nextY), 0, maxY),
+  }
 }
 
 export default function FlowCanvas({
@@ -35,12 +64,15 @@ export default function FlowCanvas({
   onConnectionSelect = () => {},
   onRouteConnect = () => {},
   onRouteReconnect = () => {},
+  onNodeMove = () => {},
+  onNodeMoveCommit = () => {},
 }) {
   const { canvas_size: canvasSize } = flow.meta
   const workspaceRef = useRef(null)
   const [hoveredNodeId, setHoveredNodeId] = useState(null)
   const [zoom, setZoom] = useState(1)
   const [draftRoute, setDraftRoute] = useState(null)
+  const [nodeDrag, setNodeDrag] = useState(null)
 
   const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
   const analysis = useMemo(() => analyzeFlow(flow.nodes), [flow.nodes])
@@ -157,6 +189,32 @@ export default function FlowCanvas({
     [getCanvasPoint, mode, onConnectionSelect],
   )
 
+  const handleNodeMoveStart = useCallback(
+    (nodeId, event) => {
+      if (mode !== 'Build') {
+        return
+      }
+
+      const node = flow.nodes.find((candidate) => candidate.id === nodeId)
+      const point = getCanvasPoint(event)
+
+      if (!node || !point) {
+        return
+      }
+
+      onNodeSelect(nodeId)
+      setDraftRoute(null)
+      setNodeDrag({
+        nodeId,
+        startPoint: point,
+        startPosition: node.position,
+        lastPosition: node.position,
+        hasMoved: false,
+      })
+    },
+    [flow.nodes, getCanvasPoint, mode, onNodeSelect],
+  )
+
   useEffect(() => {
     if (!draftRoute) {
       return undefined
@@ -226,6 +284,89 @@ export default function FlowCanvas({
     onRouteReconnect,
   ])
 
+  useEffect(() => {
+    if (!nodeDrag) {
+      return undefined
+    }
+
+    const handlePointerMove = (event) => {
+      const point = getCanvasPoint(event)
+      const nextPosition = getDraggedNodePosition(
+        nodeDrag,
+        point,
+        nodeRects[nodeDrag.nodeId],
+        canvasSize,
+      )
+      const hasMoved =
+        nodeDrag.hasMoved ||
+        nextPosition.x !== nodeDrag.startPosition.x ||
+        nextPosition.y !== nodeDrag.startPosition.y
+
+      if (
+        nextPosition.x !== nodeDrag.lastPosition.x ||
+        nextPosition.y !== nodeDrag.lastPosition.y
+      ) {
+        onNodeMove(nodeDrag.nodeId, nextPosition)
+      }
+
+      setNodeDrag((currentDrag) =>
+        currentDrag
+          ? {
+              ...currentDrag,
+              lastPosition: nextPosition,
+              hasMoved,
+            }
+          : null,
+      )
+    }
+
+    const handlePointerUp = (event) => {
+      const point = getCanvasPoint(event)
+      const nextPosition = getDraggedNodePosition(
+        nodeDrag,
+        point,
+        nodeRects[nodeDrag.nodeId],
+        canvasSize,
+      )
+      const hasMoved =
+        nodeDrag.hasMoved ||
+        nextPosition.x !== nodeDrag.startPosition.x ||
+        nextPosition.y !== nodeDrag.startPosition.y
+
+      if (
+        nextPosition.x !== nodeDrag.lastPosition.x ||
+        nextPosition.y !== nodeDrag.lastPosition.y
+      ) {
+        onNodeMove(nodeDrag.nodeId, nextPosition)
+      }
+
+      if (hasMoved) {
+        onNodeMoveCommit(nodeDrag.nodeId, nodeDrag.startPosition, nextPosition)
+      }
+
+      setNodeDrag(null)
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape') {
+        return
+      }
+
+      onNodeMove(nodeDrag.nodeId, nodeDrag.startPosition)
+      setNodeDrag(null)
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [canvasSize, getCanvasPoint, nodeDrag, nodeRects, onNodeMove, onNodeMoveCommit])
+
   const handleFitView = () => {
     const workspace = workspaceRef.current
 
@@ -265,7 +406,9 @@ export default function FlowCanvas({
         >
           <div
             ref={canvasRef}
-            className="flow-canvas"
+            className={['flow-canvas', nodeDrag ? 'flow-canvas--moving-node' : '']
+              .filter(Boolean)
+              .join(' ')}
             data-testid="flow-canvas"
             style={{
               width: `${canvasSize.w}px`,
@@ -299,6 +442,7 @@ export default function FlowCanvas({
               nodes={flow.nodes}
               width={canvasSize.w}
               height={canvasSize.h}
+              showLabels={false}
               selectedNodeId={selectedNodeId}
               selectedConnectionId={selectedConnectionId}
               onConnectionSelect={onConnectionSelect}
@@ -325,11 +469,31 @@ export default function FlowCanvas({
                 isConnectable={mode === 'Build' && node.type !== 'end'}
                 isConnectionTarget={draftRoute?.targetId === node.id}
                 isConnectionSource={draftRoute?.sourceId === node.id}
+                isMovable={mode === 'Build'}
+                isMoving={nodeDrag?.nodeId === node.id}
                 onRouteDraftStart={handleRouteDraftStart}
+                onMoveStart={handleNodeMoveStart}
                 onSelect={onNodeSelect}
                 onHover={setHoveredNodeId}
               />
             ))}
+
+            <ConnectorLayer
+              connections={connections}
+              nodeRects={nodeRects}
+              nodes={flow.nodes}
+              width={canvasSize.w}
+              height={canvasSize.h}
+              showPaths={false}
+              showDraft={false}
+              selectedNodeId={selectedNodeId}
+              selectedConnectionId={selectedConnectionId}
+              onConnectionSelect={onConnectionSelect}
+              onRouteRewireStart={handleRouteRewireStart}
+              mode={mode}
+              reachableIds={analysis.reachable}
+              cycleParticipantIds={analysis.cycleParticipants}
+            />
           </div>
         </div>
       </div>

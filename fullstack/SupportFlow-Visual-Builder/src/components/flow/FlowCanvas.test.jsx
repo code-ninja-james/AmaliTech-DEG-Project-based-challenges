@@ -63,13 +63,16 @@ describe('FlowCanvas', () => {
     expect(screen.getByRole('button', { name: 'Business, route to node 6' })).toBeInTheDocument()
   })
 
-  it('only exposes node move handles in Build mode', () => {
+  it('marks node cards as draggable in Build mode without showing a move button', () => {
     const { rerender } = render(<FlowCanvas flow={flowData} />)
 
-    expect(screen.getByRole('button', { name: 'Move node 2' })).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-2')).toHaveClass('flow-node--movable')
+    expect(screen.getByTestId('node-move-header-2')).toHaveClass('flow-node__header--movable')
+    expect(screen.queryByRole('button', { name: 'Move node 2' })).not.toBeInTheDocument()
 
     rerender(<FlowCanvas flow={flowData} mode="X-Ray" />)
 
-    expect(screen.queryByRole('button', { name: 'Move node 2' })).not.toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-2')).not.toHaveClass('flow-node--movable')
+    expect(screen.getByTestId('node-move-header-2')).not.toHaveClass('flow-node__header--movable')
   })
 })

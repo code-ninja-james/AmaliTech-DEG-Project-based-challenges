@@ -82,6 +82,19 @@ export default function FlowNode({
       onKeyDown={handleKeyDown}
       onMouseEnter={() => onHover(node.id)}
       onMouseLeave={() => onHover(null)}
+      onPointerDown={(event) => {
+        if (
+          !isMovable ||
+          event.button !== 0 ||
+          event.target.closest('.flow-node__connect-handle')
+        ) {
+          return
+        }
+
+        event.preventDefault()
+        event.stopPropagation()
+        onMoveStart(node.id, event)
+      }}
       style={{
         left: `${node.position.x}px`,
         top: `${node.position.y}px`,
@@ -94,39 +107,9 @@ export default function FlowNode({
           .filter(Boolean)
           .join(' ')}
         data-testid={`node-move-header-${node.id}`}
-        title={isMovable ? 'Drag this header to move the node' : undefined}
-        onPointerDown={(event) => {
-          if (!isMovable || event.target.closest('.flow-node__move-handle')) {
-            return
-          }
-
-          event.preventDefault()
-          event.stopPropagation()
-          onMoveStart(node.id, event)
-        }}
+        title={isMovable ? 'Drag this card to move it' : undefined}
       >
         <span className="flow-node__header-left">
-          {isMovable && (
-            <span
-              className="flow-node__move-handle"
-              role="button"
-              tabIndex="0"
-              aria-label={`Move node ${node.id}`}
-              title="Drag to move this node"
-              onClick={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-              }}
-              onPointerDown={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-                onMoveStart(node.id, event)
-              }}
-            >
-              Move
-            </span>
-          )}
-
           <span className="flow-node__type">
             <span className="flow-node__glyph" aria-hidden="true">
               {glyph}

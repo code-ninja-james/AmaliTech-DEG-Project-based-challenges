@@ -112,26 +112,6 @@
   background-image: linear-gradient(rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025));
 }
 
-.flow-node__move-handle {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.035);
-  color: rgba(255, 255, 255, 0.42);
-  box-shadow: none;
-  transition:
-    border-color 0.16s ease,
-    color 0.16s ease,
-    background 0.16s ease;
-}
-
-.flow-node__move-handle:hover,
-.flow-node__move-handle:focus-visible,
-.flow-node--moving .flow-node__move-handle {
-  border-color: rgba(79, 143, 247, 0.42);
-  background: rgba(79, 143, 247, 0.12);
-  color: rgba(191, 219, 254, 0.96);
-  outline: none;
-}
-
 .flow-node--moving {
   transform: translateY(-1px);
   box-shadow:

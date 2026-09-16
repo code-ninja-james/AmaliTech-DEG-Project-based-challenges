@@ -95,6 +95,16 @@
   border-top-color: var(--sf-node-terminal);
 }
 
+.flow-node--movable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.flow-node--movable:active,
+.flow-node--moving {
+  cursor: grabbing;
+}
+
 .flow-node__header {
   display: flex;
   align-items: center;
@@ -117,26 +127,6 @@
   min-width: 0;
   align-items: center;
   gap: 6px;
-}
-
-.flow-node__move-handle {
-  display: inline-flex;
-  min-height: 18px;
-  align-items: center;
-  padding: 0 6px;
-  border: 1px solid var(--sf-border-subtle);
-  border-radius: 999px;
-  color: var(--sf-text-faint);
-  cursor: grab;
-  font-family: var(--sf-font-mono);
-  font-size: 8px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.flow-node__move-handle:active,
-.flow-node--moving .flow-node__move-handle {
-  cursor: grabbing;
 }
 
 .flow-node__type,

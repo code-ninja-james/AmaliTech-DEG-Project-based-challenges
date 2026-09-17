@@ -63,6 +63,26 @@ describe('FlowCanvas', () => {
     expect(screen.getByRole('button', { name: 'Business, route to node 6' })).toBeInTheDocument()
   })
 
+  it('keeps imported node ids compact in card headers', () => {
+    const importedFlow = {
+      meta: { canvas_size: { w: 900, h: 600 } },
+      nodes: [
+        {
+          id: 'q-billing',
+          type: 'question',
+          text: 'Is this for a personal or business account?',
+          position: { x: 120, y: 120 },
+          options: [],
+        },
+      ],
+    }
+
+    render(<FlowCanvas flow={importedFlow} />)
+
+    expect(screen.getByText('q-billing')).toBeInTheDocument()
+    expect(screen.queryByText('node_q-billing')).not.toBeInTheDocument()
+  })
+
   it('marks node cards as draggable in Build mode without showing a move button', () => {
     const { rerender } = render(<FlowCanvas flow={flowData} />)
 

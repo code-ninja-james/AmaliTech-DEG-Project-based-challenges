@@ -102,10 +102,23 @@
   pointer-events: none;
 }
 
+.flow-node__header {
+  gap: 8px;
+  overflow: hidden;
+}
+
+.flow-node__header-left {
+  flex: 0 0 auto;
+}
+
 .flow-node__header-meta {
   display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
+  justify-content: flex-end;
   gap: 5px;
+  overflow: hidden;
 }
 
 .flow-node__header--movable:hover {
@@ -120,12 +133,29 @@
 }
 
 .flow-node__glyph {
+  flex: 0 0 auto;
   margin-right: 5px;
   font-size: 8px;
 }
 
+.flow-node__type {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.flow-node__id {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .flow-node__incoming {
   display: grid;
+  flex: 0 0 auto;
   min-width: 16px;
   height: 15px;
   place-items: center;

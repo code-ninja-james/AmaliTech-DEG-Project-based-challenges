@@ -546,22 +546,6 @@
   color: #f59e0b;
 }
 
-.flow-node__type::before {
-  margin-right: 5px;
-}
-
-.flow-node--start .flow-node__type::before {
-  content: '▶';
-}
-
-.flow-node--question .flow-node__type::before {
-  content: '◇';
-}
-
-.flow-node--end .flow-node__type::before {
-  content: '■';
-}
-
 .flow-node__text {
   padding: 8px 9px;
   font-size: 11px;

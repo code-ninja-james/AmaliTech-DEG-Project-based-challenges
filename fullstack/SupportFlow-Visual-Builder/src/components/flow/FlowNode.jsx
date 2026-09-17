@@ -18,6 +18,12 @@ const NODE_GLYPHS = {
   end: '■',
 }
 
+function getDisplayNodeId(nodeId) {
+  const id = String(nodeId)
+
+  return /^\d+$/.test(id) ? `node_${id.padStart(3, '0')}` : id
+}
+
 export default function FlowNode({
   node,
   nodeRef,
@@ -41,6 +47,7 @@ export default function FlowNode({
 }) {
   const nodeType = NODE_LABELS[node.type] ?? node.type
   const glyph = NODE_GLYPHS[node.type] ?? '•'
+  const displayNodeId = getDisplayNodeId(node.id)
   const issueCount = issues.length
   const issueSeverity = issues.some((issue) => issue.severity === 'error') ? 'error' : 'warning'
 
@@ -133,7 +140,9 @@ export default function FlowNode({
               {incomingCount}
             </span>
           )}
-          <span className="flow-node__id">node_{String(node.id).padStart(3, '0')}</span>
+          <span className="flow-node__id" title={`Node ID: ${node.id}`}>
+            {displayNodeId}
+          </span>
         </span>
       </header>
 

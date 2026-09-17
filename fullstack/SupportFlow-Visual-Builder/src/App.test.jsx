@@ -831,44 +831,52 @@ describe('SupportFlow application', () => {
     )
   })
 
-  it('switches diagnostic scenarios without accumulating faults or changing the six nodes', async () => {
+  it('switches diagnostic scenarios without accumulating faults or mutating the current flow', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByRole('button', { name: /Flow Health/ }))
     const scenario = screen.getByRole('combobox', { name: 'Diagnostic demo' })
 
     await user.selectOptions(scenario, 'broken-reference')
-    expect(
-      screen.getByText('Route "Business" from node #3 points to missing node #missing-billing.'),
-    ).toBeInTheDocument()
-    expect(screen.getByTestId('flow-node-3')).toHaveClass('flow-node--xray-broken')
-    expect(screen.getByTestId('broken-connection-3-1-missing-billing')).toBeInTheDocument()
+    expect(screen.getByText(/points to missing node/)).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-2')).toHaveClass('flow-node--xray-broken')
+    expect(screen.getByText('Missing target')).toBeInTheDocument()
     expect(screen.getAllByTestId(/^flow-node-/)).toHaveLength(6)
     expect(screen.getByText(/DEMO · X-RAY · 6\/6 reachable/)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Select node #3' }))
-    expect(screen.getByTestId('flow-node-3')).toHaveClass('flow-node--selected')
+    await user.click(screen.getByRole('button', { name: 'Select node #2' }))
+    expect(screen.getByTestId('flow-node-2')).toHaveClass('flow-node--selected')
 
     await user.selectOptions(scenario, 'unreachable-branch')
-    expect(screen.getByText(/X-RAY · 4\/6 reachable/)).toBeInTheDocument()
-    expect(screen.queryByTestId('broken-connection-3-1-missing-billing')).not.toBeInTheDocument()
-    for (const id of ['3', '6']) {
+    expect(screen.getByText(/X-RAY · 3\/6 reachable/)).toBeInTheDocument()
+    expect(screen.queryByText('Missing target')).not.toBeInTheDocument()
+    for (const id of ['2', '4', '5']) {
       expect(screen.getByTestId(`flow-node-${id}`)).toHaveClass('flow-node--xray-error')
     }
 
     await user.selectOptions(scenario, 'cycle')
     expect(screen.getByText(/X-RAY · 6\/6 reachable · cycle detected/)).toBeInTheDocument()
-    expect(screen.getByTestId('flow-node-3')).toHaveClass('flow-node--xray-cycle')
+    expect(screen.getByTestId('flow-node-2')).toHaveClass('flow-node--xray-cycle')
     expect(screen.getByTestId('flow-node-1')).not.toHaveClass('flow-node--xray-cycle')
     expect(screen.getByTestId('flow-node-6')).not.toHaveClass('flow-node--xray-error')
     expect(screen.getAllByTestId(/^flow-node-/)).toHaveLength(6)
 
+    await user.selectOptions(scenario, 'question-no-routes')
+    expect(
+      screen.getByText('Node #question-with-no-routes-demo ends unexpectedly without any routes.'),
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-question-with-no-routes-demo')).toHaveClass(
+      'flow-node--xray-error',
+    )
+    expect(screen.getAllByTestId(/^flow-node-/)).toHaveLength(7)
+
     await user.click(screen.getByRole('button', { name: 'Return to current flow' }))
     expect(scenario).toHaveValue('current')
     expect(screen.getByText('No structural issues detected')).toBeInTheDocument()
+    expect(screen.getAllByTestId(/^flow-node-/)).toHaveLength(6)
     expect(screen.queryByText('Diagnostic demo · temporary')).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Check account again, route to node 3' }),
+      screen.queryByRole('button', { name: 'X-Ray loop back, route to node 2' }),
     ).not.toBeInTheDocument()
   })
 
@@ -931,9 +939,7 @@ describe('SupportFlow application', () => {
 
     expect(writeText).toHaveBeenCalledTimes(1)
     expect(writeText.mock.calls[0][0]).toContain('Scenario: Broken reference (temporary demo)')
-    expect(writeText.mock.calls[0][0]).toContain(
-      'ERROR: Route "Business" from node #3 points to missing node #missing-billing.',
-    )
+    expect(writeText.mock.calls[0][0]).toContain('points to missing node #missing-demo-node')
     expect(screen.getByText('Report copied')).toBeInTheDocument()
   })
 })

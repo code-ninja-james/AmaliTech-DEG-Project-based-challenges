@@ -100,6 +100,14 @@ export default function FlowCanvas({
 
     return counts
   }, [connections, flow.nodes])
+  const diagnosticIssueNodeIds = useMemo(
+    () =>
+      new Set([
+        ...analysis.questionsWithoutRoutes.map((node) => node.id),
+        ...analysis.terminalsWithRoutes.map((node) => node.id),
+      ]),
+    [analysis.questionsWithoutRoutes, analysis.terminalsWithRoutes],
+  )
 
   const { canvasRef, nodeRects, registerNode } = useNodeMeasurements(flow.nodes, zoom)
 
@@ -533,6 +541,7 @@ export default function FlowCanvas({
                 isHovered={node.id === hoveredNodeId}
                 isXray={isXray}
                 isReachable={analysis.reachable.has(node.id)}
+                hasDiagnosticIssue={diagnosticIssueNodeIds.has(node.id)}
                 isCycleParticipant={analysis.cycleParticipants.has(node.id)}
                 hasBrokenRoute={brokenRouteNodeIds.has(node.id)}
                 incomingCount={incomingCounts.get(node.id) ?? 0}

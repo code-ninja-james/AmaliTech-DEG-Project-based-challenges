@@ -31,6 +31,7 @@ export default function FlowNode({
   isHovered = false,
   isXray = false,
   isReachable = true,
+  hasDiagnosticIssue = false,
   isCycleParticipant = false,
   hasBrokenRoute = false,
   incomingCount = 0,
@@ -69,7 +70,9 @@ export default function FlowNode({
         isSelected ? 'flow-node--selected' : '',
         isHovered ? 'flow-node--hovered' : '',
         isXray ? 'flow-node--xray' : '',
-        isXray && !isReachable ? 'flow-node--xray-error studio-xray-enter' : '',
+        isXray && (!isReachable || hasDiagnosticIssue)
+          ? 'flow-node--xray-error studio-xray-enter'
+          : '',
         isXray && hasBrokenRoute ? 'flow-node--xray-broken' : '',
         isXray && isCycleParticipant ? 'flow-node--xray-cycle' : '',
         !isXray && issueCount > 0 ? `flow-node--has-${issueSeverity}` : '',

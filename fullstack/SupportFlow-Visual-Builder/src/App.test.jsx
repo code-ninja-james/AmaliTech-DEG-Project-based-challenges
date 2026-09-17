@@ -728,6 +728,12 @@ describe('SupportFlow application', () => {
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
 
     let library = screen.getByRole('dialog', { name: 'Workflow library' })
+    expect(
+      within(library).getByRole('group', { name: 'Current workflow rating breakdown' }),
+    ).toHaveTextContent('Structure')
+    expect(
+      within(library).getByRole('group', { name: 'Current workflow rating breakdown' }),
+    ).toHaveTextContent('Route labels')
     await user.clear(within(library).getByLabelText('Current workflow name'))
     await user.type(within(library).getByLabelText('Current workflow name'), 'Router workflow')
     await user.click(within(library).getByRole('button', { name: 'Save current workflow' }))
@@ -735,6 +741,9 @@ describe('SupportFlow application', () => {
     expect(screen.getByText('Saved workflow "Router workflow".')).toBeInTheDocument()
     expect(within(library).getByText('Router workflow')).toBeInTheDocument()
     expect(within(library).getAllByText('100/100 · Launch ready').length).toBeGreaterThan(0)
+    expect(
+      within(library).getByRole('group', { name: 'Rating breakdown for Router workflow' }),
+    ).toHaveTextContent('Endings')
     expect(within(library).getByLabelText('Suggestions for Router workflow')).toHaveTextContent(
       'Ready to preview',
     )

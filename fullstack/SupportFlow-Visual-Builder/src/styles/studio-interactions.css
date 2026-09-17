@@ -1761,6 +1761,110 @@
   color: rgba(254, 202, 202, 0.96);
 }
 
+.workflow-library__rating-breakdown {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.workflow-library__save .workflow-library__rating-breakdown {
+  grid-column: 1 / -1;
+}
+
+.workflow-library__rating-metric {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.workflow-library__rating-metric > div:first-child {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.workflow-library__rating-metric span,
+.workflow-library__rating-metric strong {
+  overflow: hidden;
+  font-family: var(--sf-font-mono);
+  font-size: 8px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-library__rating-metric span {
+  color: rgba(255, 255, 255, 0.42);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.workflow-library__rating-metric strong {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.workflow-library__metric-score--excellent {
+  color: rgba(167, 243, 208, 0.98);
+}
+
+.workflow-library__metric-score--good {
+  color: rgba(191, 219, 254, 0.98);
+}
+
+.workflow-library__metric-score--warning {
+  color: rgba(253, 230, 138, 0.98);
+}
+
+.workflow-library__metric-score--danger {
+  color: rgba(254, 202, 202, 0.98);
+}
+
+.workflow-library__metric-bar {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.workflow-library__metric-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.workflow-library__metric-bar--excellent span {
+  background: rgba(16, 185, 129, 0.86);
+}
+
+.workflow-library__metric-bar--good span {
+  background: rgba(79, 143, 247, 0.86);
+}
+
+.workflow-library__metric-bar--warning span {
+  background: rgba(245, 158, 11, 0.9);
+}
+
+.workflow-library__metric-bar--danger span {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+.workflow-library__rating-metric p {
+  margin: 0;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.36);
+  font-size: 9px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .workflow-library__item-main > span {
   color: rgba(255, 255, 255, 0.34);
   font-family: var(--sf-font-mono);
@@ -1804,6 +1908,12 @@
   border-color: rgba(239, 68, 68, 0.2);
   background: rgba(239, 68, 68, 0.06);
   color: rgba(255, 143, 143, 0.9);
+}
+
+@media (max-width: 760px) {
+  .workflow-library__rating-breakdown {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .audit-log__backdrop {

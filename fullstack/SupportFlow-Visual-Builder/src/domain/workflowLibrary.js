@@ -101,6 +101,87 @@ function getUniqueSuggestions(suggestions) {
   return [...new Set(suggestions.filter(Boolean))]
 }
 
+function getBreakdownTone(score) {
+  if (score >= 90) {
+    return 'excellent'
+  }
+
+  if (score >= 75) {
+    return 'good'
+  }
+
+  if (score >= 55) {
+    return 'warning'
+  }
+
+  return 'danger'
+}
+
+function createBreakdownItem(label, score, detail) {
+  return {
+    label,
+    score,
+    tone: getBreakdownTone(score),
+    detail,
+  }
+}
+
+function getWorkflowRatingBreakdown({
+  errorCount,
+  warningCount,
+  unnamedRoutes,
+  placeholderNodes,
+  terminalCount,
+  nodes,
+  stats,
+}) {
+  const structureScore = Math.max(0, 100 - errorCount * 25 - warningCount * 10)
+  const routeLabelScore =
+    stats.routeCount === 0 ? 100 : Math.max(0, 100 - unnamedRoutes.length * 25)
+  const contentScore = Math.max(0, 100 - placeholderNodes.length * 25)
+  const endingScore =
+    nodes.length === 0
+      ? 0
+      : terminalCount === 0
+        ? 0
+        : Math.max(55, Math.min(100, 70 + terminalCount * 10))
+
+  return [
+    createBreakdownItem(
+      'Structure',
+      structureScore,
+      errorCount === 0 && warningCount === 0
+        ? 'No graph issues'
+        : `${errorCount} error${errorCount === 1 ? '' : 's'} · ${warningCount} warning${
+            warningCount === 1 ? '' : 's'
+          }`,
+    ),
+    createBreakdownItem(
+      'Route labels',
+      routeLabelScore,
+      unnamedRoutes.length === 0
+        ? 'Labels are clear'
+        : `${unnamedRoutes.length} generic label${unnamedRoutes.length === 1 ? '' : 's'}`,
+    ),
+    createBreakdownItem(
+      'Content',
+      contentScore,
+      placeholderNodes.length === 0
+        ? 'Messages are filled'
+        : `${placeholderNodes.length} placeholder message${
+            placeholderNodes.length === 1 ? '' : 's'
+          }`,
+    ),
+    createBreakdownItem(
+      'Endings',
+      endingScore,
+      terminalCount > 0
+        ? `${terminalCount} terminal exit${terminalCount === 1 ? '' : 's'}`
+        : 'No terminal exits',
+    ),
+  ]
+}
+
 export function getWorkflowRating(flow) {
   const nodes = getNormalizedRatingNodes(flow)
   const issues = validateFlow(nodes)
@@ -149,6 +230,15 @@ export function getWorkflowRating(flow) {
     issueCount: issues.length,
     errorCount,
     warningCount,
+    breakdown: getWorkflowRatingBreakdown({
+      errorCount,
+      warningCount,
+      unnamedRoutes,
+      placeholderNodes,
+      terminalCount,
+      nodes,
+      stats,
+    }),
     suggestions:
       suggestions.length > 0
         ? suggestions.slice(0, 3)

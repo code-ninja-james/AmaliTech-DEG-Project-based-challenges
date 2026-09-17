@@ -90,6 +90,12 @@ describe('workflowLibrary', () => {
       label: 'Launch ready',
       tone: 'excellent',
       issueCount: 0,
+      breakdown: [
+        { label: 'Structure', score: 100, detail: 'No graph issues' },
+        { label: 'Route labels', score: 100, detail: 'Labels are clear' },
+        { label: 'Content', score: 100, detail: 'Messages are filled' },
+        { label: 'Endings', score: 80, detail: '1 terminal exit' },
+      ],
       suggestions: ['Ready to preview. Test each route once before sharing the workflow.'],
     })
 
@@ -107,6 +113,12 @@ describe('workflowLibrary', () => {
 
     expect(rating.score).toBeLessThan(80)
     expect(rating.label).toBe('Needs review')
+    expect(rating.breakdown).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Structure', score: 65, detail: '1 error · 1 warning' }),
+        expect.objectContaining({ label: 'Route labels', score: 75, detail: '1 generic label' }),
+      ]),
+    )
     expect(rating.suggestions).toContain('Reconnect routes that point to missing nodes.')
     expect(rating.suggestions).toContain('Connect unreachable nodes back into the Start path.')
     expect(rating.suggestions).toContain('Rename 1 generic route label.')

@@ -15,6 +15,30 @@ function formatSavedDate(value) {
   }).format(new Date(value))
 }
 
+function RatingBreakdown({ rating, label }) {
+  return (
+    <div className="workflow-library__rating-breakdown" role="group" aria-label={label}>
+      {rating.breakdown.map((item) => (
+        <div className="workflow-library__rating-metric" key={item.label}>
+          <div>
+            <span>{item.label}</span>
+            <strong className={`workflow-library__metric-score--${item.tone}`}>
+              {item.score}/100
+            </strong>
+          </div>
+          <div
+            className={`workflow-library__metric-bar workflow-library__metric-bar--${item.tone}`}
+            aria-hidden="true"
+          >
+            <span style={{ width: `${item.score}%` }} />
+          </div>
+          <p>{item.detail}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function WorkflowLibraryPanel({
   open,
   workflows,
@@ -96,6 +120,7 @@ export default function WorkflowLibraryPanel({
                 {currentRating.score}/100 · {currentRating.label}
               </strong>
             </div>
+            <RatingBreakdown rating={currentRating} label="Current workflow rating breakdown" />
             <button type="button" onClick={onSaveCurrent}>
               Save current workflow
             </button>
@@ -154,6 +179,10 @@ export default function WorkflowLibraryPanel({
                           {stats.nodeCount} nodes · {stats.routeCount} routes · Saved{' '}
                           {formatSavedDate(workflow.updatedAt)}
                         </span>
+                        <RatingBreakdown
+                          rating={rating}
+                          label={`Rating breakdown for ${workflow.name}`}
+                        />
                         <ul
                           className="workflow-library__suggestions"
                           aria-label={`Suggestions for ${workflow.name}`}

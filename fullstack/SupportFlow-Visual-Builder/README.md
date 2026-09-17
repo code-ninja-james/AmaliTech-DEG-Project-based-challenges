@@ -57,7 +57,7 @@ The required assignment asks for a visual graph, editing, Preview mode, and one 
 - Draws custom cubic Bézier connectors with native SVG.
 - Supports route labels, selection states, execution packets, minimap navigation, and canvas zoom controls.
 - Includes a searchable/collapsible node navigator.
-- Allows node cards to be moved by dragging the card header or the Move handle in Build mode; moved positions are kept in state, saved with workflows, and recorded in the audit log.
+- Allows node cards to be moved directly in Build mode; moved positions are kept in state, saved with workflows, and recorded in the audit log.
 
 ### Flow import
 
@@ -84,7 +84,7 @@ Workflows can be saved in the browser and reused later without a backend databas
 
 Search checks workflow names, node IDs, node text, route labels, and route targets. When a saved workflow is used, the editor switches back to Build mode, selects the Start node, and all normal editing, validation, import, and Preview behavior continues against that loaded workflow.
 
-Each workflow also receives a readiness rating, such as **100/100 · Launch ready** or **Needs review**, plus short improvement suggestions generated from the same structural checks used by Flow Health. Saved flows can therefore be compared quickly before a manager chooses which one to use.
+Each workflow also receives a readiness rating, such as **100/100 · Launch ready** or **Needs review**, plus short improvement suggestions generated from the same structural checks used by Flow Health. The rating is broken down into **Structure**, **Route labels**, **Content**, and **Endings**, so managers can see why a workflow received its score instead of treating it as a black box. Saved flows can therefore be compared quickly before a manager chooses which one to use.
 
 **Business value:** support managers can keep separate flows for billing, technical support, onboarding, or seasonal campaigns and switch between them without rebuilding from scratch.
 
@@ -137,7 +137,7 @@ Build mode surfaces the same validation results while editing: affected nodes ge
 
 **Business value:** Flow Health acts as an editor-side quality gate before publish. It reduces broken customer journeys, configuration mistakes, and avoidable support tickets that are difficult for non-technical authors to spot visually.
 
-This is also where light gamification belongs. Instead of adding playful game mechanics, SupportFlow uses professional progress feedback: issue counts, node health checks, route warnings, and readiness language that helps a manager know whether a workflow is safe to preview or publish. A future iteration can turn the same validation data into a simple **Launch Readiness Score** without changing the editor's serious support-operations tone.
+This is also where light gamification belongs. Instead of adding playful game mechanics, SupportFlow uses professional progress feedback: issue counts, node health checks, route warnings, and readiness language that helps a manager know whether a workflow is safe to preview or publish. The Workflow Library turns the same validation signals into a launch-readiness score without changing the editor's serious support-operations tone.
 
 #### Diagnostic demo
 

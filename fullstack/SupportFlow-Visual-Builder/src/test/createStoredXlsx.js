@@ -121,7 +121,7 @@ function createEndOfCentralDirectory(entryCount, centralDirectorySize, centralDi
   return record
 }
 
-function createStoredZip(entries) {
+export function createStoredZip(entries) {
   const localEntries = []
   const centralEntries = []
   let offset = 0

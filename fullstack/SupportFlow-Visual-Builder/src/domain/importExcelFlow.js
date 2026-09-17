@@ -111,6 +111,27 @@ function parseXml(xmlText) {
   return document
 }
 
+function getElementsByLocalName(root, localName) {
+  return Array.from(root.getElementsByTagName('*')).filter(
+    (element) => element.localName === localName,
+  )
+}
+
+function getFirstElementByLocalName(root, localName) {
+  return getElementsByLocalName(root, localName)[0] ?? null
+}
+
+function getRelationshipId(element) {
+  return (
+    element.getAttribute('r:id') ??
+    element.getAttributeNS(
+      'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+      'id',
+    ) ??
+    element.getAttribute('id')
+  )
+}
+
 function readRelationships(entries, relsPath, sourcePath) {
   const relsEntry = entries.get(relsPath)
   const relationships = new Map()
@@ -121,7 +142,7 @@ function readRelationships(entries, relsPath, sourcePath) {
 
   const document = parseXml(readUtf8(relsEntry))
 
-  Array.from(document.getElementsByTagName('Relationship')).forEach((relationship) => {
+  getElementsByLocalName(document, 'Relationship').forEach((relationship) => {
     relationships.set(relationship.getAttribute('Id'), {
       type: relationship.getAttribute('Type') ?? '',
       target: resolvePath(sourcePath, relationship.getAttribute('Target') ?? ''),
@@ -150,10 +171,10 @@ function findWorkbookPath(entries) {
 
 function findWorksheetPath(entries, workbookPath) {
   const workbook = parseXml(readUtf8(entries.get(workbookPath)))
-  const sheet = workbook.getElementsByTagName('sheet')[0]
+  const sheet = getFirstElementByLocalName(workbook, 'sheet')
 
   if (sheet) {
-    const relationshipId = sheet.getAttribute('r:id') ?? sheet.getAttribute('id')
+    const relationshipId = getRelationshipId(sheet)
     const workbookRelsPath = resolvePath(
       workbookPath,
       `_rels/${workbookPath.split('/').pop()}.rels`,
@@ -184,8 +205,8 @@ function readSharedStrings(entries) {
     return []
   }
 
-  return Array.from(parseXml(readUtf8(sharedStrings)).getElementsByTagName('si')).map((item) =>
-    Array.from(item.getElementsByTagName('t'))
+  return getElementsByLocalName(parseXml(readUtf8(sharedStrings)), 'si').map((item) =>
+    getElementsByLocalName(item, 't')
       .map((textNode) => textNode.textContent ?? '')
       .join(''),
   )
@@ -210,12 +231,12 @@ function getCellText(cell, sharedStrings) {
   const type = cell.getAttribute('t')
 
   if (type === 'inlineStr') {
-    return Array.from(cell.getElementsByTagName('t'))
+    return getElementsByLocalName(cell, 't')
       .map((textNode) => textNode.textContent ?? '')
       .join('')
   }
 
-  const value = cell.getElementsByTagName('v')[0]?.textContent ?? ''
+  const value = getFirstElementByLocalName(cell, 'v')?.textContent ?? ''
 
   if (type === 's') {
     return sharedStrings[Number(value)] ?? ''
@@ -225,7 +246,13 @@ function getCellText(cell, sharedStrings) {
     return value === '1' ? 'TRUE' : 'FALSE'
   }
 
-  return value
+  if (value) {
+    return value
+  }
+
+  return getElementsByLocalName(cell, 't')
+    .map((textNode) => textNode.textContent ?? '')
+    .join('')
 }
 
 function trimRow(row) {
@@ -245,11 +272,11 @@ export async function readRowsFromExcelWorkbook(arrayBuffer) {
   const worksheet = parseXml(readUtf8(entries.get(worksheetPath)))
   const sharedStrings = readSharedStrings(entries)
 
-  return Array.from(worksheet.getElementsByTagName('row'))
+  return getElementsByLocalName(worksheet, 'row')
     .map((row) => {
       const cells = []
 
-      Array.from(row.getElementsByTagName('c')).forEach((cell, fallbackIndex) => {
+      getElementsByLocalName(row, 'c').forEach((cell, fallbackIndex) => {
         cells[getColumnIndex(cell.getAttribute('r'), fallbackIndex)] = getCellText(
           cell,
           sharedStrings,

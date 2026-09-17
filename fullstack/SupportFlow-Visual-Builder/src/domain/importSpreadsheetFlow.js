@@ -210,7 +210,15 @@ function getCell(row, columns, field) {
 }
 
 function readNumber(value) {
-  const parsed = Number(String(value).replace(/,/g, '').trim())
+  const normalizedValue = String(value ?? '')
+    .replace(/,/g, '')
+    .trim()
+
+  if (!normalizedValue) {
+    return null
+  }
+
+  const parsed = Number(normalizedValue)
 
   return Number.isFinite(parsed) ? parsed : null
 }

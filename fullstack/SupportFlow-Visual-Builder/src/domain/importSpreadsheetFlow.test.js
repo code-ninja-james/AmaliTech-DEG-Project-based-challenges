@@ -67,6 +67,30 @@ describe('importSpreadsheetFlow', () => {
     )
   })
 
+  it('auto-lays out rows when coordinate columns are blank', () => {
+    const csv = [
+      'Old support export',
+      'Node ID,Type,Question Text,Route Label,Next Node ID,Canvas X,Canvas Y',
+      'start,start,"Welcome to support.",Billing,billing,,',
+      'start,start,"Welcome to support.",Technical support,tech,,',
+      'billing,end,"Connecting you to billing.",,,,',
+      'tech,end,"Restart your router first.",,,,',
+    ].join('\n')
+
+    const { flow } = createFlowFromSpreadsheet(csv)
+    const positions = flow.nodes.map((node) => node.position)
+
+    expect(positions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
+      ]),
+    )
+    expect(flow.nodes.find((node) => node.id === 'start').position).not.toEqual({ x: 0, y: 0 })
+    expect(new Set(positions.map((position) => `${position.x}:${position.y}`)).size).toBe(
+      flow.nodes.length,
+    )
+  })
+
   it('throws a helpful error when no header can be found', () => {
     expect(() => createFlowFromSpreadsheet('just messy notes\nwithout columns')).toThrow(
       /Could not find spreadsheet columns/,

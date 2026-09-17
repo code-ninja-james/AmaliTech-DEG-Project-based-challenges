@@ -1,13 +1,13 @@
 /**
  * Renders the alternate spatial topology view from the Figma Make prototype.
  *
- * The view is intentionally derived from the same six challenge nodes rather
- * than maintaining a duplicate graph model. Selecting a topology point updates
- * the shared editor selection, while the viewport controls provide real zoom
- * behavior instead of decorative prototype-only buttons.
+ * The default challenge data keeps its prototype layout, while imported or
+ * custom workflows are projected into a generated topology. Selecting a point
+ * updates the shared editor selection, and the viewport controls provide real
+ * zoom behavior instead of decorative prototype-only buttons.
  */
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 const TYPE_COLOR = {
   start: '#10b981',
@@ -42,9 +42,97 @@ const SPATIAL_LABELS = {
 const MIN_ZOOM = 0.7
 const MAX_ZOOM = 1.4
 const ZOOM_STEP = 0.1
+const DYNAMIC_LAYOUT_WIDTH = 900
+const DYNAMIC_LAYOUT_VERTICAL_SPREAD = 420
+const DYNAMIC_LAYOUT_MAX_Z = 380
 
 function clampZoom(value) {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
+}
+
+function getSpatialDepths(nodes) {
+  const nodeMap = new Map(nodes.map((node) => [node.id, node]))
+  const depthById = new Map()
+  const startNode = nodes.find((node) => node.type === 'start') ?? nodes[0]
+
+  if (startNode) {
+    const queue = [{ id: startNode.id, depth: 0 }]
+
+    while (queue.length > 0) {
+      const current = queue.shift()
+      const existingDepth = depthById.get(current.id)
+
+      if (existingDepth !== undefined && existingDepth <= current.depth) {
+        continue
+      }
+
+      depthById.set(current.id, current.depth)
+      nodeMap.get(current.id)?.options.forEach((option) => {
+        if (nodeMap.has(option.nextId)) {
+          queue.push({ id: option.nextId, depth: current.depth + 1 })
+        }
+      })
+    }
+  }
+
+  let fallbackDepth = Math.max(0, ...depthById.values()) + 1
+
+  nodes.forEach((node) => {
+    if (!depthById.has(node.id)) {
+      depthById.set(node.id, fallbackDepth)
+      fallbackDepth += 1
+    }
+  })
+
+  return depthById
+}
+
+function createSpatialLayout(nodes) {
+  if (nodes.every((node) => SPATIAL_POSITIONS[node.id])) {
+    return Object.fromEntries(nodes.map((node) => [node.id, SPATIAL_POSITIONS[node.id]]))
+  }
+
+  const depthById = getSpatialDepths(nodes)
+  const groups = new Map()
+
+  nodes.forEach((node) => {
+    const depth = depthById.get(node.id) ?? 0
+    groups.set(depth, [...(groups.get(depth) ?? []), node])
+  })
+
+  const maxDepth = Math.max(0, ...groups.keys())
+  const layout = {}
+
+  groups.forEach((group, depth) => {
+    const verticalStep =
+      group.length > 1 ? Math.min(210, DYNAMIC_LAYOUT_VERTICAL_SPREAD / (group.length - 1)) : 0
+    const x = maxDepth === 0 ? 0 : (depth / maxDepth) * DYNAMIC_LAYOUT_WIDTH
+    const z = maxDepth === 0 ? 0 : Math.min(DYNAMIC_LAYOUT_MAX_Z, (depth / maxDepth) * 360)
+
+    group.forEach((node, index) => {
+      layout[node.id] = [x, (index - (group.length - 1) / 2) * verticalStep, z]
+    })
+  })
+
+  return layout
+}
+
+function getSpatialLabel(node) {
+  const prototypeLabel = SPATIAL_LABELS[node.id]
+
+  if (prototypeLabel) {
+    return prototypeLabel
+  }
+
+  const sentence = String(node.text ?? `Node ${node.id}`)
+    .split(/[.?!]/)[0]
+    .trim()
+
+  if (sentence.length <= 24) {
+    return sentence || `Node ${node.id}`
+  }
+
+  return `${sentence.slice(0, 21).trim()}...`
 }
 
 function buildEdges(nodes) {
@@ -65,7 +153,8 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
   const centerY = 320
   const [zoom, setZoom] = useState(1)
   const nodeMap = new Map(flow.nodes.map((node) => [node.id, node]))
-  const spatialNodes = flow.nodes.filter((node) => SPATIAL_POSITIONS[node.id])
+  const spatialLayout = useMemo(() => createSpatialLayout(flow.nodes), [flow.nodes])
+  const spatialNodes = flow.nodes.filter((node) => spatialLayout[node.id])
   const edges = buildEdges(spatialNodes).filter((edge) => nodeMap.has(edge.to))
 
   const project = ([x, y, z]) => {
@@ -78,7 +167,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
   }
 
   const projected = Object.fromEntries(
-    spatialNodes.map((node) => [node.id, project(SPATIAL_POSITIONS[node.id])]),
+    spatialNodes.map((node) => [node.id, project(spatialLayout[node.id])]),
   )
 
   const edgePath = (from, to) => {
@@ -117,7 +206,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
   }))
 
   const sortedNodes = [...spatialNodes].sort(
-    (a, b) => SPATIAL_POSITIONS[b.id][2] - SPATIAL_POSITIONS[a.id][2],
+    (a, b) => spatialLayout[b.id][2] - spatialLayout[a.id][2],
   )
 
   const viewWidth = viewportWidth / zoom
@@ -172,8 +261,16 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
                 y2={target.y}
                 gradientUnits="userSpaceOnUse"
               >
-                <stop offset="0%" stopColor={TYPE_COLOR[sourceNode.type]} stopOpacity="0.88" />
-                <stop offset="100%" stopColor={TYPE_COLOR[targetNode.type]} stopOpacity="0.52" />
+                <stop
+                  offset="0%"
+                  stopColor={TYPE_COLOR[sourceNode.type] ?? TYPE_COLOR.question}
+                  stopOpacity="0.88"
+                />
+                <stop
+                  offset="100%"
+                  stopColor={TYPE_COLOR[targetNode.type] ?? TYPE_COLOR.question}
+                  stopOpacity="0.52"
+                />
               </linearGradient>
             )
           })}
@@ -216,7 +313,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
           const isRelated = connected.has(edge.from) && connected.has(edge.to)
           const isParticle = edge.from === selectedNodeId
           const path = edgePath(edge.from, edge.to)
-          const color = TYPE_COLOR[sourceNode.type]
+          const color = TYPE_COLOR[sourceNode.type] ?? TYPE_COLOR.question
 
           return (
             <g key={edge.id}>
@@ -279,7 +376,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
 
         {sortedNodes.map((node) => {
           const point = projected[node.id]
-          const color = TYPE_COLOR[node.type]
+          const color = TYPE_COLOR[node.type] ?? TYPE_COLOR.question
           const selected = node.id === selectedNodeId
           const dimmed = selectedNodeId && !connected.has(node.id)
           const core = 20 * point.scale * (node.type === 'start' ? 1.22 : 1)
@@ -376,7 +473,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
                 fontWeight="500"
                 fill="rgba(255,255,255,0.82)"
               >
-                {SPATIAL_LABELS[node.id] ?? `Node ${node.id}`}
+                {getSpatialLabel(node)}
               </text>
               <text
                 x={point.x}

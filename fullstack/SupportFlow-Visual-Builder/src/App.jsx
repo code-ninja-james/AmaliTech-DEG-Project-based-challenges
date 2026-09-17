@@ -161,6 +161,7 @@ export default function App() {
   const [auditEntries, setAuditEntries] = useState(() => loadAuditLog())
   const [importNotice, setImportNotice] = useState(null)
   const [workflowNotice, setWorkflowNotice] = useState(null)
+  const [canvasViewResetKey, setCanvasViewResetKey] = useState(0)
 
   const displayFlow = useMemo(
     () => (mode === 'X-Ray' ? createXrayDemo(flow, demoScenario) : flow),
@@ -191,6 +192,26 @@ export default function App() {
     },
     [currentUser, workflowName],
   )
+
+  const requestCanvasViewReset = useCallback(() => {
+    setCanvasViewResetKey((currentKey) => currentKey + 1)
+
+    const scrollToCanvas = () => {
+      const canvas = document.querySelector('.flow-workspace')
+
+      if (typeof canvas?.scrollIntoView !== 'function') {
+        return
+      }
+
+      canvas.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'smooth' })
+    }
+
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(scrollToCanvas)
+    } else {
+      window.setTimeout(scrollToCanvas, 0)
+    }
+  }, [])
 
   const handleCurrentUserChange = (nextUser) => {
     setCurrentUser(nextUser)
@@ -701,6 +722,7 @@ export default function App() {
       message: `Imported ${importedFlow.nodes.length} nodes and ${routeCount} routes from ${sourceLabel}.`,
       warnings,
     })
+    requestCanvasViewReset()
     recordAuditEvent({
       action: 'import.completed',
       targetType: 'import',
@@ -793,6 +815,7 @@ export default function App() {
     setIsWorkflowLibraryOpen(false)
     setImportNotice(null)
     setWorkflowNotice(`Using workflow "${workflow.name}".`)
+    requestCanvasViewReset()
     recordAuditEvent({
       action: 'workflow.used',
       targetType: 'workflow',
@@ -1004,6 +1027,7 @@ export default function App() {
             isDemo={isDemo}
             selectedNodeId={selectedNodeId}
             selectedConnectionId={selectedConnectionId}
+            viewResetKey={canvasViewResetKey}
             issues={healthIssues}
             onNodeSelect={handleNodeSelect}
             onConnectionSelect={handleConnectionSelect}

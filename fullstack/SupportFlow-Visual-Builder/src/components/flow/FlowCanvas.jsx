@@ -59,6 +59,7 @@ export default function FlowCanvas({
   isDemo = false,
   selectedNodeId = null,
   selectedConnectionId = null,
+  viewResetKey = 0,
   issues = [],
   onNodeSelect = () => {},
   onConnectionSelect = () => {},
@@ -101,6 +102,16 @@ export default function FlowCanvas({
   }, [connections, flow.nodes])
 
   const { canvasRef, nodeRects, registerNode } = useNodeMeasurements(flow.nodes, zoom)
+
+  const getScrollViewport = useCallback(() => {
+    const workspace = workspaceRef.current
+
+    if (!workspace) {
+      return null
+    }
+
+    return workspace.querySelector('.flow-scroll-area') ?? workspace
+  }, [])
 
   const getCanvasPoint = useCallback(
     (event) => {
@@ -367,18 +378,78 @@ export default function FlowCanvas({
     }
   }, [canvasSize, getCanvasPoint, nodeDrag, nodeRects, onNodeMove, onNodeMoveCommit])
 
-  const handleFitView = () => {
-    const workspace = workspaceRef.current
+  const getFitZoom = useCallback(() => {
+    const viewport = getScrollViewport()
 
-    if (!workspace) {
-      return
+    if (!viewport) {
+      return 1
     }
 
-    const horizontalScale = (workspace.clientWidth - 80) / canvasSize.w
-    const verticalScale = (workspace.clientHeight - 80) / canvasSize.h
+    const horizontalScale = Math.max(1, viewport.clientWidth - 80) / canvasSize.w
+    const verticalScale = Math.max(1, viewport.clientHeight - 80) / canvasSize.h
 
-    setZoom(clampZoom(Math.min(horizontalScale, verticalScale, 1)))
-  }
+    return clampZoom(Math.min(horizontalScale, verticalScale, 1))
+  }, [canvasSize.h, canvasSize.w, getScrollViewport])
+
+  const handleFitView = useCallback(() => {
+    setZoom(getFitZoom())
+  }, [getFitZoom])
+
+  useEffect(() => {
+    if (!viewResetKey) {
+      return undefined
+    }
+
+    const resetView = () => {
+      const nextZoom = getFitZoom()
+      const viewport = getScrollViewport()
+      const focusNode =
+        flow.nodes.find((node) => node.id === selectedNodeId) ??
+        flow.nodes.find((node) => node.type === 'start') ??
+        flow.nodes[0]
+
+      setZoom(nextZoom)
+
+      if (!viewport || !focusNode?.position) {
+        return
+      }
+
+      const scrollToFocus = () => {
+        const nextLeft = Math.max(
+          0,
+          (focusNode.position.x + DEFAULT_NODE_WIDTH / 2) * nextZoom - viewport.clientWidth / 2,
+        )
+        const nextTop = Math.max(
+          0,
+          (focusNode.position.y + DEFAULT_NODE_HEIGHT / 2) * nextZoom - viewport.clientHeight / 3,
+        )
+
+        if (typeof viewport.scrollTo === 'function') {
+          viewport.scrollTo({ left: nextLeft, top: nextTop, behavior: 'auto' })
+          return
+        }
+
+        viewport.scrollLeft = nextLeft
+        viewport.scrollTop = nextTop
+      }
+
+      if (typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(scrollToFocus)
+      } else {
+        window.setTimeout(scrollToFocus, 0)
+      }
+    }
+
+    if (typeof window.requestAnimationFrame === 'function') {
+      const frameId = window.requestAnimationFrame(resetView)
+
+      return () => window.cancelAnimationFrame?.(frameId)
+    }
+
+    const timeoutId = window.setTimeout(resetView, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [flow.nodes, getFitZoom, getScrollViewport, selectedNodeId, viewResetKey])
 
   const isXray = mode === 'X-Ray'
 

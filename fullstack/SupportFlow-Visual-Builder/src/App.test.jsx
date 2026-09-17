@@ -573,6 +573,89 @@ describe('SupportFlow application', () => {
     ).toBeInTheDocument()
   })
 
+  it('runs X-Ray demo scenarios against an imported custom JSON workflow', async () => {
+    const user = userEvent.setup()
+    const customWorkflow = JSON.stringify({
+      nodes: [
+        {
+          id: 'welcome',
+          type: 'start',
+          message: 'Welcome to imported support.',
+          routes: [
+            { answerLabel: 'Billing', to: 'billing' },
+            { answerLabel: 'Technical help', targetNodeId: 'tech' },
+          ],
+        },
+        {
+          id: 'billing',
+          type: 'question',
+          prompt: 'Personal or business billing?',
+          options: {
+            Personal: { target: { id: 'personal-terminal' } },
+            Business: { destinationId: 'business-terminal', label: 'Business account' },
+          },
+        },
+        {
+          id: 'tech',
+          type: 'terminal',
+          text: 'A technician will help you.',
+        },
+        {
+          id: 'personal-terminal',
+          type: 'terminal',
+          text: 'Personal billing support.',
+        },
+        {
+          id: 'business-terminal',
+          type: 'terminal',
+          text: 'Business billing support.',
+        },
+      ],
+    })
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Import flow' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Import flow' })
+    fireEvent.change(within(dialog).getByLabelText('Pasted rows or JSON'), {
+      target: { value: customWorkflow },
+    })
+
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      'Ready to create 5 nodes and 4 routes from JSON.',
+    )
+
+    await user.click(within(dialog).getByRole('button', { name: 'Create flow' }))
+
+    expect(screen.getByText('Imported 5 nodes and 4 routes from JSON.')).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-welcome')).toBeInTheDocument()
+    expect(screen.queryByTestId('flow-node-1')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Flow Health/ }))
+    const scenario = screen.getByRole('combobox', { name: 'Diagnostic demo' })
+
+    await user.selectOptions(scenario, 'broken-reference')
+    expect(screen.getByText(/points to missing node #missing-demo-node/)).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-billing')).toHaveClass('flow-node--xray-broken')
+    expect(screen.queryByTestId('flow-node-2')).not.toBeInTheDocument()
+
+    await user.selectOptions(scenario, 'cycle')
+    expect(screen.getAllByText(/cycle detected/).length).toBeGreaterThan(0)
+    expect(screen.getByTestId('flow-node-billing')).toHaveClass('flow-node--xray-cycle')
+    expect(
+      screen.getByRole('button', { name: 'X-Ray loop back, route to node billing' }),
+    ).toBeInTheDocument()
+
+    await user.selectOptions(scenario, 'question-no-routes')
+    expect(
+      screen.getByText('Node #question-with-no-routes-demo ends unexpectedly without any routes.'),
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('flow-node-question-with-no-routes-demo')).toHaveClass(
+      'flow-node--xray-error',
+    )
+  })
+
   it('restores the active imported workflow after reload', async () => {
     const user = userEvent.setup()
     const { unmount } = render(<App />)

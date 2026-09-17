@@ -105,9 +105,30 @@ function readNodeText(node) {
 }
 
 function readRouteTarget(route) {
-  return normalizeId(
-    getFirstDefined(route, ['nextId', 'next_id', 'targetId', 'target_id', 'target', 'next']),
-  )
+  const target = getFirstDefined(route, [
+    'nextId',
+    'next_id',
+    'targetId',
+    'target_id',
+    'targetNodeId',
+    'target_node_id',
+    'destinationId',
+    'destination_id',
+    'destination',
+    'childId',
+    'child_id',
+    'to',
+    'target',
+    'next',
+  ])
+
+  if (target && typeof target === 'object') {
+    return normalizeId(
+      getFirstDefined(target, ['id', 'nodeId', 'node_id', 'node', 'targetId', 'target_id']),
+    )
+  }
+
+  return normalizeId(target)
 }
 
 function normalizeRoute(route, nodeId, routeIndex, warnings) {
@@ -155,10 +176,26 @@ function normalizeOptions(rawOptions, nodeId, warnings) {
 
   if (!Array.isArray(rawOptions) && typeof rawOptions === 'object') {
     return Object.entries(rawOptions)
-      .map(([label, nextId]) => ({
-        label: String(label).trim(),
-        nextId: normalizeId(nextId),
-      }))
+      .map(([label, target]) => {
+        const nextId =
+          target && typeof target === 'object' ? readRouteTarget(target) : normalizeId(target)
+
+        return {
+          label: String(
+            target && typeof target === 'object'
+              ? (getFirstDefined(target, [
+                  'label',
+                  'option',
+                  'optionLabel',
+                  'answer',
+                  'answerLabel',
+                  'choice',
+                ]) ?? label)
+              : label,
+          ).trim(),
+          nextId,
+        }
+      })
       .filter((option) => option.nextId)
   }
 

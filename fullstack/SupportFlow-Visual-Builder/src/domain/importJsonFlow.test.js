@@ -90,6 +90,68 @@ describe('importJsonFlow', () => {
     expect(warnings).toEqual([])
   })
 
+  it('normalizes common route target keys from exported workflow JSON', () => {
+    const { flow, warnings } = createFlowFromJsonText(
+      JSON.stringify({
+        nodes: [
+          {
+            id: 'welcome',
+            type: 'start',
+            message: 'Welcome.',
+            routes: [
+              { answerLabel: 'Billing', to: 'billing' },
+              { choice: 'Tech', targetNodeId: 'tech' },
+            ],
+          },
+          {
+            id: 'billing',
+            type: 'question',
+            prompt: 'Personal or business?',
+            options: {
+              Personal: { target: { id: 'personal-terminal' } },
+              Business: { destinationId: 'business-terminal', label: 'Business account' },
+            },
+          },
+          {
+            id: 'tech',
+            type: 'terminal',
+            text: 'A technician will help.',
+          },
+          {
+            id: 'personal-terminal',
+            type: 'terminal',
+            text: 'Personal billing support.',
+          },
+          {
+            id: 'business-terminal',
+            type: 'terminal',
+            text: 'Business billing support.',
+          },
+        ],
+      }),
+    )
+
+    expect(flow.nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'welcome',
+          options: [
+            { label: 'Billing', nextId: 'billing' },
+            { label: 'Tech', nextId: 'tech' },
+          ],
+        }),
+        expect.objectContaining({
+          id: 'billing',
+          options: [
+            { label: 'Personal', nextId: 'personal-terminal' },
+            { label: 'Business account', nextId: 'business-terminal' },
+          ],
+        }),
+      ]),
+    )
+    expect(warnings).toEqual([])
+  })
+
   it('throws a helpful error for invalid JSON syntax', () => {
     expect(() => createFlowFromJsonText('{ not valid json }')).toThrow(/Could not parse JSON/)
   })

@@ -22,6 +22,7 @@ import AppToolbar from './components/layout/AppToolbar.jsx'
 import CommandPalette from './components/layout/CommandPalette.jsx'
 import StatusBar from './components/layout/StatusBar.jsx'
 import PreviewRunner from './components/preview/PreviewRunner.jsx'
+import analyzeFlow from './domain/analyzeFlow.js'
 import validateFlow from './domain/validateFlow.js'
 import getConnections from './domain/getConnections.js'
 import {
@@ -100,6 +101,28 @@ function getRouteTargetLabel(nodeId, route) {
 
 function getRouteAuditId(nodeId, optionIndex) {
   return `${nodeId}-${optionIndex}`
+}
+
+function getDiagnosticFocusNodeId(flow, scenarioId, currentSelectedNodeId) {
+  if (scenarioId === 'current') {
+    return flow.nodes.some((node) => node.id === currentSelectedNodeId)
+      ? currentSelectedNodeId
+      : (flow.nodes.find((node) => node.type === 'start')?.id ?? flow.nodes[0]?.id ?? null)
+  }
+
+  const demoFlow = createXrayDemo(flow, scenarioId)
+  const analysis = analyzeFlow(demoFlow.nodes)
+
+  return (
+    analysis.brokenReferences[0]?.sourceId ??
+    analysis.unreachable[0]?.id ??
+    [...analysis.cycleParticipants][0] ??
+    analysis.questionsWithoutRoutes[0]?.id ??
+    analysis.terminalsWithRoutes[0]?.id ??
+    demoFlow.nodes.find((node) => node.type === 'start')?.id ??
+    demoFlow.nodes[0]?.id ??
+    null
+  )
 }
 
 function truncateAuditValue(value, maxLength = 90) {
@@ -689,6 +712,7 @@ export default function App() {
 
   const handleDemoChange = (scenarioId) => {
     setDemoScenario(scenarioId)
+    setSelectedNodeId(getDiagnosticFocusNodeId(flow, scenarioId, selectedNodeId))
     setSelectedConnectionId(null)
     setRouteEditorFocusId(null)
   }

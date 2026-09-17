@@ -573,6 +573,26 @@ describe('SupportFlow application', () => {
     ).toBeInTheDocument()
   })
 
+  it('restores the active imported workflow after reload', async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Import flow' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Import flow' })
+    await user.click(within(dialog).getByRole('button', { name: 'Use JSON sample' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Create flow' }))
+
+    expect(screen.getByTestId('flow-node-start')).toBeInTheDocument()
+
+    unmount()
+    render(<App />)
+
+    expect(screen.getByTestId('flow-node-start')).toBeInTheDocument()
+    expect(screen.queryByTestId('flow-node-1')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Imported JSON workflow').length).toBeGreaterThan(0)
+  })
+
   it('imports an uploaded Excel workbook', async () => {
     const user = userEvent.setup()
     const workbook = createStoredXlsx([

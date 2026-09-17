@@ -4,10 +4,13 @@ import {
   deleteWorkflow,
   getWorkflowRating,
   loadWorkflowLibrary,
+  loadWorkspaceSession,
   persistWorkflowLibrary,
+  persistWorkspaceSession,
   renameWorkflow,
   saveWorkflow,
   searchWorkflows,
+  WORKSPACE_SESSION_STORAGE_KEY,
   WORKFLOW_LIBRARY_STORAGE_KEY,
 } from './workflowLibrary.js'
 
@@ -35,11 +38,16 @@ const flow = {
 }
 
 function createStorageMock(seed = null) {
+  let lastKey = null
+
   return {
-    value: seed,
     getItem: () => seed,
     setItem: (_key, nextValue) => {
+      lastKey = _key
       seed = nextValue
+    },
+    get lastKey() {
+      return lastKey
     },
   }
 }
@@ -137,5 +145,29 @@ describe('workflowLibrary', () => {
         flow,
       },
     ])
+  })
+
+  it('persists and restores the active workspace session', () => {
+    const storage = createStorageMock()
+
+    expect(
+      persistWorkspaceSession(
+        {
+          flow,
+          workflowName: 'Imported Excel workflow',
+          activeWorkflowId: 'workflow-1',
+          selectedNodeId: '2',
+        },
+        storage,
+      ),
+    ).toBe(true)
+    expect(storage.lastKey).toBe(WORKSPACE_SESSION_STORAGE_KEY)
+
+    expect(loadWorkspaceSession(storage)).toMatchObject({
+      workflowName: 'Imported Excel workflow',
+      activeWorkflowId: 'workflow-1',
+      selectedNodeId: '2',
+      flow,
+    })
   })
 })

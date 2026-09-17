@@ -40,7 +40,9 @@ import {
   deleteWorkflow,
   getWorkflowStats,
   loadWorkflowLibrary,
+  loadWorkspaceSession,
   persistWorkflowLibrary,
+  persistWorkspaceSession,
   renameWorkflow,
   saveWorkflow,
 } from './domain/workflowLibrary.js'
@@ -141,11 +143,18 @@ function downloadTextFile(filename, content, type) {
 }
 
 export default function App() {
-  const [flow, setFlow] = useState(flowData)
-  const [workflowName, setWorkflowName] = useState(DEFAULT_WORKFLOW_NAME)
-  const [activeWorkflowId, setActiveWorkflowId] = useState(null)
+  const [initialWorkspace] = useState(() => loadWorkspaceSession())
+  const [flow, setFlow] = useState(() => initialWorkspace?.flow ?? flowData)
+  const [workflowName, setWorkflowName] = useState(
+    () => initialWorkspace?.workflowName ?? DEFAULT_WORKFLOW_NAME,
+  )
+  const [activeWorkflowId, setActiveWorkflowId] = useState(
+    () => initialWorkspace?.activeWorkflowId ?? null,
+  )
   const [workflows, setWorkflows] = useState(() => loadWorkflowLibrary())
-  const [selectedNodeId, setSelectedNodeId] = useState('2')
+  const [selectedNodeId, setSelectedNodeId] = useState(
+    () => initialWorkspace?.selectedNodeId ?? '2',
+  )
   const [selectedConnectionId, setSelectedConnectionId] = useState(null)
   const [mode, setMode] = useState('Build')
   const [isPreviewing, setIsPreviewing] = useState(false)
@@ -176,6 +185,15 @@ export default function App() {
     connections.find((connection) => connection.id === selectedConnectionId) ?? null
 
   const healthIssues = useMemo(() => validateFlow(displayFlow.nodes), [displayFlow.nodes])
+
+  useEffect(() => {
+    persistWorkspaceSession({
+      flow,
+      workflowName,
+      activeWorkflowId,
+      selectedNodeId,
+    })
+  }, [activeWorkflowId, flow, selectedNodeId, workflowName])
 
   const recordAuditEvent = useCallback(
     (event) => {

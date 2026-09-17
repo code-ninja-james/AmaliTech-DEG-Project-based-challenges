@@ -1,6 +1,7 @@
 import validateFlow from './validateFlow.js'
 
 export const WORKFLOW_LIBRARY_STORAGE_KEY = 'supportflow.workflow-library.v1'
+export const WORKSPACE_SESSION_STORAGE_KEY = 'supportflow.workspace-session.v1'
 export const DEFAULT_WORKFLOW_NAME = 'Main Flow'
 
 function getStorage() {
@@ -193,6 +194,25 @@ export function normalizeWorkflowRecord(record) {
   }
 }
 
+export function normalizeWorkspaceSession(record) {
+  if (!Array.isArray(record?.flow?.nodes)) {
+    return null
+  }
+
+  const flow = cloneFlow(record.flow)
+  const selectedNodeCandidate = String(record.selectedNodeId ?? '')
+  const selectedNodeId = flow.nodes.some((node) => node.id === selectedNodeCandidate)
+    ? selectedNodeCandidate
+    : (flow.nodes.find((node) => node.type === 'start')?.id ?? flow.nodes[0]?.id ?? null)
+
+  return {
+    flow,
+    workflowName: normalizeWorkflowName(record.workflowName),
+    activeWorkflowId: record.activeWorkflowId ? String(record.activeWorkflowId) : null,
+    selectedNodeId,
+  }
+}
+
 export function loadWorkflowLibrary(storage = getStorage()) {
   if (!storage) {
     return []
@@ -211,6 +231,18 @@ export function loadWorkflowLibrary(storage = getStorage()) {
   }
 }
 
+export function loadWorkspaceSession(storage = getStorage()) {
+  if (!storage) {
+    return null
+  }
+
+  try {
+    return normalizeWorkspaceSession(JSON.parse(storage.getItem(WORKSPACE_SESSION_STORAGE_KEY)))
+  } catch {
+    return null
+  }
+}
+
 export function persistWorkflowLibrary(workflows, storage = getStorage()) {
   if (!storage) {
     return false
@@ -218,6 +250,25 @@ export function persistWorkflowLibrary(workflows, storage = getStorage()) {
 
   try {
     storage.setItem(WORKFLOW_LIBRARY_STORAGE_KEY, JSON.stringify(workflows))
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function persistWorkspaceSession(session, storage = getStorage()) {
+  if (!storage) {
+    return false
+  }
+
+  const normalizedSession = normalizeWorkspaceSession(session)
+
+  if (!normalizedSession) {
+    return false
+  }
+
+  try {
+    storage.setItem(WORKSPACE_SESSION_STORAGE_KEY, JSON.stringify(normalizedSession))
     return true
   } catch {
     return false

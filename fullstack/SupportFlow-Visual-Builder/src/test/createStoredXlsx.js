@@ -147,7 +147,19 @@ export function createStoredZip(entries) {
   return concatBytes([...localEntries, centralDirectory, endOfCentralDirectory])
 }
 
-export function createStoredXlsx(rows) {
+export function createStoredXlsxSheets(sheets) {
+  const sheetEntries = sheets.map((sheet, index) => {
+    const sheetId = index + 1
+
+    return {
+      name: sheet.name ?? `Sheet ${sheetId}`,
+      relationshipId: `rId${sheetId}`,
+      sheetId,
+      worksheetPath: `worksheets/sheet${sheetId}.xml`,
+      rows: sheet.rows,
+    }
+  })
+
   return createStoredZip([
     [
       '_rels/.rels',
@@ -155,12 +167,26 @@ export function createStoredXlsx(rows) {
     ],
     [
       'xl/workbook.xml',
-      '<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Support Flow" sheetId="1" r:id="rId1"/></sheets></workbook>',
+      `<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheetEntries
+        .map(
+          (sheet) =>
+            `<sheet name="${escapeXml(sheet.name)}" sheetId="${sheet.sheetId}" r:id="${sheet.relationshipId}"/>`,
+        )
+        .join('')}</sheets></workbook>`,
     ],
     [
       'xl/_rels/workbook.xml.rels',
-      '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>',
+      `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheetEntries
+        .map(
+          (sheet) =>
+            `<Relationship Id="${sheet.relationshipId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="${sheet.worksheetPath}"/>`,
+        )
+        .join('')}</Relationships>`,
     ],
-    ['xl/worksheets/sheet1.xml', createWorksheetXml(rows)],
+    ...sheetEntries.map((sheet) => [`xl/${sheet.worksheetPath}`, createWorksheetXml(sheet.rows)]),
   ])
+}
+
+export function createStoredXlsx(rows) {
+  return createStoredXlsxSheets([{ name: 'Support Flow', rows }])
 }

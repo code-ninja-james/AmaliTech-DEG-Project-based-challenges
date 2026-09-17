@@ -169,33 +169,46 @@ function findWorkbookPath(entries) {
   throw new Error('Could not find workbook.xml inside the Excel file.')
 }
 
-function findWorksheetPath(entries, workbookPath) {
+function findWorksheetPaths(entries, workbookPath) {
   const workbook = parseXml(readUtf8(entries.get(workbookPath)))
-  const sheet = getFirstElementByLocalName(workbook, 'sheet')
+  const sheets = getElementsByLocalName(workbook, 'sheet')
+  const worksheetPaths = []
 
-  if (sheet) {
-    const relationshipId = getRelationshipId(sheet)
+  if (sheets.length > 0) {
     const workbookRelsPath = resolvePath(
       workbookPath,
       `_rels/${workbookPath.split('/').pop()}.rels`,
     )
     const relationships = readRelationships(entries, workbookRelsPath, workbookPath)
-    const worksheetPath = relationships.get(relationshipId)?.target
 
-    if (worksheetPath && entries.has(worksheetPath)) {
-      return worksheetPath
-    }
+    sheets.forEach((sheet) => {
+      const worksheetPath = relationships.get(getRelationshipId(sheet))?.target
+
+      if (worksheetPath && entries.has(worksheetPath)) {
+        worksheetPaths.push(worksheetPath)
+      }
+    })
   }
 
-  const firstWorksheetPath = [...entries.keys()].find((path) =>
-    /^xl\/worksheets\/sheet\d+\.xml$/.test(path),
+  const fallbackWorksheetPaths = [...entries.keys()].filter((path) =>
+    /^xl\/worksheets\/sheet\d+\.xml$/i.test(path),
   )
 
-  if (!firstWorksheetPath) {
+  fallbackWorksheetPaths.forEach((path) => {
+    if (!worksheetPaths.includes(path)) {
+      worksheetPaths.push(path)
+    }
+  })
+
+  if (worksheetPaths.length === 0) {
     throw new Error('Could not find a worksheet inside the Excel file.')
   }
 
-  return firstWorksheetPath
+  return worksheetPaths
+}
+
+function findWorksheetPath(entries, workbookPath) {
+  return findWorksheetPaths(entries, workbookPath)[0]
 }
 
 function readSharedStrings(entries) {
@@ -272,6 +285,10 @@ export async function readRowsFromExcelWorkbook(arrayBuffer) {
   const worksheet = parseXml(readUtf8(entries.get(worksheetPath)))
   const sharedStrings = readSharedStrings(entries)
 
+  return readRowsFromWorksheet(worksheet, sharedStrings)
+}
+
+function readRowsFromWorksheet(worksheet, sharedStrings) {
   return getElementsByLocalName(worksheet, 'row')
     .map((row) => {
       const cells = []
@@ -288,14 +305,41 @@ export async function readRowsFromExcelWorkbook(arrayBuffer) {
     .filter((row) => row.some((cell) => cell.trim()))
 }
 
+async function readWorksheetRowsFromExcelWorkbook(arrayBuffer) {
+  const entries = await readZipEntries(arrayBuffer)
+  const workbookPath = findWorkbookPath(entries)
+  const sharedStrings = readSharedStrings(entries)
+
+  return findWorksheetPaths(entries, workbookPath).map((worksheetPath) => ({
+    path: worksheetPath,
+    rows: readRowsFromWorksheet(parseXml(readUtf8(entries.get(worksheetPath))), sharedStrings),
+  }))
+}
+
 export async function createFlowFromExcelWorkbook(
   arrayBuffer,
   { canvasSize = DEFAULT_CANVAS_SIZE } = {},
 ) {
-  const rows = await readRowsFromExcelWorkbook(arrayBuffer)
+  const worksheets = await readWorksheetRowsFromExcelWorkbook(arrayBuffer)
+  const failures = []
 
-  return createFlowFromRows(rows, {
-    canvasSize,
-    emptyMessage: 'The Excel workbook did not contain readable flow rows.',
-  })
+  for (const worksheet of worksheets) {
+    if (worksheet.rows.length === 0) {
+      failures.push(`${worksheet.path}: no rows`)
+      continue
+    }
+
+    try {
+      return createFlowFromRows(worksheet.rows, {
+        canvasSize,
+        emptyMessage: 'The Excel workbook did not contain readable flow rows.',
+      })
+    } catch (error) {
+      failures.push(`${worksheet.path}: ${error.message}`)
+    }
+  }
+
+  const detail = failures.length > 0 ? ` Checked ${failures.join('; ')}.` : ''
+
+  throw new Error(`The Excel workbook did not contain readable flow rows.${detail}`)
 }

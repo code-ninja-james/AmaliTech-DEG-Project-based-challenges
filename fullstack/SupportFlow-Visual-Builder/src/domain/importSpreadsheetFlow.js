@@ -18,9 +18,14 @@ export const SAMPLE_SPREADSHEET_TEXT = [
 const FIELD_ALIASES = {
   id: [
     'id',
+    'no',
+    'no.',
+    'number',
     'node',
+    'node #',
     'nodeid',
     'node id',
+    'node number',
     'source',
     'sourceid',
     'source id',
@@ -28,17 +33,28 @@ const FIELD_ALIASES = {
     'question id',
     'step',
     'step id',
+    'step number',
+    'screen',
+    'screen id',
   ],
-  type: ['type', 'node type', 'kind', 'category'],
+  type: ['type', 'node type', 'kind', 'category', 'node category'],
   text: [
     'text',
     'node text',
     'question',
     'question text',
+    'question/prompt',
     'prompt',
     'message',
+    'message text',
     'script',
     'bot message',
+    'bot response',
+    'customer prompt',
+    'support message',
+    'description',
+    'details',
+    'content',
   ],
   optionLabel: [
     'option',
@@ -46,10 +62,17 @@ const FIELD_ALIASES = {
     'answer',
     'answer label',
     'choice',
+    'choice label',
+    'response',
+    'response label',
+    'reply',
+    'user response',
+    'customer response',
     'route',
     'route label',
     'label',
     'button',
+    'button text',
   ],
   targetId: [
     'next',
@@ -57,13 +80,24 @@ const FIELD_ALIASES = {
     'next id',
     'next node',
     'next node id',
+    'next question',
+    'next question id',
+    'next step',
+    'next step id',
     'target',
     'target id',
     'target node',
+    'target node id',
     'destination',
+    'destination id',
     'destination node',
+    'destination node id',
     'child',
     'child node',
+    'go to',
+    'goto',
+    'jump to',
+    'then',
   ],
   x: ['x', 'x position', 'position x', 'canvas x', 'left'],
   y: ['y', 'y position', 'position y', 'canvas y', 'top'],
@@ -73,6 +107,37 @@ const NORMALIZED_ALIASES = Object.entries(FIELD_ALIASES).reduce((aliases, [field
   labels.forEach((label) => aliases.set(normalizeHeader(label), field))
   return aliases
 }, new Map())
+
+const ROUTE_LABEL_WORDS = new Set([
+  'answer',
+  'button',
+  'choice',
+  'label',
+  'option',
+  'reply',
+  'response',
+  'route',
+])
+const ROUTE_TARGET_WORDS = new Set([
+  'child',
+  'destination',
+  'go',
+  'goto',
+  'jump',
+  'next',
+  'target',
+  'then',
+  'to',
+])
+const ROUTE_GROUP_STOP_WORDS = new Set([
+  ...ROUTE_LABEL_WORDS,
+  ...ROUTE_TARGET_WORDS,
+  'id',
+  'node',
+  'question',
+  'step',
+  'text',
+])
 
 function normalizeHeader(value) {
   return String(value)
@@ -86,6 +151,7 @@ export function normalizeId(value) {
   return String(value ?? '')
     .trim()
     .replace(/^#/, '')
+    .replace(/^(node|question|step)\s*#?\s*/i, '')
 }
 
 export function normalizeNodeType(value) {
@@ -93,15 +159,26 @@ export function normalizeNodeType(value) {
     .trim()
     .toLowerCase()
 
-  if (['start', 'entry', 'root', 'begin'].includes(type)) {
+  if (['start', 'entry', 'root', 'begin'].includes(type) || type.includes('start')) {
     return 'start'
   }
 
-  if (['end', 'terminal', 'leaf', 'response', 'answer'].includes(type)) {
+  if (
+    ['end', 'terminal', 'leaf', 'response', 'answer'].includes(type) ||
+    type.includes('terminal') ||
+    type.includes('end') ||
+    type.includes('handoff') ||
+    type.includes('final')
+  ) {
     return 'end'
   }
 
-  if (['question', 'decision', 'branch', 'node'].includes(type)) {
+  if (
+    ['question', 'decision', 'branch', 'node'].includes(type) ||
+    type.includes('question') ||
+    type.includes('decision') ||
+    type.includes('branch')
+  ) {
     return 'question'
   }
 
@@ -172,18 +249,58 @@ export function parseSpreadsheetText(text) {
 
 function getHeaderMatch(row) {
   const columns = new Map()
+  const routeColumnsByGroup = new Map()
   let score = 0
 
+  const addRouteColumn = (group, field, index) => {
+    const entry = routeColumnsByGroup.get(group) ?? { group }
+
+    if (entry[field] === undefined) {
+      entry[field] = index
+    }
+
+    routeColumnsByGroup.set(group, entry)
+  }
+
   row.forEach((cell, index) => {
-    const field = NORMALIZED_ALIASES.get(normalizeHeader(cell))
+    const normalizedHeader = normalizeHeader(cell)
+    const field = NORMALIZED_ALIASES.get(normalizedHeader)
 
     if (field && !columns.has(field)) {
       columns.set(field, index)
       score += 1
     }
+
+    if (field === 'optionLabel') {
+      addRouteColumn('primary', 'labelIndex', index)
+    }
+
+    if (field === 'targetId') {
+      addRouteColumn('primary', 'targetIndex', index)
+    }
+
+    const routeColumn =
+      field === 'optionLabel' || field === 'targetId'
+        ? null
+        : getRouteColumnMatch(normalizedHeader, index)
+
+    if (routeColumn) {
+      addRouteColumn(routeColumn.group, routeColumn.field, index)
+    }
   })
 
-  return { columns, score }
+  const routeColumns = [...routeColumnsByGroup.values()]
+    .filter((entry) => entry.labelIndex !== undefined || entry.targetIndex !== undefined)
+    .sort((left, right) => {
+      const leftIndex = Math.min(left.labelIndex ?? Infinity, left.targetIndex ?? Infinity)
+      const rightIndex = Math.min(right.labelIndex ?? Infinity, right.targetIndex ?? Infinity)
+
+      return leftIndex - rightIndex
+    })
+
+  score += routeColumns.filter((entry) => entry.targetIndex !== undefined).length
+
+  return { columns, routeColumns, score }
 }
 
 function findHeader(rows) {
@@ -194,18 +311,56 @@ function findHeader(rows) {
 
   const bestCandidate = candidates.sort((left, right) => right.score - left.score)[0]
 
-  if (!bestCandidate || bestCandidate.score < 3 || !bestCandidate.columns.has('id')) {
+  const hasReadableShape =
+    bestCandidate?.columns.has('id') &&
+    (bestCandidate.columns.has('text') ||
+      bestCandidate.columns.has('type') ||
+      bestCandidate.routeColumns.length > 0)
+
+  if (!bestCandidate || bestCandidate.score < 2 || !hasReadableShape) {
+    const readableHeaders = rows
+      .flatMap((row) => row)
+      .map((cell) => String(cell ?? '').trim())
+      .filter(Boolean)
+      .slice(0, 12)
+
     throw new Error(
-      'Could not find spreadsheet columns. Include at least Node ID, Question Text, Route Label, and Next Node ID.',
+      `Could not find spreadsheet columns. Include at least Node ID and Question Text. Optional route columns can be Route Label / Next Node ID or Answer 1 / Next 1. Found: ${
+        readableHeaders.join(', ') || 'no readable headers'
+      }.`,
     )
   }
 
   return bestCandidate
 }
 
+function getRouteColumnMatch(normalizedHeader, index) {
+  if (!normalizedHeader) {
+    return null
+  }
+
+  const words = normalizedHeader.split(' ')
+  const field = words.some((word) => ROUTE_TARGET_WORDS.has(word)) ? 'targetIndex' : 'labelIndex'
+  const hasRouteLanguage = words.some(
+    (word) => ROUTE_LABEL_WORDS.has(word) || ROUTE_TARGET_WORDS.has(word),
+  )
+
+  if (!hasRouteLanguage) {
+    return null
+  }
+
+  const group = words.find((word) => !ROUTE_GROUP_STOP_WORDS.has(word)) ?? `column-${index}`
+
+  return { field, group }
+}
+
 function getCell(row, columns, field) {
   const index = columns.get(field)
 
+  return index === undefined ? '' : String(row[index] ?? '').trim()
+}
+
+function getCellByIndex(row, index) {
   return index === undefined ? '' : String(row[index] ?? '').trim()
 }
 
@@ -343,7 +498,7 @@ export function createFlowFromRows(
     throw new Error(emptyMessage)
   }
 
-  const { index: headerIndex, columns } = findHeader(rows)
+  const { index: headerIndex, columns, routeColumns } = findHeader(rows)
   const nodesById = new Map()
   const rowWarnings = []
   const generatedTextIds = new Set()
@@ -362,8 +517,6 @@ export function createFlowFromRows(
     const node = nodesById.get(nodeId)
     const nodeType = normalizeNodeType(getCell(row, columns, 'type'))
     const textValue = getCell(row, columns, 'text')
-    const routeLabel = getCell(row, columns, 'optionLabel')
-    const targetId = normalizeId(getCell(row, columns, 'targetId'))
     const x = readNumber(getCell(row, columns, 'x'))
     const y = readNumber(getCell(row, columns, 'y'))
 
@@ -379,11 +532,20 @@ export function createFlowFromRows(
       node.position = { x, y }
     }
 
-    addOption(node, routeLabel, targetId, rowWarnings)
+    routeColumns.forEach((routeColumn) => {
+      const routeLabel = getCellByIndex(row, routeColumn.labelIndex)
+      const targetId = normalizeId(getCellByIndex(row, routeColumn.targetIndex))
 
-    if (targetId && !nodesById.has(targetId)) {
-      nodesById.set(targetId, createNodeStoreEntry(targetId))
-    }
+      if (!routeLabel && !targetId) {
+        return
+      }
+
+      addOption(node, routeLabel, targetId, rowWarnings)
+
+      if (targetId && !nodesById.has(targetId)) {
+        nodesById.set(targetId, createNodeStoreEntry(targetId))
+      }
+    })
   })
 
   const importedNodes = [...nodesById.values()]

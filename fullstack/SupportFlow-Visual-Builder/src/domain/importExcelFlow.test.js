@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { createStoredXlsx, createStoredZip } from '../test/createStoredXlsx.js'
+import {
+  createStoredXlsx,
+  createStoredXlsxSheets,
+  createStoredZip,
+} from '../test/createStoredXlsx.js'
 
 import { createFlowFromExcelWorkbook, readRowsFromExcelWorkbook } from './importExcelFlow.js'
 
@@ -120,6 +124,55 @@ describe('importExcelFlow', () => {
       id: '2',
       type: 'end',
       text: 'Connecting you to billing.',
+    })
+    expect(warnings).toEqual([])
+  })
+
+  it('imports the first readable worksheet when older workbooks start with notes', async () => {
+    const workbook = createStoredXlsxSheets([
+      {
+        name: 'Cover',
+        rows: [['Old help bot export'], ['Use the Flow sheet for the chatbot steps.']],
+      },
+      {
+        name: 'Flow',
+        rows: [
+          ['Node ID', 'Type', 'Question Text', 'Route Label', 'Next Node ID'],
+          ['1', 'start', 'Welcome from the old workbook.', 'Billing', '2'],
+          ['2', 'end', 'Connecting you to billing.', '', ''],
+        ],
+      },
+    ])
+
+    const { flow } = await createFlowFromExcelWorkbook(getArrayBuffer(workbook))
+
+    expect(flow.nodes).toHaveLength(2)
+    expect(flow.nodes[0]).toMatchObject({
+      id: '1',
+      text: 'Welcome from the old workbook.',
+      options: [{ label: 'Billing', nextId: '2' }],
+    })
+  })
+
+  it('imports old wide Excel rows with multiple answer and target columns', async () => {
+    const workbook = createStoredXlsx([
+      ['Legacy IVR export'],
+      ['Step', 'Kind', 'Prompt', 'Answer 1', 'Next 1', 'Answer 2', 'Next 2'],
+      ['1', 'Start node', 'Welcome. What do you need?', 'Billing', '2', 'Tech support', '3'],
+      ['2', 'Terminal', 'A billing agent will help you.', '', '', '', ''],
+      ['3', 'Terminal', 'Restart the router first.', '', '', '', ''],
+    ])
+
+    const { flow, warnings } = await createFlowFromExcelWorkbook(getArrayBuffer(workbook))
+
+    expect(flow.nodes).toHaveLength(3)
+    expect(flow.nodes[0]).toMatchObject({
+      id: '1',
+      type: 'start',
+      options: [
+        { label: 'Billing', nextId: '2' },
+        { label: 'Tech support', nextId: '3' },
+      ],
     })
     expect(warnings).toEqual([])
   })

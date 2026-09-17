@@ -63,7 +63,7 @@ The required assignment asks for a visual graph, editing, Preview mode, and one 
 
 Support teams can convert an old Excel-style configuration into a visual flow without hand-authoring JSON. Open **Import flow** in Build mode, then paste SupportFlow JSON, paste rows copied from Excel, or upload `.json`, `.xlsx`, `.csv`, or `.tsv` files.
 
-Native JSON imports accept the same `{ meta, nodes }` structure used by the app, plus flat `rows`, `data`, or `records` exports when they use spreadsheet-style headings. Excel and CSV/TSV imports detect the useful header row, accept flexible column names, group repeated node rows into outbound routes, create terminal placeholders for referenced endpoints that are missing from the sheet, and lay out nodes automatically when coordinates are absent.
+Native JSON imports accept the same `{ meta, nodes }` structure used by the app, plus flat `rows`, `data`, or `records` exports when they use spreadsheet-style headings. Excel and CSV/TSV imports detect the useful header row, scan past cover or notes worksheets, accept flexible column names, support repeated route rows or wide answer columns such as `Answer 1 / Next 1`, create terminal placeholders for referenced endpoints that are missing from the sheet, and lay out nodes automatically when coordinates are absent.
 
 Accepted table shape for Excel, CSV/TSV, and flat JSON rows:
 

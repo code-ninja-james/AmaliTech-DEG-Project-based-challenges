@@ -312,6 +312,26 @@ describe('SupportFlow application', () => {
     ).toBeInTheDocument()
   })
 
+  it('retargets the selected canvas route from the inspector', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByTestId('flow-node-3'))
+    await user.click(screen.getByRole('button', { name: 'Personal, route to node 6' }))
+
+    await user.selectOptions(screen.getByLabelText('Selected route target'), '5')
+
+    expect(screen.getByRole('button', { name: 'Personal, route to node 5' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Personal, route to node 6' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Selected route target')).toHaveValue('5')
+  })
+
   it('deletes the selected canvas route with the keyboard', async () => {
     const user = userEvent.setup()
 

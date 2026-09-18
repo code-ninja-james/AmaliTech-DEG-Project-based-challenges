@@ -440,6 +440,7 @@ export default function NodeInspector({
   }
 
   const meta = NODE_META[node.type] ?? NODE_META.question
+  const nodeMap = new Map(flow.nodes.map((candidate) => [candidate.id, candidate]))
 
   return (
     <aside className="node-inspector studio-inspector" aria-label="Node inspector">
@@ -494,6 +495,30 @@ export default function NodeInspector({
             <span>→</span>
             <code>#{selectedConnection.targetId}</code>
           </div>
+
+          <label className="studio-inspector__selected-route-field">
+            <span>Target node</span>
+            <select
+              aria-label="Selected route target"
+              value={selectedConnection.targetId}
+              onChange={(event) =>
+                onRouteChange(selectedConnection.sourceId, selectedConnection.optionIndex, {
+                  nextId: event.target.value,
+                })
+              }
+            >
+              {!nodeMap.has(selectedConnection.targetId) && (
+                <option value={selectedConnection.targetId}>
+                  Missing target #{selectedConnection.targetId}
+                </option>
+              )}
+              {flow.nodes.map((targetNode) => (
+                <option key={targetNode.id} value={targetNode.id}>
+                  #{targetNode.id} {NODE_META[targetNode.type]?.label ?? targetNode.type}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <span className="studio-inspector__route-status">
             <span aria-hidden="true" />

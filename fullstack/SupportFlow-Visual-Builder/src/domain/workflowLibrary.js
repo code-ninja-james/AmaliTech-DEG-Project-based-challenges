@@ -258,10 +258,6 @@ function getTimestamp(now = Date.now()) {
   return new Date(now).toISOString()
 }
 
-function normalizeWorkflowName(name) {
-  return String(name ?? '').trim() || 'Untitled workflow'
-}
-
 function getTitleCaseWorkflowWord(word) {
   const normalizedWord = String(word ?? '')
     .trim()
@@ -286,22 +282,38 @@ function getWorkflowNameFromFileName(fileName) {
   return sourceBaseName.split(/\s+/).map(getTitleCaseWorkflowWord).join(' ')
 }
 
+function getFormattedMachineWorkflowName(name) {
+  const trimmedName = String(name ?? '').trim()
+  const sourceName = trimmedName.replace(/^imported\s+/i, '')
+  const isMachineName =
+    /[_-]/.test(sourceName) || /\.[^./\\]+$/.test(sourceName) || /[a-z0-9][A-Z]/.test(sourceName)
+
+  return isMachineName ? getWorkflowNameFromFileName(sourceName) : ''
+}
+
+function normalizeWorkflowName(name) {
+  const trimmedName = String(name ?? '').trim()
+  const formattedName = getFormattedMachineWorkflowName(trimmedName)
+
+  return formattedName || trimmedName || 'Untitled workflow'
+}
+
 export function getImportedWorkflowName(sourceLabel, sourceName = '') {
   const sourceWorkflowName = getWorkflowNameFromFileName(sourceName)
 
   if (sourceWorkflowName) {
-    return `Imported ${sourceWorkflowName}`
+    return sourceWorkflowName
   }
 
   if (sourceLabel === 'JSON') {
-    return 'Imported JSON Workflow'
+    return 'JSON Workflow'
   }
 
   if (sourceLabel === 'Excel workbook') {
-    return 'Imported Excel Workflow'
+    return 'Excel Workflow'
   }
 
-  return 'Imported Spreadsheet Workflow'
+  return 'Spreadsheet Workflow'
 }
 
 function normalizeTimestamp(value, fallback) {

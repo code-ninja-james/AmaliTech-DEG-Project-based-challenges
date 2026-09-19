@@ -57,12 +57,18 @@ describe('workflowLibrary', () => {
   it('formats imported workflow names from source files', () => {
     expect(
       getImportedWorkflowName('Excel workbook', 'supportflow_low_rating_blocked_workflow.xlsx'),
-    ).toBe('Imported Supportflow Low Rating Blocked Workflow')
-    expect(getImportedWorkflowName('JSON', 'billing-flow.json')).toBe('Imported Billing Flow')
+    ).toBe('Supportflow Low Rating Blocked Workflow')
+    expect(
+      getImportedWorkflowName(
+        'Excel workbook',
+        'supportflow_strong_rating_retail_returns_workflow',
+      ),
+    ).toBe('Supportflow Strong Rating Retail Returns Workflow')
+    expect(getImportedWorkflowName('JSON', 'billing-flow.json')).toBe('Billing Flow')
     expect(getImportedWorkflowName('spreadsheet', 'vipCustomerEscalation.csv')).toBe(
-      'Imported Vip Customer Escalation',
+      'Vip Customer Escalation',
     )
-    expect(getImportedWorkflowName('JSON')).toBe('Imported JSON Workflow')
+    expect(getImportedWorkflowName('JSON')).toBe('JSON Workflow')
   })
 
   it('saves, renames, searches, and deletes workflow records', () => {
@@ -141,7 +147,7 @@ describe('workflowLibrary', () => {
       JSON.stringify([
         {
           id: 'workflow-1',
-          name: 'Saved workflow',
+          name: 'supportflow_strong_rating_retail_returns_workflow',
           flow,
           createdAt: '2026-09-15T07:00:00.000Z',
           updatedAt: '2026-09-15T07:00:00.000Z',
@@ -153,7 +159,10 @@ describe('workflowLibrary', () => {
     const workflows = loadWorkflowLibrary(storage)
 
     expect(workflows).toHaveLength(1)
-    expect(workflows[0]).toMatchObject({ id: 'workflow-1', name: 'Saved workflow' })
+    expect(workflows[0]).toMatchObject({
+      id: 'workflow-1',
+      name: 'Supportflow Strong Rating Retail Returns Workflow',
+    })
   })
 
   it('persists workflow JSON under the library key', () => {
@@ -178,7 +187,7 @@ describe('workflowLibrary', () => {
       persistWorkspaceSession(
         {
           flow,
-          workflowName: 'Imported Excel Workflow',
+          workflowName: 'Excel Workflow',
           activeWorkflowId: 'workflow-1',
           selectedNodeId: '2',
         },
@@ -188,7 +197,7 @@ describe('workflowLibrary', () => {
     expect(storage.lastKey).toBe(WORKSPACE_SESSION_STORAGE_KEY)
 
     expect(loadWorkspaceSession(storage)).toMatchObject({
-      workflowName: 'Imported Excel Workflow',
+      workflowName: 'Excel Workflow',
       activeWorkflowId: 'workflow-1',
       selectedNodeId: '2',
       flow,

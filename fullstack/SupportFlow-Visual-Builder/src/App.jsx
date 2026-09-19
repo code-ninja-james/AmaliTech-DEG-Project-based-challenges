@@ -75,7 +75,15 @@ function isTextEditingTarget(target) {
   )
 }
 
-function getImportedWorkflowName(sourceLabel) {
+function getImportedWorkflowName(sourceLabel, sourceName = '') {
+  const sourceBaseName = String(sourceName)
+    .trim()
+    .replace(/\.[^.]+$/, '')
+
+  if (sourceBaseName) {
+    return `Imported ${sourceBaseName}`
+  }
+
   if (sourceLabel === 'JSON') {
     return 'Imported JSON workflow'
   }
@@ -739,19 +747,49 @@ export default function App() {
     setIsPreviewing(false)
   }
 
-  const handleSpreadsheetImport = ({
-    flow: importedFlow,
-    warnings = [],
-    sourceLabel = 'import',
-  }) => {
+  const handleSpreadsheetImport = (importPayload) => {
+    handleWorkflowImports(Array.isArray(importPayload) ? importPayload : [importPayload])
+  }
+
+  const handleWorkflowImports = (imports) => {
+    const validImports = imports
+      .filter((item) => Array.isArray(item?.flow?.nodes))
+      .map((item) => ({
+        ...item,
+        warnings: item.warnings ?? [],
+        sourceLabel: item.sourceLabel ?? 'import',
+        sourceName: item.sourceName ?? '',
+      }))
+
+    if (validImports.length === 0) {
+      return
+    }
+
+    const savedImports = []
+    let nextWorkflows = workflows
+
+    validImports.forEach((item) => {
+      const importedWorkflowName = getImportedWorkflowName(item.sourceLabel, item.sourceName)
+      const result = saveWorkflow(nextWorkflows, {
+        name: importedWorkflowName,
+        flow: item.flow,
+      })
+
+      nextWorkflows = result.workflows
+      savedImports.push({
+        ...item,
+        workflow: result.workflow,
+        routeCount: item.flow.nodes.reduce((count, node) => count + node.options.length, 0),
+      })
+    })
+
+    const activeImport = savedImports.at(-1)
+    const importedFlow = activeImport.flow
     const startNode =
       importedFlow.nodes.find((node) => node.type === 'start') ?? importedFlow.nodes[0] ?? null
-    const routeCount = importedFlow.nodes.reduce((count, node) => count + node.options.length, 0)
-    const importedWorkflowName = getImportedWorkflowName(sourceLabel)
-    const { workflow, workflows: nextWorkflows } = saveWorkflow(workflows, {
-      name: importedWorkflowName,
-      flow: importedFlow,
-    })
+    const totalNodeCount = savedImports.reduce((count, item) => count + item.flow.nodes.length, 0)
+    const totalRouteCount = savedImports.reduce((count, item) => count + item.routeCount, 0)
+    const totalWarnings = savedImports.flatMap((item) => item.warnings ?? [])
     const wasSaved = persistWorkflows(nextWorkflows)
 
     setFlow(importedFlow)
@@ -763,49 +801,59 @@ export default function App() {
     setIsPreviewing(false)
     setDemoScenario('current')
     setIsSpreadsheetImporterOpen(false)
-    setActiveWorkflowId(wasSaved ? workflow.id : null)
-    setWorkflowName(workflow.name)
+    setActiveWorkflowId(wasSaved ? activeImport.workflow.id : null)
+    setWorkflowName(activeImport.workflow.name)
     if (wasSaved) setWorkflowNotice(null)
     setImportNotice({
-      message: `Imported ${importedFlow.nodes.length} nodes and ${routeCount} routes from ${sourceLabel}.`,
-      warnings,
+      message:
+        savedImports.length === 1
+          ? `Imported ${importedFlow.nodes.length} nodes and ${activeImport.routeCount} routes from ${activeImport.sourceLabel}.`
+          : `Imported ${savedImports.length} workflows with ${totalNodeCount} nodes and ${totalRouteCount} routes from selected files.`,
+      warnings: totalWarnings,
     })
     requestCanvasViewReset()
-    recordAuditEvent({
-      action: 'import.completed',
-      targetType: 'import',
-      targetId: sourceLabel,
-      targetLabel: sourceLabel,
-      summary: `Imported ${importedFlow.nodes.length} nodes and ${routeCount} routes from ${sourceLabel}.`,
-      details:
-        warnings.length > 0
-          ? `${warnings.length} warnings were raised during import.`
-          : 'Import completed without warnings.',
-      workflowName: workflow.name,
-      meta: {
-        sourceLabel,
-        nodeCount: importedFlow.nodes.length,
-        routeCount,
-        warningCount: warnings.length,
-      },
-    })
 
-    if (wasSaved) {
+    savedImports.forEach((item) => {
+      recordAuditEvent({
+        action: 'import.completed',
+        targetType: 'import',
+        targetId: item.sourceName || item.sourceLabel,
+        targetLabel: item.sourceName || item.sourceLabel,
+        summary: `Imported ${item.flow.nodes.length} nodes and ${item.routeCount} routes from ${item.sourceLabel}.`,
+        details:
+          item.warnings.length > 0
+            ? `${item.warnings.length} warnings were raised during import.`
+            : 'Import completed without warnings.',
+        workflowName: item.workflow.name,
+        meta: {
+          sourceLabel: item.sourceLabel,
+          sourceName: item.sourceName,
+          nodeCount: item.flow.nodes.length,
+          routeCount: item.routeCount,
+          warningCount: item.warnings.length,
+        },
+      })
+
+      if (!wasSaved) {
+        return
+      }
+
       recordAuditEvent({
         action: 'workflow.saved',
         targetType: 'workflow',
-        targetId: workflow.id,
-        targetLabel: workflow.name,
-        summary: `Saved workflow "${workflow.name}".`,
-        details: `${importedFlow.nodes.length} nodes and ${routeCount} routes saved automatically after import.`,
-        workflowName: workflow.name,
+        targetId: item.workflow.id,
+        targetLabel: item.workflow.name,
+        summary: `Saved workflow "${item.workflow.name}".`,
+        details: `${item.flow.nodes.length} nodes and ${item.routeCount} routes saved automatically after import.`,
+        workflowName: item.workflow.name,
         meta: {
-          workflowId: workflow.id,
-          sourceLabel,
+          workflowId: item.workflow.id,
+          sourceLabel: item.sourceLabel,
+          sourceName: item.sourceName,
           autoSaved: true,
         },
       })
-    }
+    })
   }
 
   const persistWorkflows = (nextWorkflows) => {

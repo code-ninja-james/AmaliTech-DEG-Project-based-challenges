@@ -13,14 +13,33 @@ const SOURCE_LABELS = {
   spreadsheet: 'spreadsheet',
 }
 
-function getSourceTypeFromFile(fileName) {
+const ALLOWED_FILE_EXTENSIONS = ['.json', '.xlsx', '.csv', '.tsv']
+const ALLOWED_FILE_TYPES = [
+  'application/json',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv',
+  'text/tab-separated-values',
+]
+const ACCEPTED_FILE_TYPES = [...ALLOWED_FILE_EXTENSIONS, ...ALLOWED_FILE_TYPES].join(',')
+
+function getFileExtension(fileName) {
   const normalizedName = fileName.toLowerCase()
 
-  if (normalizedName.endsWith('.xlsx')) {
+  return ALLOWED_FILE_EXTENSIONS.find((extension) => normalizedName.endsWith(extension)) ?? ''
+}
+
+function isAllowedWorkflowFile(file) {
+  return Boolean(getFileExtension(file.name))
+}
+
+function getSourceTypeFromFile(fileName) {
+  const extension = getFileExtension(fileName)
+
+  if (extension === '.xlsx') {
     return 'excel'
   }
 
-  if (normalizedName.endsWith('.json')) {
+  if (extension === '.json') {
     return 'json'
   }
 
@@ -50,7 +69,21 @@ function createFlowFromText(rawText, sourceType) {
   }
 }
 
-function getPreview(rawText, sourceType, preparedImport) {
+function getPreview(rawText, sourceType, preparedImport, preparedImports) {
+  if (preparedImports.length > 0) {
+    return {
+      status: 'ready-batch',
+      workflowCount: preparedImports.length,
+      nodeCount: preparedImports.reduce((count, item) => count + item.flow.nodes.length, 0),
+      routeCount: preparedImports.reduce(
+        (count, item) =>
+          count + item.flow.nodes.reduce((routeTotal, node) => routeTotal + node.options.length, 0),
+        0,
+      ),
+      warningCount: preparedImports.reduce((count, item) => count + item.warnings.length, 0),
+    }
+  }
+
   if (preparedImport) {
     return {
       status: 'ready',
@@ -83,16 +116,37 @@ function getPreview(rawText, sourceType, preparedImport) {
   }
 }
 
+async function createImportFromFile(file) {
+  const sourceType = getSourceTypeFromFile(file.name)
+
+  if (sourceType === 'excel') {
+    const result = await createFlowFromExcelWorkbook(await file.arrayBuffer())
+
+    return {
+      ...result,
+      sourceLabel: SOURCE_LABELS.excel,
+      sourceName: file.name,
+    }
+  }
+
+  return {
+    ...createFlowFromText(await file.text(), sourceType),
+    sourceName: file.name,
+  }
+}
+
 export default function SpreadsheetImporter({ open, onClose, onImport }) {
   const [rawText, setRawText] = useState('')
   const [fileName, setFileName] = useState('')
+  const [uploadedFileName, setUploadedFileName] = useState('')
   const [sourceType, setSourceType] = useState('spreadsheet')
   const [preparedImport, setPreparedImport] = useState(null)
+  const [preparedImports, setPreparedImports] = useState([])
   const [isReadingFile, setIsReadingFile] = useState(false)
   const [error, setError] = useState('')
   const preview = useMemo(
-    () => getPreview(rawText, sourceType, preparedImport),
-    [rawText, sourceType, preparedImport],
+    () => getPreview(rawText, sourceType, preparedImport, preparedImports),
+    [rawText, sourceType, preparedImport, preparedImports],
   )
 
   if (!open) {
@@ -102,39 +156,75 @@ export default function SpreadsheetImporter({ open, onClose, onImport }) {
   const resetImportState = () => {
     setRawText('')
     setFileName('')
+    setUploadedFileName('')
     setPreparedImport(null)
+    setPreparedImports([])
     setError('')
   }
 
   const handleFileChange = async (event) => {
-    const file = event.target.files?.[0]
+    const files = [...(event.target.files ?? [])]
 
-    if (!file) {
+    if (files.length === 0) {
       return
     }
 
-    const nextSourceType = getSourceTypeFromFile(file.name)
+    const validFiles = files.filter(isAllowedWorkflowFile)
+    const rejectedFiles = files.filter((file) => !isAllowedWorkflowFile(file))
+    const rejectedFileMessage =
+      rejectedFiles.length > 0
+        ? `Only .json, .xlsx, .csv, or .tsv workflow files are allowed. Skipped: ${rejectedFiles
+            .map((file) => file.name)
+            .join(', ')}.`
+        : ''
+
     setIsReadingFile(true)
-    setSourceType(nextSourceType)
-    setFileName(file.name)
+    setSourceType(
+      validFiles.length === 1 ? getSourceTypeFromFile(validFiles[0].name) : 'spreadsheet',
+    )
+    setFileName(
+      validFiles.length > 1 ? `${validFiles.length} files selected` : (validFiles[0]?.name ?? ''),
+    )
+    setUploadedFileName(validFiles.length === 1 ? (validFiles[0]?.name ?? '') : '')
     setPreparedImport(null)
-    setError('')
+    setPreparedImports([])
+    setRawText('')
+    setError(rejectedFileMessage)
 
     try {
-      if (nextSourceType === 'excel') {
-        const result = await createFlowFromExcelWorkbook(await file.arrayBuffer())
+      if (validFiles.length === 0) {
+        return
+      }
 
+      if (files.length === 1 && validFiles.length === 1) {
+        const file = validFiles[0]
+        const nextSourceType = getSourceTypeFromFile(file.name)
+
+        setSourceType(nextSourceType)
+        setFileName(file.name)
+        setUploadedFileName(file.name)
+
+        if (nextSourceType === 'excel') {
+          setPreparedImport(await createImportFromFile(file))
+        } else {
+          setRawText(await file.text())
+        }
+
+        return
+      }
+
+      const nextPreparedImports = await Promise.all(validFiles.map(createImportFromFile))
+
+      if (nextPreparedImports.length === 1) {
         setRawText('')
-        setPreparedImport({
-          ...result,
-          sourceLabel: SOURCE_LABELS.excel,
-        })
+        setPreparedImport(nextPreparedImports[0])
       } else {
-        setRawText(await file.text())
+        setPreparedImports(nextPreparedImports)
       }
     } catch (fileError) {
       setRawText('')
       setPreparedImport(null)
+      setPreparedImports([])
       setError(fileError.message || 'Could not read that file. Try JSON, CSV, TSV, or XLSX.')
     } finally {
       setIsReadingFile(false)
@@ -144,7 +234,13 @@ export default function SpreadsheetImporter({ open, onClose, onImport }) {
 
   const handleImport = () => {
     try {
-      const result = preparedImport ?? createFlowFromText(rawText, sourceType)
+      const result =
+        preparedImports.length > 0
+          ? preparedImports
+          : (preparedImport ?? {
+              ...createFlowFromText(rawText, sourceType),
+              sourceName: uploadedFileName,
+            })
 
       onImport(result)
       resetImportState()
@@ -183,16 +279,17 @@ export default function SpreadsheetImporter({ open, onClose, onImport }) {
         <div className="spreadsheet-importer__body">
           <p>
             Paste SupportFlow JSON, paste rows copied from Excel, or upload `.json`, `.xlsx`,
-            `.csv`, or `.tsv` files. Spreadsheet headings can use Node ID, Type, Question Text,
-            Route Label, and Next Node ID.
+            `.csv`, or `.tsv` files. You can select multiple files at once. Spreadsheet headings can
+            use Node ID, Type, Question Text, Route Label, and Next Node ID.
           </p>
 
           <div className="spreadsheet-importer__actions">
             <label>
-              <span>Import file</span>
+              <span>Import files</span>
               <input
                 type="file"
-                accept=".json,.xlsx,.csv,.tsv,.txt,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/tab-separated-values,text/plain"
+                multiple
+                accept={ACCEPTED_FILE_TYPES}
                 onChange={handleFileChange}
               />
             </label>
@@ -202,6 +299,7 @@ export default function SpreadsheetImporter({ open, onClose, onImport }) {
                 resetImportState()
                 setRawText(SAMPLE_SPREADSHEET_TEXT)
                 setFileName('sample-pasted-from-excel.tsv')
+                setUploadedFileName('')
                 setSourceType('spreadsheet')
               }}
             >
@@ -213,6 +311,7 @@ export default function SpreadsheetImporter({ open, onClose, onImport }) {
                 resetImportState()
                 setRawText(SAMPLE_FLOW_JSON_TEXT)
                 setFileName('sample-flow.json')
+                setUploadedFileName('')
                 setSourceType('json')
               }}
             >
@@ -234,7 +333,9 @@ export default function SpreadsheetImporter({ open, onClose, onImport }) {
             onChange={(event) => {
               setRawText(event.target.value)
               setPreparedImport(null)
+              setPreparedImports([])
               setFileName('')
+              setUploadedFileName('')
               setError('')
               setSourceType(getSourceTypeFromText(event.target.value, 'spreadsheet'))
             }}
@@ -250,6 +351,14 @@ export default function SpreadsheetImporter({ open, onClose, onImport }) {
             <div className="spreadsheet-importer__preview" role="status">
               Ready to create {preview.nodeCount} nodes and {preview.routeCount} routes from{' '}
               {preview.sourceLabel}
+              {preview.warningCount > 0 ? ` with ${preview.warningCount} warnings` : ''}.
+            </div>
+          )}
+
+          {!isReadingFile && preview?.status === 'ready-batch' && (
+            <div className="spreadsheet-importer__preview" role="status">
+              Ready to create {preview.workflowCount} workflows with {preview.nodeCount} nodes and{' '}
+              {preview.routeCount} routes from selected files
               {preview.warningCount > 0 ? ` with ${preview.warningCount} warnings` : ''}.
             </div>
           )}

@@ -721,7 +721,7 @@ describe('SupportFlow application', () => {
     await user.click(screen.getByRole('button', { name: 'Import flow' }))
 
     const dialog = screen.getByRole('dialog', { name: 'Import flow' })
-    await user.upload(within(dialog).getByLabelText('Import file'), file)
+    await user.upload(within(dialog).getByLabelText('Import files'), file)
 
     await waitFor(() => {
       expect(within(dialog).getByRole('status')).toHaveTextContent(
@@ -740,6 +740,84 @@ describe('SupportFlow application', () => {
     expect(
       screen.getByRole('button', { name: 'Technical support, route to node 3' }),
     ).toBeInTheDocument()
+  })
+
+  it('uploads multiple allowed workflow files and skips unsupported files', async () => {
+    const user = userEvent.setup()
+    const createWorkflowFile = ({ fileName, startId, endId, startText, endText }) =>
+      new File(
+        [
+          JSON.stringify({
+            nodes: [
+              {
+                id: startId,
+                type: 'start',
+                text: startText,
+                options: [{ label: 'Done', nextId: endId }],
+              },
+              {
+                id: endId,
+                type: 'end',
+                text: endText,
+                options: [],
+              },
+            ],
+          }),
+        ],
+        fileName,
+        { type: 'application/json' },
+      )
+    const onboardingFile = createWorkflowFile({
+      fileName: 'onboarding-flow.json',
+      startId: 'start-onboarding',
+      endId: 'end-onboarding',
+      startText: 'Welcome to onboarding.',
+      endText: 'Onboarding is complete.',
+    })
+    const billingFile = createWorkflowFile({
+      fileName: 'billing-flow.json',
+      startId: 'start-billing',
+      endId: 'end-billing',
+      startText: 'Welcome to billing.',
+      endText: 'Billing is complete.',
+    })
+    const unsupportedFile = new File(['not a workflow'], 'random-notes.exe', {
+      type: 'application/octet-stream',
+    })
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Import flow' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Import flow' })
+    fireEvent.change(within(dialog).getByLabelText('Import files'), {
+      target: { files: [onboardingFile, unsupportedFile, billingFile] },
+    })
+
+    await waitFor(() => {
+      expect(within(dialog).getByRole('status')).toHaveTextContent(
+        'Ready to create 2 workflows with 4 nodes and 2 routes from selected files.',
+      )
+    })
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      'Only .json, .xlsx, .csv, or .tsv workflow files are allowed. Skipped: random-notes.exe.',
+    )
+
+    await user.click(within(dialog).getByRole('button', { name: 'Create flow' }))
+
+    expect(
+      screen.getByText('Imported 2 workflows with 4 nodes and 2 routes from selected files.'),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('flow-node-start-billing')).getByText('Welcome to billing.'),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Open workflows' }))
+
+    const library = screen.getByRole('dialog', { name: 'Workflow library' })
+    expect(within(library).getByText('Imported onboarding-flow')).toBeInTheDocument()
+    expect(within(library).getByText('Imported billing-flow')).toBeInTheDocument()
+    expect(within(library).queryByText(/random-notes/)).not.toBeInTheDocument()
   })
 
   it('auto-saves imports, searches, edits, uses and deletes workflows', async () => {

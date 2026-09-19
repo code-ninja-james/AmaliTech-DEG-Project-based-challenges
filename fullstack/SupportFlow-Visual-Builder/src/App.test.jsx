@@ -595,7 +595,7 @@ describe('SupportFlow application', () => {
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
 
     const library = screen.getByRole('dialog', { name: 'Workflow library' })
-    expect(within(library).getByText('Imported JSON workflow')).toBeInTheDocument()
+    expect(within(library).getAllByText('Imported JSON Workflow').length).toBeGreaterThan(0)
     expect(within(library).queryByText('No saved workflows yet.')).not.toBeInTheDocument()
   })
 
@@ -699,7 +699,7 @@ describe('SupportFlow application', () => {
 
     expect(screen.getByTestId('flow-node-start')).toBeInTheDocument()
     expect(screen.queryByTestId('flow-node-1')).not.toBeInTheDocument()
-    expect(screen.getAllByText('Imported JSON workflow').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Imported JSON Workflow').length).toBeGreaterThan(0)
   })
 
   it('imports an uploaded Excel workbook', async () => {
@@ -815,8 +815,8 @@ describe('SupportFlow application', () => {
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
 
     const library = screen.getByRole('dialog', { name: 'Workflow library' })
-    expect(within(library).getByText('Imported onboarding-flow')).toBeInTheDocument()
-    expect(within(library).getByText('Imported billing-flow')).toBeInTheDocument()
+    expect(within(library).getByText('Imported Onboarding Flow')).toBeInTheDocument()
+    expect(within(library).getAllByText('Imported Billing Flow').length).toBeGreaterThan(0)
     expect(within(library).queryByText(/random-notes/)).not.toBeInTheDocument()
   })
 
@@ -832,7 +832,7 @@ describe('SupportFlow application', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Create flow' }))
 
     expect(screen.getByText('Imported 4 nodes and 3 routes from JSON.')).toBeInTheDocument()
-    expect(screen.getAllByText('Imported JSON workflow').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Imported JSON Workflow').length).toBeGreaterThan(0)
 
     await user.click(screen.getByTestId('flow-node-start'))
     await user.clear(screen.getByLabelText('Question Text'))
@@ -842,23 +842,24 @@ describe('SupportFlow application', () => {
 
     let library = screen.getByRole('dialog', { name: 'Workflow library' })
     expect(
-      within(library).getByRole('group', { name: 'Current canvas rating breakdown' }),
+      within(library).getByRole('group', { name: 'Current workflow rating breakdown' }),
     ).toHaveTextContent('Structure')
     expect(
-      within(library).getByRole('group', { name: 'Current canvas rating breakdown' }),
+      within(library).getByRole('group', { name: 'Current workflow rating breakdown' }),
     ).toHaveTextContent('Route labels')
-    expect(
-      within(library).getByText('Uploaded workflows are saved automatically after import.'),
-    ).toBeInTheDocument()
+    expect(within(library).getByText('Current workflow')).toBeInTheDocument()
+    expect(within(library).getByLabelText('Current workflow summary')).toHaveTextContent(
+      'Imported JSON Workflow',
+    )
     expect(within(library).queryByRole('button', { name: 'Save current workflow' })).toBeNull()
 
-    expect(within(library).getByText('Imported JSON workflow')).toBeInTheDocument()
+    expect(within(library).getAllByText('Imported JSON Workflow').length).toBeGreaterThan(0)
     expect(within(library).getAllByText('100/100 · Launch ready').length).toBeGreaterThan(0)
     expect(
-      within(library).getByRole('group', { name: 'Rating breakdown for Imported JSON workflow' }),
+      within(library).getByRole('group', { name: 'Rating breakdown for Imported JSON Workflow' }),
     ).toHaveTextContent('Endings')
     expect(
-      within(library).getByLabelText('Suggestions for Imported JSON workflow'),
+      within(library).getByLabelText('Suggestions for Imported JSON Workflow'),
     ).toHaveTextContent('Ready to preview')
 
     await user.click(within(library).getByRole('button', { name: 'Close workflow library' }))
@@ -867,18 +868,18 @@ describe('SupportFlow application', () => {
     library = screen.getByRole('dialog', { name: 'Workflow library' })
 
     await user.type(within(library).getByLabelText('Search workflows'), 'Acme')
-    expect(within(library).getByText('Imported JSON workflow')).toBeInTheDocument()
+    expect(within(library).getAllByText('Imported JSON Workflow').length).toBeGreaterThan(0)
 
     await user.click(within(library).getByRole('button', { name: 'Edit name' }))
-    await user.clear(within(library).getByLabelText('Workflow name for Imported JSON workflow'))
+    await user.clear(within(library).getByLabelText('Workflow name for Imported JSON Workflow'))
     await user.type(
-      within(library).getByLabelText('Workflow name for Imported JSON workflow'),
+      within(library).getByLabelText('Workflow name for Imported JSON Workflow'),
       'Saved support workflow',
     )
     await user.click(within(library).getByRole('button', { name: 'Save name' }))
 
     expect(screen.getByText('Renamed workflow to "Saved support workflow".')).toBeInTheDocument()
-    expect(within(library).getByText('Saved support workflow')).toBeInTheDocument()
+    expect(within(library).getAllByText('Saved support workflow').length).toBeGreaterThan(0)
 
     await user.click(within(library).getByRole('button', { name: 'Use workflow' }))
 
@@ -916,7 +917,7 @@ describe('SupportFlow application', () => {
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
 
     let library = screen.getByRole('dialog', { name: 'Workflow library' })
-    expect(within(library).getByText('Imported JSON workflow')).toBeInTheDocument()
+    expect(within(library).getAllByText('Imported JSON Workflow').length).toBeGreaterThan(0)
     await user.click(within(library).getByRole('button', { name: 'Use workflow' }))
 
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
@@ -928,10 +929,10 @@ describe('SupportFlow application', () => {
     dialog = screen.getByRole('dialog', { name: 'Audit log' })
 
     expect(within(dialog).getByText('Imported 4 nodes and 3 routes from JSON.')).toBeInTheDocument()
-    expect(within(dialog).getByText('Saved workflow "Imported JSON workflow".')).toBeInTheDocument()
-    expect(within(dialog).getByText('Used workflow "Imported JSON workflow".')).toBeInTheDocument()
+    expect(within(dialog).getByText('Saved workflow "Imported JSON Workflow".')).toBeInTheDocument()
+    expect(within(dialog).getByText('Used workflow "Imported JSON Workflow".')).toBeInTheDocument()
     expect(
-      within(dialog).getByText('Deleted workflow "Imported JSON workflow".'),
+      within(dialog).getByText('Deleted workflow "Imported JSON Workflow".'),
     ).toBeInTheDocument()
   })
 

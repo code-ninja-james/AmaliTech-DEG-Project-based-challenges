@@ -262,6 +262,48 @@ function normalizeWorkflowName(name) {
   return String(name ?? '').trim() || 'Untitled workflow'
 }
 
+function getTitleCaseWorkflowWord(word) {
+  const normalizedWord = String(word ?? '')
+    .trim()
+    .toLowerCase()
+
+  return normalizedWord ? normalizedWord[0].toUpperCase() + normalizedWord.slice(1) : ''
+}
+
+function getWorkflowNameFromFileName(fileName) {
+  const sourceBaseName = String(fileName ?? '')
+    .trim()
+    .replace(/\.[^./\\]+$/, '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .trim()
+
+  if (!sourceBaseName) {
+    return ''
+  }
+
+  return sourceBaseName.split(/\s+/).map(getTitleCaseWorkflowWord).join(' ')
+}
+
+export function getImportedWorkflowName(sourceLabel, sourceName = '') {
+  const sourceWorkflowName = getWorkflowNameFromFileName(sourceName)
+
+  if (sourceWorkflowName) {
+    return `Imported ${sourceWorkflowName}`
+  }
+
+  if (sourceLabel === 'JSON') {
+    return 'Imported JSON Workflow'
+  }
+
+  if (sourceLabel === 'Excel workbook') {
+    return 'Imported Excel Workflow'
+  }
+
+  return 'Imported Spreadsheet Workflow'
+}
+
 function normalizeTimestamp(value, fallback) {
   const date = new Date(value)
 

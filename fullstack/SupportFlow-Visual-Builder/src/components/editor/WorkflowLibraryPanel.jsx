@@ -44,6 +44,7 @@ export default function WorkflowLibraryPanel({
   workflows,
   activeWorkflowId,
   currentFlow,
+  workflowName,
   onClose,
   onUseWorkflow,
   onRenameWorkflow,
@@ -54,6 +55,7 @@ export default function WorkflowLibraryPanel({
   const [editingName, setEditingName] = useState('')
   const currentStats = getWorkflowStats(currentFlow)
   const currentRating = getWorkflowRating(currentFlow)
+  const currentWorkflowName = String(workflowName ?? '').trim() || 'Untitled workflow'
   const visibleWorkflows = useMemo(() => searchWorkflows(workflows, search), [workflows, search])
 
   if (!open) {
@@ -98,10 +100,10 @@ export default function WorkflowLibraryPanel({
         </header>
 
         <div className="workflow-library__body">
-          <section className="workflow-library__save" aria-label="Current canvas summary">
+          <section className="workflow-library__save" aria-label="Current workflow summary">
             <div>
-              <strong>Current canvas</strong>
-              <p>Uploaded workflows are saved automatically after import.</p>
+              <strong>Current workflow</strong>
+              <p>{currentWorkflowName}</p>
             </div>
             <div className="workflow-library__current-stats">
               <span>
@@ -113,7 +115,7 @@ export default function WorkflowLibraryPanel({
                 {currentRating.score}/100 · {currentRating.label}
               </strong>
             </div>
-            <RatingBreakdown rating={currentRating} label="Current canvas rating breakdown" />
+            <RatingBreakdown rating={currentRating} label="Current workflow rating breakdown" />
           </section>
 
           <label className="workflow-library__search" htmlFor="workflow-search">

@@ -39,6 +39,7 @@ import {
   cloneFlow,
   DEFAULT_WORKFLOW_NAME,
   deleteWorkflow,
+  getImportedWorkflowName,
   getWorkflowStats,
   loadWorkflowLibrary,
   loadWorkspaceSession,
@@ -73,26 +74,6 @@ function isTextEditingTarget(target) {
     ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName) ||
     Boolean(target.closest('[contenteditable="true"]'))
   )
-}
-
-function getImportedWorkflowName(sourceLabel, sourceName = '') {
-  const sourceBaseName = String(sourceName)
-    .trim()
-    .replace(/\.[^.]+$/, '')
-
-  if (sourceBaseName) {
-    return `Imported ${sourceBaseName}`
-  }
-
-  if (sourceLabel === 'JSON') {
-    return 'Imported JSON workflow'
-  }
-
-  if (sourceLabel === 'Excel workbook') {
-    return 'Imported Excel workflow'
-  }
-
-  return 'Imported spreadsheet workflow'
 }
 
 function getNodeTypeLabel(node) {
@@ -1243,6 +1224,7 @@ export default function App() {
         workflows={workflows}
         activeWorkflowId={activeWorkflowId}
         currentFlow={flow}
+        workflowName={workflowName}
         onClose={() => setIsWorkflowLibraryOpen(false)}
         onUseWorkflow={handleWorkflowUse}
         onRenameWorkflow={handleWorkflowRename}

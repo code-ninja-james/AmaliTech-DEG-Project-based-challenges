@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   deleteWorkflow,
+  getImportedWorkflowName,
   getWorkflowRating,
   loadWorkflowLibrary,
   loadWorkspaceSession,
@@ -53,6 +54,17 @@ function createStorageMock(seed = null) {
 }
 
 describe('workflowLibrary', () => {
+  it('formats imported workflow names from source files', () => {
+    expect(
+      getImportedWorkflowName('Excel workbook', 'supportflow_low_rating_blocked_workflow.xlsx'),
+    ).toBe('Imported Supportflow Low Rating Blocked Workflow')
+    expect(getImportedWorkflowName('JSON', 'billing-flow.json')).toBe('Imported Billing Flow')
+    expect(getImportedWorkflowName('spreadsheet', 'vipCustomerEscalation.csv')).toBe(
+      'Imported Vip Customer Escalation',
+    )
+    expect(getImportedWorkflowName('JSON')).toBe('Imported JSON Workflow')
+  })
+
   it('saves, renames, searches, and deletes workflow records', () => {
     const saved = saveWorkflow([], {
       id: 'workflow-1',
@@ -166,7 +178,7 @@ describe('workflowLibrary', () => {
       persistWorkspaceSession(
         {
           flow,
-          workflowName: 'Imported Excel workflow',
+          workflowName: 'Imported Excel Workflow',
           activeWorkflowId: 'workflow-1',
           selectedNodeId: '2',
         },
@@ -176,7 +188,7 @@ describe('workflowLibrary', () => {
     expect(storage.lastKey).toBe(WORKSPACE_SESSION_STORAGE_KEY)
 
     expect(loadWorkspaceSession(storage)).toMatchObject({
-      workflowName: 'Imported Excel workflow',
+      workflowName: 'Imported Excel Workflow',
       activeWorkflowId: 'workflow-1',
       selectedNodeId: '2',
       flow,

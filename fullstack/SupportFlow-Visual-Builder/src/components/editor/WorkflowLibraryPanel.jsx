@@ -92,7 +92,7 @@ export default function WorkflowLibraryPanel({
         <header className="workflow-library__header">
           <div>
             <span>Workflow Library</span>
-            <h2>Reuse saved support flows</h2>
+            <h2>Saved Workflow Library</h2>
           </div>
           <button type="button" aria-label="Close workflow library" onClick={onClose}>
             x

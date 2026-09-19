@@ -41,29 +41,44 @@
 }
 
 .app-brand__mark {
-  display: grid;
-  width: 16px;
-  height: 16px;
-  grid-template-columns: repeat(2, 6px);
-  grid-template-rows: repeat(2, 6px);
-  gap: 2px;
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
-.app-brand__mark span {
-  border-radius: 2px;
-  background: #4f8ff7;
+.app-brand__mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-.app-brand__mark span:nth-child(2) {
-  opacity: 0.3;
+.app-brand__mark-link {
+  fill: none;
+  stroke: #4f8ff7;
+  stroke-linecap: round;
+  stroke-width: 2;
 }
 
-.app-brand__mark span:nth-child(3) {
-  opacity: 0.18;
+.app-brand__mark-link--primary {
+  opacity: 0.78;
 }
 
-.app-brand__mark span:nth-child(4) {
-  opacity: 0.52;
+.app-brand__mark-link--secondary {
+  opacity: 0.48;
+}
+
+.app-brand__mark-node--primary {
+  fill: #4f8ff7;
+}
+
+.app-brand__mark-node--secondary {
+  fill: #4f8ff7;
+  opacity: 0.46;
+}
+
+.app-brand__mark-node--active {
+  fill: #34d399;
 }
 
 .app-brand__name {

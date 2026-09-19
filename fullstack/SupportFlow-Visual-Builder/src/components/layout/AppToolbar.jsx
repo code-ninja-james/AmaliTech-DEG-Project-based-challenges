@@ -30,10 +30,34 @@ export default function AppToolbar({
     <header className="app-toolbar">
       <div className="app-brand">
         <span className="app-brand__mark" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-          <span />
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path className="app-brand__mark-link app-brand__mark-link--primary" d="M9 6h6" />
+            <path className="app-brand__mark-link app-brand__mark-link--secondary" d="M18 9v6" />
+            <rect
+              className="app-brand__mark-node app-brand__mark-node--primary"
+              x="2"
+              y="2"
+              width="8"
+              height="8"
+              rx="3"
+            />
+            <rect
+              className="app-brand__mark-node app-brand__mark-node--secondary"
+              x="14"
+              y="2"
+              width="8"
+              height="8"
+              rx="3"
+            />
+            <rect
+              className="app-brand__mark-node app-brand__mark-node--active"
+              x="14"
+              y="14"
+              width="8"
+              height="8"
+              rx="3"
+            />
+          </svg>
         </span>
 
         <h1 className="app-brand__name">

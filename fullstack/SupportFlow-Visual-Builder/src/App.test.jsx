@@ -591,6 +591,12 @@ describe('SupportFlow application', () => {
         'A business billing agent will join shortly.',
       ),
     ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Open workflows' }))
+
+    const library = screen.getByRole('dialog', { name: 'Workflow library' })
+    expect(within(library).getByText('Imported JSON workflow')).toBeInTheDocument()
+    expect(within(library).queryByText('No saved workflows yet.')).not.toBeInTheDocument()
   })
 
   it('runs X-Ray demo scenarios against an imported custom JSON workflow', async () => {
@@ -822,7 +828,7 @@ describe('SupportFlow application', () => {
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
 
     let library = screen.getByRole('dialog', { name: 'Workflow library' })
-    await user.click(within(library).getByRole('button', { name: 'Save current workflow' }))
+    expect(within(library).getByText('Imported JSON workflow')).toBeInTheDocument()
     await user.click(within(library).getByRole('button', { name: 'Use workflow' }))
 
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))

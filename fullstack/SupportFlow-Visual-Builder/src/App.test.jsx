@@ -742,52 +742,59 @@ describe('SupportFlow application', () => {
     ).toBeInTheDocument()
   })
 
-  it('saves, searches, edits, uses and deletes workflows', async () => {
+  it('auto-saves imports, searches, edits, uses and deletes workflows', async () => {
     const user = userEvent.setup()
 
     render(<App />)
 
-    await user.click(screen.getByTestId('flow-node-2'))
+    await user.click(screen.getByRole('button', { name: 'Import flow' }))
+
+    let dialog = screen.getByRole('dialog', { name: 'Import flow' })
+    await user.click(within(dialog).getByRole('button', { name: 'Use JSON sample' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Create flow' }))
+
+    expect(screen.getByText('Imported 4 nodes and 3 routes from JSON.')).toBeInTheDocument()
+    expect(screen.getAllByText('Imported JSON workflow').length).toBeGreaterThan(0)
+
+    await user.click(screen.getByTestId('flow-node-start'))
     await user.clear(screen.getByLabelText('Question Text'))
-    await user.type(screen.getByLabelText('Question Text'), 'Saved router question')
+    await user.type(screen.getByLabelText('Question Text'), 'Temporary canvas question')
 
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
 
     let library = screen.getByRole('dialog', { name: 'Workflow library' })
     expect(
-      within(library).getByRole('group', { name: 'Current workflow rating breakdown' }),
+      within(library).getByRole('group', { name: 'Current canvas rating breakdown' }),
     ).toHaveTextContent('Structure')
     expect(
-      within(library).getByRole('group', { name: 'Current workflow rating breakdown' }),
+      within(library).getByRole('group', { name: 'Current canvas rating breakdown' }),
     ).toHaveTextContent('Route labels')
-    await user.clear(within(library).getByLabelText('Current workflow name'))
-    await user.type(within(library).getByLabelText('Current workflow name'), 'Router workflow')
-    await user.click(within(library).getByRole('button', { name: 'Save current workflow' }))
+    expect(
+      within(library).getByText('Uploaded workflows are saved automatically after import.'),
+    ).toBeInTheDocument()
+    expect(within(library).queryByRole('button', { name: 'Save current workflow' })).toBeNull()
 
-    expect(screen.getByText('Saved workflow "Router workflow".')).toBeInTheDocument()
-    expect(within(library).getByText('Router workflow')).toBeInTheDocument()
+    expect(within(library).getByText('Imported JSON workflow')).toBeInTheDocument()
     expect(within(library).getAllByText('100/100 · Launch ready').length).toBeGreaterThan(0)
     expect(
-      within(library).getByRole('group', { name: 'Rating breakdown for Router workflow' }),
+      within(library).getByRole('group', { name: 'Rating breakdown for Imported JSON workflow' }),
     ).toHaveTextContent('Endings')
-    expect(within(library).getByLabelText('Suggestions for Router workflow')).toHaveTextContent(
-      'Ready to preview',
-    )
+    expect(
+      within(library).getByLabelText('Suggestions for Imported JSON workflow'),
+    ).toHaveTextContent('Ready to preview')
 
     await user.click(within(library).getByRole('button', { name: 'Close workflow library' }))
-    await user.clear(screen.getByLabelText('Question Text'))
-    await user.type(screen.getByLabelText('Question Text'), 'Temporary canvas question')
 
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
     library = screen.getByRole('dialog', { name: 'Workflow library' })
 
-    await user.type(within(library).getByLabelText('Search workflows'), 'saved router')
-    expect(within(library).getByText('Router workflow')).toBeInTheDocument()
+    await user.type(within(library).getByLabelText('Search workflows'), 'Acme')
+    expect(within(library).getByText('Imported JSON workflow')).toBeInTheDocument()
 
     await user.click(within(library).getByRole('button', { name: 'Edit name' }))
-    await user.clear(within(library).getByLabelText('Workflow name for Router workflow'))
+    await user.clear(within(library).getByLabelText('Workflow name for Imported JSON workflow'))
     await user.type(
-      within(library).getByLabelText('Workflow name for Router workflow'),
+      within(library).getByLabelText('Workflow name for Imported JSON workflow'),
       'Saved support workflow',
     )
     await user.click(within(library).getByRole('button', { name: 'Save name' }))
@@ -799,11 +806,14 @@ describe('SupportFlow application', () => {
 
     expect(screen.queryByRole('dialog', { name: 'Workflow library' })).not.toBeInTheDocument()
     expect(
-      within(screen.getByTestId('flow-node-2')).getByText('Saved router question'),
+      within(screen.getByTestId('flow-node-start')).getByText(
+        'Welcome to Acme Support. What do you need help with?',
+      ),
     ).toBeInTheDocument()
-    await user.click(screen.getByTestId('flow-node-2'))
-    expect(screen.getByLabelText('Question Text')).toHaveValue('Saved router question')
-    expect(screen.getByText('Using workflow "Saved support workflow".')).toBeInTheDocument()
+    await user.click(screen.getByTestId('flow-node-start'))
+    expect(screen.getByLabelText('Question Text')).toHaveValue(
+      'Welcome to Acme Support. What do you need help with?',
+    )
 
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
     library = screen.getByRole('dialog', { name: 'Workflow library' })

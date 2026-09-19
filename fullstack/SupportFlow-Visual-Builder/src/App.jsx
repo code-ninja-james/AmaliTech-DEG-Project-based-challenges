@@ -819,44 +819,6 @@ export default function App() {
     return false
   }
 
-  const handleWorkflowNameChange = (nextName) => {
-    setWorkflowName(nextName)
-    setWorkflowNotice(null)
-  }
-
-  const handleWorkflowSave = () => {
-    const { workflow, workflows: nextWorkflows } = saveWorkflow(workflows, {
-      id: activeWorkflowId,
-      name: workflowName,
-      flow,
-    })
-
-    if (!persistWorkflows(nextWorkflows)) {
-      return
-    }
-
-    setActiveWorkflowId(workflow.id)
-    setWorkflowName(workflow.name)
-    setDeleteUndo(null)
-    setImportNotice(null)
-    setWorkflowNotice(`Saved workflow "${workflow.name}".`)
-
-    const stats = getWorkflowStats(workflow.flow)
-
-    recordAuditEvent({
-      action: 'workflow.saved',
-      targetType: 'workflow',
-      targetId: workflow.id,
-      targetLabel: workflow.name,
-      summary: `Saved workflow "${workflow.name}".`,
-      details: `${stats.nodeCount} nodes and ${stats.routeCount} routes saved.`,
-      workflowName: workflow.name,
-      meta: {
-        workflowId: workflow.id,
-      },
-    })
-  }
-
   const handleWorkflowUse = (workflowId) => {
     const workflow = workflows.find((currentWorkflow) => currentWorkflow.id === workflowId)
 
@@ -1232,11 +1194,8 @@ export default function App() {
         open={isWorkflowLibraryOpen}
         workflows={workflows}
         activeWorkflowId={activeWorkflowId}
-        workflowName={workflowName}
         currentFlow={flow}
         onClose={() => setIsWorkflowLibraryOpen(false)}
-        onWorkflowNameChange={handleWorkflowNameChange}
-        onSaveCurrent={handleWorkflowSave}
         onUseWorkflow={handleWorkflowUse}
         onRenameWorkflow={handleWorkflowRename}
         onDeleteWorkflow={handleWorkflowDelete}

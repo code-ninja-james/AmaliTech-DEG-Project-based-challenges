@@ -43,11 +43,8 @@ export default function WorkflowLibraryPanel({
   open,
   workflows,
   activeWorkflowId,
-  workflowName,
   currentFlow,
   onClose,
-  onWorkflowNameChange,
-  onSaveCurrent,
   onUseWorkflow,
   onRenameWorkflow,
   onDeleteWorkflow,
@@ -93,7 +90,7 @@ export default function WorkflowLibraryPanel({
         <header className="workflow-library__header">
           <div>
             <span>Workflow Library</span>
-            <h2>Save and reuse support flows</h2>
+            <h2>Reuse saved support flows</h2>
           </div>
           <button type="button" aria-label="Close workflow library" onClick={onClose}>
             x
@@ -101,14 +98,10 @@ export default function WorkflowLibraryPanel({
         </header>
 
         <div className="workflow-library__body">
-          <section className="workflow-library__save" aria-label="Save current workflow">
+          <section className="workflow-library__save" aria-label="Current canvas summary">
             <div>
-              <label htmlFor="workflow-name">Current workflow name</label>
-              <input
-                id="workflow-name"
-                value={workflowName}
-                onChange={(event) => onWorkflowNameChange(event.target.value)}
-              />
+              <strong>Current canvas</strong>
+              <p>Uploaded workflows are saved automatically after import.</p>
             </div>
             <div className="workflow-library__current-stats">
               <span>
@@ -120,10 +113,7 @@ export default function WorkflowLibraryPanel({
                 {currentRating.score}/100 · {currentRating.label}
               </strong>
             </div>
-            <RatingBreakdown rating={currentRating} label="Current workflow rating breakdown" />
-            <button type="button" onClick={onSaveCurrent}>
-              Save current workflow
-            </button>
+            <RatingBreakdown rating={currentRating} label="Current canvas rating breakdown" />
           </section>
 
           <label className="workflow-library__search" htmlFor="workflow-search">

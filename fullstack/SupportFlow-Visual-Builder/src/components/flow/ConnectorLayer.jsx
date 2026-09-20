@@ -454,12 +454,17 @@ export default function ConnectorLayer({
             {showPaths && (
               <>
                 <path
-                  className="connector-path"
+                  className={[
+                    'connector-path',
+                    isConnectionSelected ? 'connector-path--selected' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                   data-connection-id={connection.id}
                   d={path}
                   fill="none"
                   stroke={stroke}
-                  strokeWidth={isRelated ? 1.7 : 1}
+                  strokeWidth={isConnectionSelected ? 2.4 : isRelated ? 1.7 : 1}
                   strokeDasharray={isXray && !xrayReachable ? '5 3' : undefined}
                   markerEnd={
                     isXray

@@ -88,6 +88,41 @@ describe('diagnostic connectors', () => {
     ).toBeInTheDocument()
   })
 
+  it('marks the selected connector path and label for stronger visual focus', () => {
+    const { container } = render(
+      <ConnectorLayer
+        connections={[
+          {
+            id: '1-0-2',
+            sourceId: '1',
+            targetId: '2',
+            optionIndex: 0,
+            sourceOptionCount: 1,
+            label: 'Billing',
+          },
+        ]}
+        nodes={[
+          { id: '1', type: 'start', options: [], position: { x: 120, y: 100 } },
+          { id: '2', type: 'question', options: [], position: { x: 520, y: 260 } },
+        ]}
+        nodeRects={{
+          1: { x: 120, y: 100, width: 196, height: 100 },
+          2: { x: 520, y: 260, width: 196, height: 100 },
+        }}
+        width={900}
+        height={600}
+        selectedConnectionId="1-0-2"
+      />,
+    )
+
+    const edge = container.querySelector('[data-connection-id="1-0-2"]')
+    expect(edge).toHaveClass('connector-path--selected')
+    expect(edge).toHaveAttribute('stroke-width', '2.4')
+    expect(screen.getByRole('button', { name: 'Billing, route to node 2' })).toHaveClass(
+      'connector-label--selected',
+    )
+  })
+
   it('keeps labels attached to the connector curve when avoiding node cards', () => {
     const sourceRect = { x: 100, y: 60, width: 196, height: 100 }
     const targetRect = { x: 700, y: 420, width: 196, height: 100 }

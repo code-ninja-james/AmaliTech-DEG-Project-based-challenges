@@ -206,6 +206,10 @@
   vector-effect: non-scaling-stroke;
 }
 
+.connector-path--selected {
+  filter: drop-shadow(0 0 6px rgba(79, 143, 247, 0.65));
+}
+
 .connector-arrow {
   fill: var(--sf-text-faint);
 }
@@ -246,7 +250,8 @@
 .connector-label__background {
   transition:
     fill 120ms ease,
-    stroke 120ms ease;
+    stroke 120ms ease,
+    stroke-width 120ms ease;
 }
 
 .connector-label:hover .connector-label__background {
@@ -256,12 +261,14 @@
 
 .connector-label:focus-visible .connector-label__background,
 .connector-label--selected .connector-label__background {
-  fill: #151e28;
-  stroke: var(--sf-node-question);
+  fill: #102033;
+  stroke: rgba(96, 165, 250, 0.95);
+  stroke-width: 1.5;
 }
 
 .connector-label--selected .connector-label__text {
   fill: var(--sf-text-primary);
+  font-weight: 700;
 }
 
 /*

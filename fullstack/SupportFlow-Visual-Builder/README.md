@@ -1,6 +1,8 @@
 # SupportFlow Studio
 
-SupportFlow Studio is a visual decision-tree editor for customer-support flows. It turns the supplied `flow_data.json` into an interactive graph that support teams can inspect, edit, validate, and run as a chat simulation.
+SupportFlow Studio is a React-based visual workflow builder for customer-support teams. It turns the supplied `flow_data.json` into an interactive graph that support teams can inspect, edit, validate, reuse, and run as a chat simulation.
+
+**Live website:** https://supportflow-delta.vercel.app/
 
 The implementation is deliberately built without graph or component libraries. Node positions come directly from the provided JSON, while relationships are measured from the DOM and rendered with native SVG.
 
@@ -24,27 +26,27 @@ The product shell includes a searchable node navigator, visual graph, inspector 
 
 The latest design-system pass also documents the newer product controls:
 
-- **Import Flow** — JSON, Excel, CSV, and TSV migration entry point.
-- **Workflow Library** — save, search, rename, use, and delete saved flows.
+- **Import Flow** — JSON, Excel, CSV, and TSV migration entry point with multi-file import.
+- **Workflow Library** — auto-save imports, search, rename, use, and delete saved flows.
 - **Security Audit** — current-user identity, searchable history, and export actions.
-- **Route Authoring** — editable labels, target selectors, delete actions, and draggable route handles.
+- **Route Authoring** — editable labels, target selectors, delete actions, draggable route handles, and drag-to-retarget route labels.
 
 ## Beyond the brief
 
 The required assignment asks for a visual graph, editing, Preview mode, and one wildcard feature. SupportFlow Studio goes further by adding the surrounding workflow a support manager would need before using this in practice.
 
-| Added feature               | What it does                                                        | Why it matters                                                     |
-| --------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Spreadsheet and JSON import | Converts `.json`, `.xlsx`, `.csv`, and `.tsv` flow data into nodes. | Gives teams a migration path from messy Excel configuration files. |
-| Workflow Library            | Saves, searches, renames, uses, and deletes browser-stored flows.   | Lets managers keep multiple support flows without rebuilding them. |
-| Workflow readiness rating   | Scores each workflow and lists the top improvement suggestions.     | Helps managers compare saved flows and fix weak spots quickly.     |
-| Security Audit Log          | Tracks who added, edited, deleted, imported, saved, or reused data. | Makes the demo credible for teams that care about accountability.  |
-| Canvas layout editing       | Lets users drag node cards into clearer positions.                  | Gives managers control over readability without editing JSON.      |
-| Route authoring tools       | Adds, names, retargets, drags, and deletes routes visually.         | Allows non-technical users to change flow logic without JSON.      |
-| Delete safety               | Offers Undo after deletion, plus minimize and close controls.       | Reduces the risk of accidental destructive edits.                  |
-| Diagnostic demo scenarios   | Shows broken reference, unreachable branch, and cycle examples.     | Makes the X-Ray feature easy to evaluate during a review.          |
-| Spatial mode and minimap    | Provides alternate navigation and topology views.                   | Helps larger flows remain understandable as they grow.             |
-| Command palette             | Opens key actions with `⌘K` / `Ctrl+K`.                             | Speeds up navigation for power users and reviewers.                |
+| Added feature               | What it does                                                                            | Why it matters                                                     |
+| --------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Spreadsheet and JSON import | Converts `.json`, `.xlsx`, `.csv`, and `.tsv` flow data into nodes.                     | Gives teams a migration path from messy Excel configuration files. |
+| Workflow Library            | Auto-saves imports and lets users search, rename, use, and delete browser-stored flows. | Lets managers keep multiple support flows without rebuilding them. |
+| Workflow readiness rating   | Scores each workflow and lists the top improvement suggestions.                         | Helps managers compare saved flows and fix weak spots quickly.     |
+| Security Audit Log          | Tracks who added, edited, deleted, imported, saved, or reused data.                     | Makes the demo credible for teams that care about accountability.  |
+| Draggable node layout       | Lets users drag node cards into clearer positions.                                      | Gives managers control over readability without editing JSON.      |
+| Route authoring tools       | Adds, names, retargets, drags, highlights, and deletes routes visually.                 | Allows non-technical users to change flow logic without JSON.      |
+| Delete safety               | Offers Undo after deletion, plus minimize and close controls.                           | Reduces the risk of accidental destructive edits.                  |
+| Diagnostic demo scenarios   | Shows broken reference, unreachable branch, and cycle examples.                         | Makes the X-Ray feature easy to evaluate during a review.          |
+| Spatial mode and minimap    | Provides alternate navigation and topology views.                                       | Helps larger flows remain understandable as they grow.             |
+| Command palette             | Opens key actions with `⌘K` / `Ctrl+K`.                                                 | Speeds up navigation for power users and reviewers.                |
 
 ## Features
 
@@ -58,10 +60,13 @@ The required assignment asks for a visual graph, editing, Preview mode, and one 
 - Supports route labels, selection states, execution packets, minimap navigation, and canvas zoom controls.
 - Includes a searchable/collapsible node navigator.
 - Allows node cards to be moved directly in Build mode; moved positions are kept in state, saved with workflows, and recorded in the audit log.
+- Highlights the selected route connector and label so route edits are visible on the dark canvas.
 
 ### Flow import
 
-Support teams can convert an old Excel-style configuration into a visual flow without hand-authoring JSON. Open **Import flow** in Build mode, then paste SupportFlow JSON, paste rows copied from Excel, or upload `.json`, `.xlsx`, `.csv`, or `.tsv` files.
+Support teams can convert an old Excel-style configuration into a visual flow without hand-authoring JSON. Open **Import flow** in Build mode, then paste SupportFlow JSON, paste rows copied from Excel, or upload one or more `.json`, `.xlsx`, `.csv`, or `.tsv` files.
+
+The import modal shows the allowed file types clearly, filters unsupported uploads, previews cleaned workflow names before import, and saves every valid imported workflow automatically. A file such as `supportflow_strong_rating_retail_returns_workflow.xlsx` becomes **Supportflow Strong Rating Retail Returns Workflow** in the library.
 
 Native JSON imports accept the same `{ meta, nodes }` structure used by the app, plus flat `rows`, `data`, or `records` exports when they use spreadsheet-style headings. Excel and CSV/TSV imports detect the useful header row, scan past cover or notes worksheets, accept flexible column names, support repeated route rows or wide answer columns such as `Answer 1 / Next 1`, create terminal placeholders for referenced endpoints that are missing from the sheet, and lay out nodes automatically when coordinates are absent.
 
@@ -80,9 +85,11 @@ Accepted table shape for Excel, CSV/TSV, and flat JSON rows:
 
 ### Workflow library
 
-Workflows can be saved in the browser and reused later without a backend database. Open **Workflows** in Build mode to name and save the current flow, search saved workflows, rename them, delete old ones, or click **Use workflow** to load a saved flow back onto the canvas.
+Workflows are saved in the browser and reused later without a backend database. Open **Workflows** in Build mode to see the **Current Workflow** summary, search saved workflows, rename them, delete old ones, or click **Use workflow** to load a saved flow back onto the canvas.
 
 Search checks workflow names, node IDs, node text, route labels, and route targets. When a saved workflow is used, the editor switches back to Build mode, selects the Start node, and all normal editing, validation, import, and Preview behavior continues against that loaded workflow.
+
+The currently loaded workflow is marked with an **Active** badge, and saved workflow cards stay compact so the library remains easy to scan during a demo.
 
 Each workflow also receives a readiness rating, such as **100/100 · Launch ready** or **Needs review**, plus short improvement suggestions generated from the same structural checks used by Flow Health. The rating is broken down into **Structure**, **Route labels**, **Content**, and **Endings**, so managers can see why a workflow received its score instead of treating it as a black box. Saved flows can therefore be compared quickly before a manager chooses which one to use.
 
@@ -300,7 +307,9 @@ npm test
 
 ## Deployment
 
-SupportFlow Studio is a static Vite application.
+SupportFlow Studio is a React application built with Vite and deployed on Vercel. React is the application layer; Vite handles local development and production bundling.
+
+**Production URL:** https://supportflow-delta.vercel.app/
 
 Recommended monorepo deployment settings:
 

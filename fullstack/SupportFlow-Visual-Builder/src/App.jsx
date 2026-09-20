@@ -788,8 +788,14 @@ export default function App() {
     setImportNotice({
       message:
         savedImports.length === 1
-          ? `Imported ${importedFlow.nodes.length} nodes and ${activeImport.routeCount} routes from ${activeImport.sourceLabel}.`
-          : `Imported ${savedImports.length} workflows with ${totalNodeCount} nodes and ${totalRouteCount} routes from selected files.`,
+          ? `${
+              wasSaved ? 'Imported and saved' : 'Imported'
+            } "${activeImport.workflow.name}" with ${importedFlow.nodes.length} nodes and ${
+              activeImport.routeCount
+            } routes.`
+          : `${
+              wasSaved ? 'Imported and saved' : 'Imported'
+            } ${savedImports.length} workflows with ${totalNodeCount} nodes and ${totalRouteCount} routes.`,
       warnings: totalWarnings,
     })
     requestCanvasViewReset()

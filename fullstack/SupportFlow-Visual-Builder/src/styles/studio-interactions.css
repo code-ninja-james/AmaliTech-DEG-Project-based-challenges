@@ -1431,6 +1431,29 @@
   line-height: 1.6;
 }
 
+.spreadsheet-importer__file-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -4px 0 2px;
+  padding: 0;
+  list-style: none;
+}
+
+.spreadsheet-importer__file-types li {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid rgba(79, 143, 247, 0.2);
+  border-radius: 999px;
+  background: rgba(79, 143, 247, 0.08);
+  color: rgba(191, 219, 254, 0.88);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  font-weight: 600;
+}
+
 .spreadsheet-importer__actions {
   display: flex;
   flex-wrap: wrap;
@@ -1528,6 +1551,48 @@
   border: 1px solid rgba(16, 185, 129, 0.18);
   background: rgba(16, 185, 129, 0.06);
   color: rgba(167, 243, 208, 0.88);
+}
+
+.spreadsheet-importer__preview p {
+  margin: 0;
+}
+
+.spreadsheet-importer__workflow-preview {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spreadsheet-importer__workflow-preview li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 1px solid rgba(16, 185, 129, 0.14);
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.045);
+}
+
+.spreadsheet-importer__workflow-preview strong {
+  min-width: 0;
+  overflow: hidden;
+  color: rgba(220, 252, 231, 0.94);
+  font-size: 10px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spreadsheet-importer__workflow-preview span {
+  flex: 0 0 auto;
+  color: rgba(167, 243, 208, 0.62);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  white-space: nowrap;
 }
 
 .spreadsheet-importer__error {
@@ -1736,6 +1801,23 @@
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.workflow-library__active-badge {
+  display: inline-flex;
+  min-height: 20px;
+  align-items: center;
+  padding: 0 7px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: rgba(253, 230, 138, 0.96);
+  font-family: var(--sf-font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 

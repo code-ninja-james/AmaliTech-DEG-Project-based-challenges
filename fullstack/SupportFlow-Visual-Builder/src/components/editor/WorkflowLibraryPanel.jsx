@@ -102,7 +102,7 @@ export default function WorkflowLibraryPanel({
         <div className="workflow-library__body">
           <section className="workflow-library__save" aria-label="Current workflow summary">
             <div>
-              <strong>Current workflow</strong>
+              <strong>Current Workflow</strong>
               <p>{currentWorkflowName}</p>
             </div>
             <div className="workflow-library__current-stats">
@@ -119,7 +119,7 @@ export default function WorkflowLibraryPanel({
           </section>
 
           <label className="workflow-library__search" htmlFor="workflow-search">
-            <span>Search workflows</span>
+            <span>Search Workflows</span>
             <input
               id="workflow-search"
               placeholder="Search by name, node, route, or ID"
@@ -160,6 +160,9 @@ export default function WorkflowLibraryPanel({
                       <>
                         <div className="workflow-library__item-title">
                           <strong>{workflow.name}</strong>
+                          {isActive && (
+                            <span className="workflow-library__active-badge">Active</span>
+                          )}
                           <span
                             className={`workflow-library__rating-pill workflow-library__rating-pill--${rating.tone}`}
                             aria-label={`${workflow.name} readiness rating ${rating.score} out of 100, ${rating.label}`}

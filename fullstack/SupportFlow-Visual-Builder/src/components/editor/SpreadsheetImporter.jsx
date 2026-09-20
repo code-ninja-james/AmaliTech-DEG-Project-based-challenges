@@ -6,6 +6,7 @@ import {
   createFlowFromSpreadsheet,
   SAMPLE_SPREADSHEET_TEXT,
 } from '../../domain/importSpreadsheetFlow.js'
+import { getImportedWorkflowName } from '../../domain/workflowLibrary.js'
 
 const SOURCE_LABELS = {
   excel: 'Excel workbook',
@@ -69,28 +70,39 @@ function createFlowFromText(rawText, sourceType) {
   }
 }
 
+function getImportSummary(item) {
+  return {
+    name: getImportedWorkflowName(item.sourceLabel, item.sourceName),
+    nodeCount: item.flow.nodes.length,
+    routeCount: item.flow.nodes.reduce((count, node) => count + node.options.length, 0),
+    warningCount: item.warnings.length,
+  }
+}
+
 function getPreview(rawText, sourceType, preparedImport, preparedImports) {
   if (preparedImports.length > 0) {
+    const workflowSummaries = preparedImports.map(getImportSummary)
+
     return {
       status: 'ready-batch',
       workflowCount: preparedImports.length,
-      nodeCount: preparedImports.reduce((count, item) => count + item.flow.nodes.length, 0),
-      routeCount: preparedImports.reduce(
-        (count, item) =>
-          count + item.flow.nodes.reduce((routeTotal, node) => routeTotal + node.options.length, 0),
-        0,
-      ),
-      warningCount: preparedImports.reduce((count, item) => count + item.warnings.length, 0),
+      nodeCount: workflowSummaries.reduce((count, item) => count + item.nodeCount, 0),
+      routeCount: workflowSummaries.reduce((count, item) => count + item.routeCount, 0),
+      warningCount: workflowSummaries.reduce((count, item) => count + item.warningCount, 0),
+      workflowSummaries,
     }
   }
 
   if (preparedImport) {
+    const workflowSummary = getImportSummary(preparedImport)
+
     return {
       status: 'ready',
       sourceLabel: preparedImport.sourceLabel,
-      nodeCount: preparedImport.flow.nodes.length,
-      routeCount: preparedImport.flow.nodes.reduce((count, node) => count + node.options.length, 0),
-      warningCount: preparedImport.warnings.length,
+      nodeCount: workflowSummary.nodeCount,
+      routeCount: workflowSummary.routeCount,
+      warningCount: workflowSummary.warningCount,
+      workflowSummaries: [workflowSummary],
     }
   }
 
@@ -107,6 +119,7 @@ function getPreview(rawText, sourceType, preparedImport, preparedImports) {
       nodeCount: result.flow.nodes.length,
       routeCount: result.flow.nodes.reduce((count, node) => count + node.options.length, 0),
       warningCount: result.warnings.length,
+      workflowSummaries: [getImportSummary(result)],
     }
   } catch (error) {
     return {
@@ -278,10 +291,15 @@ export default function SpreadsheetImporter({ open, onClose, onImport }) {
 
         <div className="spreadsheet-importer__body">
           <p>
-            Paste SupportFlow JSON, paste rows copied from Excel, or upload `.json`, `.xlsx`,
-            `.csv`, or `.tsv` files. You can select multiple files at once. Spreadsheet headings can
-            use Node ID, Type, Question Text, Route Label, and Next Node ID.
+            Paste SupportFlow JSON, paste rows copied from Excel, or upload workflow files. You can
+            select multiple files at once, and every valid import is saved automatically.
           </p>
+
+          <ul className="spreadsheet-importer__file-types" aria-label="Allowed workflow file types">
+            {ALLOWED_FILE_EXTENSIONS.map((extension) => (
+              <li key={extension}>{extension}</li>
+            ))}
+          </ul>
 
           <div className="spreadsheet-importer__actions">
             <label>
@@ -319,7 +337,7 @@ export default function SpreadsheetImporter({ open, onClose, onImport }) {
             </button>
           </div>
 
-          {fileName && <p className="spreadsheet-importer__file">Loaded: {fileName}</p>}
+          {fileName && <p className="spreadsheet-importer__file">Selected: {fileName}</p>}
 
           <label className="spreadsheet-importer__textarea-label" htmlFor="import-source">
             Pasted rows or JSON
@@ -349,17 +367,41 @@ export default function SpreadsheetImporter({ open, onClose, onImport }) {
 
           {!isReadingFile && preview?.status === 'ready' && (
             <div className="spreadsheet-importer__preview" role="status">
-              Ready to create {preview.nodeCount} nodes and {preview.routeCount} routes from{' '}
-              {preview.sourceLabel}
-              {preview.warningCount > 0 ? ` with ${preview.warningCount} warnings` : ''}.
+              <p>
+                Ready to create {preview.nodeCount} nodes and {preview.routeCount} routes from{' '}
+                {preview.sourceLabel}
+                {preview.warningCount > 0 ? ` with ${preview.warningCount} warnings` : ''}.
+              </p>
+              <ul className="spreadsheet-importer__workflow-preview">
+                {preview.workflowSummaries.map((workflow, index) => (
+                  <li key={`${workflow.name}-${index}`}>
+                    <strong>{workflow.name}</strong>
+                    <span>
+                      {workflow.nodeCount} nodes · {workflow.routeCount} routes
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
           {!isReadingFile && preview?.status === 'ready-batch' && (
             <div className="spreadsheet-importer__preview" role="status">
-              Ready to create {preview.workflowCount} workflows with {preview.nodeCount} nodes and{' '}
-              {preview.routeCount} routes from selected files
-              {preview.warningCount > 0 ? ` with ${preview.warningCount} warnings` : ''}.
+              <p>
+                Ready to create {preview.workflowCount} workflows with {preview.nodeCount} nodes and{' '}
+                {preview.routeCount} routes from selected files
+                {preview.warningCount > 0 ? ` with ${preview.warningCount} warnings` : ''}.
+              </p>
+              <ul className="spreadsheet-importer__workflow-preview">
+                {preview.workflowSummaries.map((workflow, index) => (
+                  <li key={`${workflow.name}-${index}`}>
+                    <strong>{workflow.name}</strong>
+                    <span>
+                      {workflow.nodeCount} nodes · {workflow.routeCount} routes
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

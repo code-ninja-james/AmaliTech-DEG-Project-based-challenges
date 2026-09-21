@@ -811,32 +811,19 @@ export default function App() {
     })
 
     const activeImport = savedImports.at(-1)
-    const importedFlow = activeImport.flow
-    const startNode =
-      importedFlow.nodes.find((node) => node.type === 'start') ?? importedFlow.nodes[0] ?? null
     const totalNodeCount = savedImports.reduce((count, item) => count + item.flow.nodes.length, 0)
     const totalRouteCount = savedImports.reduce((count, item) => count + item.routeCount, 0)
     const totalWarnings = savedImports.flatMap((item) => item.warnings ?? [])
     const wasSaved = persistWorkflows(nextWorkflows)
 
-    setFlow(importedFlow)
-    setSelectedNodeId(startNode?.id ?? null)
-    setSelectedConnectionId(null)
-    setRouteEditorFocusId(null)
-    setDeleteUndo(null)
-    setMode('Build')
-    setIsPreviewing(false)
-    setDemoScenario('current')
     setIsSpreadsheetImporterOpen(false)
-    setActiveWorkflowId(wasSaved ? activeImport.workflow.id : null)
-    setWorkflowName(activeImport.workflow.name)
     if (wasSaved) setWorkflowNotice(null)
     setImportNotice({
       message:
         savedImports.length === 1
           ? `${
               wasSaved ? 'Imported and saved' : 'Imported'
-            } "${activeImport.workflow.name}" with ${importedFlow.nodes.length} nodes and ${
+            } "${activeImport.workflow.name}" with ${activeImport.flow.nodes.length} nodes and ${
               activeImport.routeCount
             } routes.`
           : `${

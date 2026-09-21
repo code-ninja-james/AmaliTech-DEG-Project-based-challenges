@@ -833,7 +833,7 @@ describe('SupportFlow application', () => {
     expect(within(library).queryByText(/random-notes/)).not.toBeInTheDocument()
   })
 
-  it('auto-saves imports, searches, edits, uses and deletes workflows', async () => {
+  it('auto-saves imports, active edits, searches, uses and deletes workflows', async () => {
     const user = userEvent.setup()
 
     render(<App />)
@@ -883,7 +883,7 @@ describe('SupportFlow application', () => {
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
     library = screen.getByRole('dialog', { name: 'Workflow library' })
 
-    await user.type(within(library).getByLabelText('Search Workflows'), 'Acme')
+    await user.type(within(library).getByLabelText('Search Workflows'), 'Temporary')
     expect(within(library).getAllByText('JSON Workflow').length).toBeGreaterThan(0)
 
     await user.click(within(library).getByRole('button', { name: 'Edit name' }))
@@ -901,14 +901,10 @@ describe('SupportFlow application', () => {
 
     expect(screen.queryByRole('dialog', { name: 'Workflow library' })).not.toBeInTheDocument()
     expect(
-      within(screen.getByTestId('flow-node-start')).getByText(
-        'Welcome to Acme Support. What do you need help with?',
-      ),
+      within(screen.getByTestId('flow-node-start')).getByText('Temporary canvas question'),
     ).toBeInTheDocument()
     await user.click(screen.getByTestId('flow-node-start'))
-    expect(screen.getByLabelText('Question Text')).toHaveValue(
-      'Welcome to Acme Support. What do you need help with?',
-    )
+    expect(screen.getByLabelText('Question Text')).toHaveValue('Temporary canvas question')
 
     await user.click(screen.getByRole('button', { name: 'Open workflows' }))
     library = screen.getByRole('dialog', { name: 'Workflow library' })

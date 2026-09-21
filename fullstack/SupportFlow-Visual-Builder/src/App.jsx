@@ -92,6 +92,19 @@ function getRouteAuditId(nodeId, optionIndex) {
   return `${nodeId}-${optionIndex}`
 }
 
+function areFlowsEqual(leftFlow, rightFlow) {
+  return JSON.stringify(leftFlow) === JSON.stringify(rightFlow)
+}
+
+function queueReactStateUpdate(updateState) {
+  if (typeof queueMicrotask === 'function') {
+    queueMicrotask(updateState)
+    return
+  }
+
+  globalThis.setTimeout(updateState, 0)
+}
+
 function getDiagnosticFocusNodeId(flow, scenarioId, currentSelectedNodeId) {
   if (scenarioId === 'current') {
     return flow.nodes.some((node) => node.id === currentSelectedNodeId)
@@ -206,6 +219,39 @@ export default function App() {
       selectedNodeId,
     })
   }, [activeWorkflowId, flow, selectedNodeId, workflowName])
+
+  useEffect(() => {
+    if (!activeWorkflowId) {
+      return
+    }
+
+    const activeWorkflow = workflows.find((workflow) => workflow.id === activeWorkflowId)
+
+    if (!activeWorkflow) {
+      return
+    }
+
+    if (activeWorkflow.name === workflowName && areFlowsEqual(activeWorkflow.flow, flow)) {
+      return
+    }
+
+    const { workflows: nextWorkflows } = saveWorkflow(workflows, {
+      id: activeWorkflowId,
+      name: workflowName,
+      flow,
+    })
+
+    if (!persistWorkflowLibrary(nextWorkflows)) {
+      queueReactStateUpdate(() => {
+        setWorkflowNotice('Could not save workflow edits in this browser.')
+      })
+      return
+    }
+
+    queueReactStateUpdate(() => {
+      setWorkflows(nextWorkflows)
+    })
+  }, [activeWorkflowId, flow, workflowName, workflows])
 
   const recordAuditEvent = useCallback(
     (event) => {

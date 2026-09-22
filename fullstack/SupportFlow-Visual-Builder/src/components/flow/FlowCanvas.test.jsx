@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import flowData from '../../../flow_data.json'
@@ -94,5 +95,36 @@ describe('FlowCanvas', () => {
 
     expect(screen.getByTestId('flow-node-2')).not.toHaveClass('flow-node--movable')
     expect(screen.getByTestId('node-move-header-2')).not.toHaveClass('flow-node__header--movable')
+  })
+
+  it('keeps the user zoom level when flow nodes update without a view reset', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(<FlowCanvas flow={flowData} viewResetKey={0} />)
+
+    rerender(<FlowCanvas flow={flowData} viewResetKey={1} />)
+    await waitFor(() => expect(screen.getByText('50%')).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Zoom in' }))
+    await user.click(screen.getByRole('button', { name: 'Zoom in' }))
+    expect(screen.getByText('70%')).toBeInTheDocument()
+
+    const editedFlow = {
+      ...flowData,
+      nodes: flowData.nodes.map((node) =>
+        node.id === '2'
+          ? {
+              ...node,
+              text: 'Has the router been restarted?',
+            }
+          : node,
+      ),
+    }
+
+    rerender(<FlowCanvas flow={editedFlow} selectedNodeId="2" viewResetKey={1} />)
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0))
+    })
+
+    expect(screen.getByText('70%')).toBeInTheDocument()
   })
 })

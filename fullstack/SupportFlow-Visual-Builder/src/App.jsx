@@ -831,7 +831,6 @@ export default function App() {
             } ${savedImports.length} workflows with ${totalNodeCount} nodes and ${totalRouteCount} routes.`,
       warnings: totalWarnings,
     })
-    requestCanvasViewReset()
 
     savedImports.forEach((item) => {
       recordAuditEvent({

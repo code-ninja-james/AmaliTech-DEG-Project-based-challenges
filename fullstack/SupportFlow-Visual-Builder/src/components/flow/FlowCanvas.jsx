@@ -74,6 +74,8 @@ export default function FlowCanvas({
   const [zoom, setZoom] = useState(1)
   const [draftRoute, setDraftRoute] = useState(null)
   const [nodeDrag, setNodeDrag] = useState(null)
+  const viewResetContextRef = useRef({ nodes: flow.nodes, selectedNodeId })
+  const handledViewResetKeyRef = useRef(null)
 
   const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
   const analysis = useMemo(() => analyzeFlow(flow.nodes), [flow.nodes])
@@ -110,6 +112,10 @@ export default function FlowCanvas({
   )
 
   const { canvasRef, nodeRects, registerNode } = useNodeMeasurements(flow.nodes, zoom)
+
+  useEffect(() => {
+    viewResetContextRef.current = { nodes: flow.nodes, selectedNodeId }
+  }, [flow.nodes, selectedNodeId])
 
   const getScrollViewport = useCallback(() => {
     const workspace = workspaceRef.current
@@ -404,17 +410,20 @@ export default function FlowCanvas({
   }, [getFitZoom])
 
   useEffect(() => {
-    if (!viewResetKey) {
+    if (!viewResetKey || handledViewResetKeyRef.current === viewResetKey) {
       return undefined
     }
 
+    handledViewResetKeyRef.current = viewResetKey
+
     const resetView = () => {
+      const { nodes, selectedNodeId: resetSelectedNodeId } = viewResetContextRef.current
       const nextZoom = getFitZoom()
       const viewport = getScrollViewport()
       const focusNode =
-        flow.nodes.find((node) => node.id === selectedNodeId) ??
-        flow.nodes.find((node) => node.type === 'start') ??
-        flow.nodes[0]
+        nodes.find((node) => node.id === resetSelectedNodeId) ??
+        nodes.find((node) => node.type === 'start') ??
+        nodes[0]
 
       setZoom(nextZoom)
 
@@ -457,7 +466,7 @@ export default function FlowCanvas({
     const timeoutId = window.setTimeout(resetView, 0)
 
     return () => window.clearTimeout(timeoutId)
-  }, [flow.nodes, getFitZoom, getScrollViewport, selectedNodeId, viewResetKey])
+  }, [getFitZoom, getScrollViewport, viewResetKey])
 
   const isXray = mode === 'X-Ray'
 

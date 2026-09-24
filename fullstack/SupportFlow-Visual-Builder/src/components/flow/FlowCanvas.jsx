@@ -76,6 +76,7 @@ export default function FlowCanvas({
   const [nodeDrag, setNodeDrag] = useState(null)
   const viewResetContextRef = useRef({ nodes: flow.nodes, selectedNodeId })
   const handledViewResetKeyRef = useRef(null)
+  const appliedMobileInitialFitRef = useRef(false)
 
   const connections = useMemo(() => getConnections(flow.nodes), [flow.nodes])
   const analysis = useMemo(() => analyzeFlow(flow.nodes), [flow.nodes])
@@ -409,6 +410,47 @@ export default function FlowCanvas({
     setZoom(getFitZoom())
   }, [getFitZoom])
 
+  const resetCanvasView = useCallback(() => {
+    const { nodes, selectedNodeId: resetSelectedNodeId } = viewResetContextRef.current
+    const nextZoom = getFitZoom()
+    const viewport = getScrollViewport()
+    const focusNode =
+      nodes.find((node) => node.id === resetSelectedNodeId) ??
+      nodes.find((node) => node.type === 'start') ??
+      nodes[0]
+
+    setZoom(nextZoom)
+
+    if (!viewport || !focusNode?.position) {
+      return
+    }
+
+    const scrollToFocus = () => {
+      const nextLeft = Math.max(
+        0,
+        (focusNode.position.x + DEFAULT_NODE_WIDTH / 2) * nextZoom - viewport.clientWidth / 2,
+      )
+      const nextTop = Math.max(
+        0,
+        (focusNode.position.y + DEFAULT_NODE_HEIGHT / 2) * nextZoom - viewport.clientHeight / 3,
+      )
+
+      if (typeof viewport.scrollTo === 'function') {
+        viewport.scrollTo({ left: nextLeft, top: nextTop, behavior: 'auto' })
+        return
+      }
+
+      viewport.scrollLeft = nextLeft
+      viewport.scrollTop = nextTop
+    }
+
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(scrollToFocus)
+    } else {
+      window.setTimeout(scrollToFocus, 0)
+    }
+  }, [getFitZoom, getScrollViewport])
+
   useEffect(() => {
     if (!viewResetKey || handledViewResetKeyRef.current === viewResetKey) {
       return undefined
@@ -416,57 +458,38 @@ export default function FlowCanvas({
 
     handledViewResetKeyRef.current = viewResetKey
 
-    const resetView = () => {
-      const { nodes, selectedNodeId: resetSelectedNodeId } = viewResetContextRef.current
-      const nextZoom = getFitZoom()
-      const viewport = getScrollViewport()
-      const focusNode =
-        nodes.find((node) => node.id === resetSelectedNodeId) ??
-        nodes.find((node) => node.type === 'start') ??
-        nodes[0]
-
-      setZoom(nextZoom)
-
-      if (!viewport || !focusNode?.position) {
-        return
-      }
-
-      const scrollToFocus = () => {
-        const nextLeft = Math.max(
-          0,
-          (focusNode.position.x + DEFAULT_NODE_WIDTH / 2) * nextZoom - viewport.clientWidth / 2,
-        )
-        const nextTop = Math.max(
-          0,
-          (focusNode.position.y + DEFAULT_NODE_HEIGHT / 2) * nextZoom - viewport.clientHeight / 3,
-        )
-
-        if (typeof viewport.scrollTo === 'function') {
-          viewport.scrollTo({ left: nextLeft, top: nextTop, behavior: 'auto' })
-          return
-        }
-
-        viewport.scrollLeft = nextLeft
-        viewport.scrollTop = nextTop
-      }
-
-      if (typeof window.requestAnimationFrame === 'function') {
-        window.requestAnimationFrame(scrollToFocus)
-      } else {
-        window.setTimeout(scrollToFocus, 0)
-      }
-    }
-
     if (typeof window.requestAnimationFrame === 'function') {
-      const frameId = window.requestAnimationFrame(resetView)
+      const frameId = window.requestAnimationFrame(resetCanvasView)
 
       return () => window.cancelAnimationFrame?.(frameId)
     }
 
-    const timeoutId = window.setTimeout(resetView, 0)
+    const timeoutId = window.setTimeout(resetCanvasView, 0)
 
     return () => window.clearTimeout(timeoutId)
-  }, [getFitZoom, getScrollViewport, viewResetKey])
+  }, [resetCanvasView, viewResetKey])
+
+  useEffect(() => {
+    if (
+      appliedMobileInitialFitRef.current ||
+      typeof window.matchMedia !== 'function' ||
+      !window.matchMedia('(max-width: 720px)').matches
+    ) {
+      return undefined
+    }
+
+    appliedMobileInitialFitRef.current = true
+
+    if (typeof window.requestAnimationFrame === 'function') {
+      const frameId = window.requestAnimationFrame(resetCanvasView)
+
+      return () => window.cancelAnimationFrame?.(frameId)
+    }
+
+    const timeoutId = window.setTimeout(resetCanvasView, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [resetCanvasView])
 
   const isXray = mode === 'X-Ray'
 

@@ -779,7 +779,7 @@
   }
 
   .app-mode-switch {
-    order: 3;
+    order: 2;
     width: 100%;
   }
 
@@ -791,18 +791,13 @@
   }
 
   .app-toolbar__security-actions {
-    order: 2;
-    width: 100%;
+    order: 1;
+    width: auto;
+    margin-left: auto;
   }
 
   .app-current-user {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .app-current-user input {
-    width: 100%;
-    min-width: 0;
+    display: none;
   }
 
   .app-audit-button {
@@ -810,7 +805,7 @@
   }
 
   .app-toolbar__build-actions {
-    order: 4;
+    order: 3;
     display: grid;
     width: 100%;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -829,12 +824,16 @@
   }
 
   .app-preview-indicator {
-    order: 2;
+    order: 1;
     margin: 0;
   }
 
+  .node-navigator {
+    display: none;
+  }
+
   .editor-layout {
-    grid-template-rows: auto minmax(360px, 54vh) auto;
+    grid-template-rows: minmax(420px, 64vh) auto;
   }
 
   .status-bar {
@@ -863,14 +862,14 @@
   }
 
   .app-toolbar__build-actions {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .app-preview-button {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   .editor-layout {
-    grid-template-rows: auto minmax(330px, 52vh) auto;
+    grid-template-rows: minmax(380px, 62vh) auto;
   }
 }

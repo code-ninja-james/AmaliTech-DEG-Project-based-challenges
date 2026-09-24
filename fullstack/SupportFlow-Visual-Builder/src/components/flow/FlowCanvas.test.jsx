@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import flowData from '../../../flow_data.json'
 import FlowCanvas from './FlowCanvas.jsx'
@@ -126,5 +126,36 @@ describe('FlowCanvas', () => {
     })
 
     expect(screen.getByText('70%')).toBeInTheDocument()
+  })
+
+  it('fits the canvas on first load on phone-sized screens', async () => {
+    const originalMatchMedia = window.matchMedia
+
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn().mockImplementation((query) => ({
+        matches: query === '(max-width: 720px)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    try {
+      render(<FlowCanvas flow={flowData} selectedNodeId="2" />)
+
+      await waitFor(() => expect(screen.getByText('50%')).toBeInTheDocument())
+    } finally {
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        writable: true,
+        value: originalMatchMedia,
+      })
+    }
   })
 })

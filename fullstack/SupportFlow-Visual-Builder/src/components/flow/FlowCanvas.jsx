@@ -494,7 +494,11 @@ export default function FlowCanvas({
   const isXray = mode === 'X-Ray'
 
   return (
-    <section ref={workspaceRef} className="flow-workspace" aria-label="Support flow">
+    <section
+      ref={workspaceRef}
+      className={['flow-workspace', isXray ? 'flow-workspace--xray' : ''].filter(Boolean).join(' ')}
+      aria-label="Support flow"
+    >
       {isXray && (
         <div className="flow-xray-banner">
           <span className="studio-blink" aria-hidden="true" />

@@ -2892,6 +2892,31 @@
     padding: 18px 14px 84px;
   }
 
+  .flow-workspace--xray .flow-scroll-area {
+    padding-top: 58px;
+  }
+
+  .flow-xray-banner {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+    padding: 6px 10px;
+    overflow: hidden;
+    background: rgba(245, 158, 11, 0.09);
+    white-space: nowrap;
+  }
+
+  .flow-xray-banner strong {
+    min-width: 0;
+    overflow: hidden;
+    flex: 1;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+  }
+
   .flow-canvas-controls,
   .spatial-view__controls {
     right: 12px;

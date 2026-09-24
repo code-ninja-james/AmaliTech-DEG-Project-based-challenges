@@ -2267,6 +2267,46 @@
 }
 
 @media (max-width: 720px) {
+  .spreadsheet-importer__backdrop,
+  .workflow-library__backdrop,
+  .audit-log__backdrop {
+    align-items: stretch;
+    padding: 10px;
+  }
+
+  .spreadsheet-importer,
+  .workflow-library,
+  .audit-log {
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+    border-radius: 6px;
+  }
+
+  .spreadsheet-importer header,
+  .spreadsheet-importer footer,
+  .workflow-library__header,
+  .audit-log__header {
+    padding: 12px;
+  }
+
+  .spreadsheet-importer__body,
+  .workflow-library__body,
+  .audit-log__body {
+    padding: 12px;
+  }
+
+  .spreadsheet-importer__actions,
+  .spreadsheet-importer footer {
+    align-items: stretch;
+  }
+
+  .spreadsheet-importer__actions > *,
+  .spreadsheet-importer footer button,
+  .workflow-library button,
+  .audit-log button {
+    width: 100%;
+  }
+
   .audit-log__controls,
   .audit-log__identity,
   .workflow-library__save,
@@ -2276,7 +2316,28 @@
 
   .audit-log__exports,
   .workflow-library__actions {
-    justify-content: flex-start;
+    justify-content: stretch;
+  }
+
+  .workflow-library__rating-breakdown {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-library__item-main strong,
+  .workflow-library__rating-metric p,
+  .spreadsheet-importer__workflow-preview strong,
+  .spreadsheet-importer__workflow-preview span {
+    white-space: normal;
+  }
+
+  .audit-log__entry header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .audit-log__entry header strong {
+    flex-basis: 100%;
+    white-space: normal;
   }
 }
 
@@ -2734,6 +2795,175 @@
 
 .status-bar__mode--spatial > span {
   background: #8b5cf6;
+}
+
+@media (max-width: 900px) {
+  .flow-scroll-area {
+    padding: 20px 16px 72px;
+  }
+
+  .flow-zoom-surface {
+    margin: 0;
+  }
+
+  .flow-xray-banner {
+    top: 10px;
+    left: 10px;
+    max-width: calc(100% - 20px);
+    transform: none;
+    white-space: normal;
+  }
+
+  .flow-xray-banner strong {
+    line-height: 1.45;
+  }
+
+  .studio-inspector,
+  .studio-xray {
+    overflow: visible;
+  }
+
+  .studio-inspector__content,
+  .studio-xray {
+    overflow: visible;
+  }
+
+  .studio-inspector__header,
+  .studio-xray__header {
+    min-height: 36px;
+    height: auto;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+  }
+
+  .studio-inspector__header > code {
+    margin-left: 0;
+  }
+
+  .studio-inspector__tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .studio-inspector__tabs button {
+    min-width: 98px;
+  }
+
+  .studio-inspector__tab-content {
+    padding: 12px 12px 0;
+  }
+
+  .studio-inspector__separator,
+  .studio-xray__separator {
+    margin-right: -12px;
+    margin-left: -12px;
+  }
+
+  .studio-preview {
+    min-height: 420px;
+  }
+
+  .studio-preview__header,
+  .studio-preview__conversation {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .studio-preview__meta {
+    display: none;
+  }
+
+  .spatial-view {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 720px) {
+  .flow-scroll-area {
+    padding: 14px 10px 70px;
+  }
+
+  .flow-canvas-controls,
+  .spatial-view__controls {
+    right: 10px;
+    bottom: 10px;
+    padding: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    background: rgba(6, 6, 10, 0.82);
+    backdrop-filter: blur(10px);
+  }
+
+  .flow-canvas-controls button,
+  .spatial-view__controls button {
+    width: 28px;
+    height: 28px;
+  }
+
+  .flow-canvas-controls span,
+  .spatial-view__controls span {
+    min-width: 44px;
+    text-align: center;
+  }
+
+  .studio-preview__header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .studio-preview__back {
+    order: 2;
+    width: 100%;
+  }
+
+  .studio-preview__title {
+    flex: 1;
+  }
+
+  .studio-preview__conversation {
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+
+  .studio-preview__thread {
+    gap: 12px;
+  }
+
+  .studio-preview__row--assistant,
+  .studio-preview__row--system,
+  .studio-preview__row--user {
+    max-width: 100%;
+  }
+
+  .studio-preview__assistant,
+  .studio-preview__user-message {
+    padding: 12px;
+  }
+
+  .studio-preview__answers {
+    padding-left: 0;
+  }
+
+  .studio-preview__answers button,
+  .studio-preview__terminal-actions button {
+    width: 100%;
+  }
+
+  .app-undo-toast,
+  .app-import-toast {
+    right: 10px;
+    bottom: 34px;
+    left: 10px;
+    max-width: none;
+    flex-wrap: wrap;
+  }
+
+  .app-undo-toast span,
+  .app-import-toast span {
+    flex-basis: 100%;
+    white-space: normal;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

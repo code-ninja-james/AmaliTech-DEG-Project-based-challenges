@@ -965,6 +965,15 @@
     padding: 10px 10px 0;
   }
 
+  .editor-layout--preview {
+    grid-template-rows: minmax(0, 1fr);
+    padding-bottom: 10px;
+  }
+
+  .editor-layout--preview .node-inspector {
+    display: none;
+  }
+
   .status-bar {
     display: none;
   }
@@ -1003,5 +1012,10 @@
   .editor-layout {
     grid-template-rows: minmax(430px, 1fr) auto;
     padding: 8px 8px 0;
+  }
+
+  .editor-layout--preview {
+    grid-template-rows: minmax(0, 1fr);
+    padding-bottom: 8px;
   }
 }

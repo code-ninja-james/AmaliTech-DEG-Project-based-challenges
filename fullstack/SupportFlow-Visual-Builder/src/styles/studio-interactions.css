@@ -2994,48 +2994,49 @@
   }
 
   .studio-preview {
-    min-height: min(640px, calc(100dvh - 158px));
+    min-height: 0;
+    height: 100%;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.075);
-    border-radius: 18px 18px 0 0;
-    background: #080b10 !important;
+    border-radius: 8px;
+    background: #070a0f !important;
   }
 
   .studio-preview__header {
     display: grid;
     height: auto;
-    min-height: 56px;
+    min-height: 48px;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 8px;
+    padding: 8px 10px;
     border-bottom-color: rgba(255, 255, 255, 0.08);
-    background: #0b1117;
+    background: #090d13;
   }
 
   .studio-preview__back {
-    display: grid;
-    width: 34px;
-    height: 34px;
-    place-items: center;
-    padding: 0;
-    border-radius: 999px;
-    overflow: hidden;
+    display: inline-flex;
+    width: auto;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    border-radius: 4px;
     color: transparent;
     font-size: 0;
   }
 
   .studio-preview__back::before {
-    content: '\2039';
-    color: rgba(255, 255, 255, 0.78);
-    font-family: Inter, system-ui, sans-serif;
-    font-size: 24px;
+    content: '\2190 Canvas';
+    color: rgba(255, 255, 255, 0.62);
+    font-family: var(--sf-font-mono);
+    font-size: 10px;
     line-height: 1;
   }
 
   .studio-preview__title {
     min-width: 0;
-    justify-content: center;
+    justify-content: flex-start;
     color: rgba(255, 255, 255, 0.82);
     font-family: Inter, system-ui, sans-serif;
     font-size: 0;
@@ -3043,8 +3044,8 @@
   }
 
   .studio-preview__title > span {
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     background: #34d399;
   }
 
@@ -3056,13 +3057,15 @@
 
   .studio-preview__title strong::after {
     content: 'SupportFlow Preview';
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 650;
   }
 
   .studio-preview__conversation {
-    padding: 16px 12px 12px;
-    background: #080b10;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 12px 12px;
+    background: #070a0f;
   }
 
   .studio-preview__thread {
@@ -3070,6 +3073,7 @@
     max-width: none;
     min-height: 100%;
     gap: 10px;
+    flex: 1;
     margin: 0;
     padding: 0;
   }
@@ -3081,15 +3085,16 @@
   }
 
   .studio-preview__assistant {
-    max-width: 88%;
-    gap: 8px;
+    max-width: 86%;
+    gap: 7px;
   }
 
   .studio-preview__avatar {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     margin-top: 0;
-    font-size: 9px;
+    border-radius: 4px;
+    font-size: 8px;
   }
 
   .studio-preview__assistant p,
@@ -3101,38 +3106,37 @@
 
   .studio-preview__assistant p {
     border-color: rgba(255, 255, 255, 0.08);
-    border-radius: 16px 16px 16px 5px;
-    background: #151c24;
+    border-radius: 8px;
+    background: #101821;
     color: rgba(255, 255, 255, 0.78);
   }
 
   .studio-preview__user-message {
     max-width: 78%;
     border-color: rgba(79, 143, 247, 0.24);
-    border-radius: 16px 16px 5px 16px;
-    background: rgba(79, 143, 247, 0.18);
+    border-radius: 8px;
+    background: rgba(79, 143, 247, 0.14);
     color: rgba(224, 237, 255, 0.96);
   }
 
   .studio-preview__answers,
   .studio-preview__terminal-actions {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
+    position: static;
     gap: 8px;
-    margin-top: 4px;
-    padding: 14px 0 0;
-    background: linear-gradient(180deg, rgba(8, 11, 16, 0), #080b10 16px);
+    margin-top: auto;
+    padding: 12px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: transparent;
   }
 
   .studio-preview__answers button,
   .studio-preview__terminal-actions button {
     width: 100%;
-    min-height: 44px;
-    border-radius: 14px;
-    background: #101722;
-    color: rgba(198, 219, 255, 0.92);
-    font-weight: 600;
+    min-height: 40px;
+    border-radius: 4px;
+    background: rgba(79, 143, 247, 0.08);
+    color: rgba(198, 219, 255, 0.9);
+    font-weight: 500;
   }
 
   .app-undo-toast,

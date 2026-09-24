@@ -1099,7 +1099,11 @@ export default function App() {
         onCurrentUserChange={handleCurrentUserChange}
       />
 
-      <div className="editor-layout">
+      <div
+        className={['editor-layout', isPreviewing ? 'editor-layout--preview' : '']
+          .filter(Boolean)
+          .join(' ')}
+      >
         <NodeNavigator
           flow={displayFlow}
           selectedNodeId={selectedNodeId}

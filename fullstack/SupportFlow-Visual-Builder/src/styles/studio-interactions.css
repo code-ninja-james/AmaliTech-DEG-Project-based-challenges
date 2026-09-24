@@ -2940,7 +2940,7 @@
   }
 
   .studio-inspector__tabs {
-    padding: 0 8px;
+    padding: 10px 8px 0;
     border-bottom: 0;
     gap: 6px;
   }
@@ -2950,7 +2950,7 @@
     height: 34px;
     margin: 0;
     border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 999px;
+    border-radius: 4px;
     background: rgba(255, 255, 255, 0.035);
   }
 

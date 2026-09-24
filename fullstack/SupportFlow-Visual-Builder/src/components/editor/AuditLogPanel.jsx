@@ -75,7 +75,9 @@ export default function AuditLogPanel({
             aria-label="Close audit log"
             onClick={onClose}
           >
-            x
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <path d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5" />
+            </svg>
           </button>
         </header>
 

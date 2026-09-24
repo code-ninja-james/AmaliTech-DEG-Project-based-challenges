@@ -824,18 +824,18 @@
     align-items: center;
     justify-content: center;
     padding: 0 14px;
-    border: 1px solid rgba(16, 185, 129, 0.28);
+    border: 1px solid rgba(16, 185, 129, 0.22);
     border-radius: 4px;
-    background: rgba(16, 185, 129, 0.12);
-    color: rgba(52, 211, 153, 0.94);
+    background: rgba(16, 185, 129, 0.08);
+    color: rgba(52, 211, 153, 0.82);
     cursor: pointer;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   .app-mobile-menu__preview:active,
   .app-mobile-menu__preview:hover {
-    background: rgba(16, 185, 129, 0.2);
+    background: rgba(16, 185, 129, 0.16);
   }
 
   .app-mobile-menu__button {

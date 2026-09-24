@@ -117,7 +117,7 @@ export default function AppToolbar({
             aria-label="Play preview from mobile toolbar"
             onClick={onPreviewStart}
           >
-            Preview
+            ▶ Preview
           </button>
         )}
 

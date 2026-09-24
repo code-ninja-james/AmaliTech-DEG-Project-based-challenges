@@ -110,6 +110,17 @@ export default function AppToolbar({
       <div className="app-toolbar__spacer" />
 
       <div className="app-mobile-menu">
+        {mode === 'Build' && !isPreviewMode && (
+          <button
+            className="app-mobile-menu__preview"
+            type="button"
+            aria-label="Play preview from mobile toolbar"
+            onClick={onPreviewStart}
+          >
+            Preview
+          </button>
+        )}
+
         <button
           className="app-mobile-menu__button"
           type="button"
@@ -153,17 +164,6 @@ export default function AppToolbar({
                 }}
               >
                 Import flow
-              </button>
-              <button
-                className="app-mobile-menu__item app-mobile-menu__item--preview"
-                type="button"
-                aria-label="Play preview from mobile menu"
-                onClick={() => {
-                  onPreviewStart()
-                  closeMobileMenu()
-                }}
-              >
-                Preview
               </button>
             </>
           )}

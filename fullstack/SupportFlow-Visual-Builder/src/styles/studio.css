@@ -812,8 +812,30 @@
     position: relative;
     display: flex;
     grid-area: menu;
+    gap: 8px;
+    align-items: center;
     justify-content: flex-end;
     justify-self: end;
+  }
+
+  .app-mobile-menu__preview {
+    display: inline-flex;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.12);
+    color: rgba(52, 211, 153, 0.94);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .app-mobile-menu__preview:active,
+  .app-mobile-menu__preview:hover {
+    background: rgba(16, 185, 129, 0.2);
   }
 
   .app-mobile-menu__button {
@@ -882,19 +904,12 @@
     color: rgba(251, 191, 36, 0.9);
   }
 
-  .app-mobile-menu__item--import,
-  .app-mobile-menu__item--preview {
+  .app-mobile-menu__item--import {
     color: rgba(154, 193, 255, 0.94);
   }
 
   .app-mobile-menu__item--audit {
     color: rgba(255, 168, 168, 0.92);
-  }
-
-  .app-mobile-menu__item--preview {
-    border-color: rgba(16, 185, 129, 0.2);
-    background: rgba(16, 185, 129, 0.08);
-    color: rgba(52, 211, 153, 0.92);
   }
 
   .app-mobile-menu__item span {
@@ -972,6 +987,11 @@
   }
 
   .app-mobile-menu__button {
+    height: 32px;
+    padding: 0 12px;
+  }
+
+  .app-mobile-menu__preview {
     height: 32px;
     padding: 0 12px;
   }

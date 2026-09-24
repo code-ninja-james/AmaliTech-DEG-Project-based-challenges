@@ -111,43 +111,13 @@
 @media (max-width: 720px) {
   .minimap,
   .minimap-toggle {
-    right: auto;
-    bottom: 12px;
-    left: 10px;
-  }
-
-  .minimap {
-    width: 128px;
-  }
-
-  .minimap__header {
-    height: 22px;
-    padding: 0 7px;
-  }
-
-  .minimap__graph {
-    height: 82px;
-    padding: 5px;
+    display: none;
   }
 }
 
 @media (max-width: 420px) {
-  .minimap {
-    width: 104px;
-  }
-
-  .minimap__header span {
-    overflow: hidden;
-    max-width: 58px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .minimap__graph {
-    height: 62px;
-  }
-
+  .minimap,
   .minimap-toggle {
-    display: block;
+    display: none;
   }
 }

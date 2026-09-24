@@ -750,22 +750,29 @@
   }
 
   .app-toolbar {
+    display: grid;
+    grid-template-areas:
+      'brand audit'
+      'modes modes'
+      'actions actions';
+    grid-template-columns: minmax(0, 1fr) auto;
     height: auto;
     min-height: 0;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 8px;
-    padding: 8px 10px;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px 10px;
+    background: linear-gradient(180deg, #101018 0%, #09090f 100%);
   }
 
   .app-brand {
+    grid-area: brand;
     min-width: 0;
-    flex: 1 1 auto;
+    flex: none;
   }
 
   .app-brand__name {
     overflow: hidden;
-    font-size: 12px;
+    font-size: 13px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -779,19 +786,28 @@
   }
 
   .app-mode-switch {
-    order: 2;
+    grid-area: modes;
+    order: initial;
     width: 100%;
+    padding: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.045);
   }
 
   .app-mode-switch__button {
+    height: 34px;
     min-width: 0;
     flex: 1;
     justify-content: center;
-    padding: 0 8px;
+    padding: 0 10px;
+    border-right: 0;
+    border-radius: 999px;
+    font-size: 11px;
   }
 
   .app-toolbar__security-actions {
-    order: 1;
+    grid-area: audit;
+    order: initial;
     width: auto;
     margin-left: auto;
   }
@@ -805,25 +821,45 @@
   }
 
   .app-toolbar__build-actions {
-    order: 3;
-    display: grid;
-    width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    grid-area: actions;
+    order: initial;
+    display: flex;
+    width: auto;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 14px 2px 0;
+    margin-right: -14px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
   }
 
   .app-audit-button,
   .app-workflow-button,
   .app-import-button,
   .app-preview-button {
-    min-width: 0;
-    padding: 0 8px;
+    min-width: 112px;
+    height: 36px;
+    flex: 0 0 auto;
+    padding: 0 14px;
     overflow: hidden;
+    border-radius: 999px;
+    scroll-snap-align: start;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  .app-audit-button {
+    min-width: 0;
+    height: 32px;
+    padding: 0 12px;
+  }
+
+  .app-preview-button {
+    min-width: 124px;
+  }
+
   .app-preview-indicator {
+    grid-area: audit;
     order: 1;
     margin: 0;
   }
@@ -833,22 +869,20 @@
   }
 
   .editor-layout {
-    grid-template-rows: minmax(420px, 64vh) auto;
+    grid-template-rows: minmax(470px, 1fr) auto;
+    gap: 0;
+    padding: 10px 10px 0;
   }
 
   .status-bar {
-    gap: 8px;
-    overflow-x: auto;
-    padding: 0 10px;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
+    display: none;
   }
 }
 
 @media (max-width: 480px) {
   .app-toolbar {
-    gap: 7px;
-    padding: 7px 8px;
+    gap: 9px;
+    padding: 11px 12px 9px;
   }
 
   .app-brand__mark {
@@ -857,19 +891,26 @@
   }
 
   .app-mode-switch__button {
-    height: 30px;
+    height: 32px;
     font-size: 10px;
   }
 
   .app-toolbar__build-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding-right: 12px;
+    margin-right: -12px;
   }
 
+  .app-audit-button,
+  .app-workflow-button,
+  .app-import-button,
   .app-preview-button {
-    grid-column: auto;
+    min-width: 104px;
+    height: 35px;
+    padding: 0 12px;
   }
 
   .editor-layout {
-    grid-template-rows: minmax(380px, 62vh) auto;
+    grid-template-rows: minmax(430px, 1fr) auto;
+    padding: 8px 8px 0;
   }
 }

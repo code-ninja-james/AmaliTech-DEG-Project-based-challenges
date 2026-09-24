@@ -303,6 +303,10 @@
   background: #10b981;
 }
 
+.app-mobile-menu {
+  display: none;
+}
+
 /* Three-column editor ----------------------------------------------------- */
 
 .editor-layout {
@@ -752,9 +756,8 @@
   .app-toolbar {
     display: grid;
     grid-template-areas:
-      'brand audit'
-      'modes modes'
-      'actions actions';
+      'brand menu'
+      'modes modes';
     grid-template-columns: minmax(0, 1fr) auto;
     height: auto;
     min-height: 0;
@@ -805,32 +808,107 @@
     font-size: 11px;
   }
 
-  .app-toolbar__security-actions {
-    grid-area: audit;
-    order: initial;
-    width: auto;
-    margin-left: auto;
+  .app-mobile-menu {
+    position: relative;
+    display: flex;
+    grid-area: menu;
+    justify-content: flex-end;
+    justify-self: end;
   }
 
-  .app-current-user {
+  .app-mobile-menu__button {
+    display: inline-flex;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 13px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.055);
+    color: rgba(255, 255, 255, 0.78);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .app-mobile-menu__button[aria-expanded='true'] {
+    border-color: rgba(79, 143, 247, 0.34);
+    background: rgba(79, 143, 247, 0.14);
+    color: rgba(198, 219, 255, 0.95);
+  }
+
+  .app-mobile-menu__panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 60;
+    display: none;
+    width: min(240px, calc(100vw - 28px));
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    background: rgba(12, 13, 20, 0.98);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  }
+
+  .app-mobile-menu__panel--open {
+    display: grid;
+    gap: 6px;
+  }
+
+  .app-mobile-menu__item {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.78);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .app-mobile-menu__item:active,
+  .app-mobile-menu__item:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .app-mobile-menu__item--workflow {
+    color: rgba(251, 191, 36, 0.9);
+  }
+
+  .app-mobile-menu__item--import,
+  .app-mobile-menu__item--preview {
+    color: rgba(154, 193, 255, 0.94);
+  }
+
+  .app-mobile-menu__item--audit {
+    color: rgba(255, 168, 168, 0.92);
+  }
+
+  .app-mobile-menu__item--preview {
+    border-color: rgba(16, 185, 129, 0.2);
+    background: rgba(16, 185, 129, 0.08);
+    color: rgba(52, 211, 153, 0.92);
+  }
+
+  .app-mobile-menu__item span {
+    font-family: var(--sf-font-mono);
+    font-size: 10px;
+    opacity: 0.72;
+  }
+
+  .app-toolbar__security-actions {
     display: none;
   }
 
-  .app-audit-button {
-    flex: 0 0 auto;
-  }
-
   .app-toolbar__build-actions {
-    grid-area: actions;
-    order: initial;
-    display: flex;
-    width: auto;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 0 14px 2px 0;
-    margin-right: -14px;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
+    display: none;
   }
 
   .app-audit-button,
@@ -859,9 +937,7 @@
   }
 
   .app-preview-indicator {
-    grid-area: audit;
-    order: 1;
-    margin: 0;
+    display: none;
   }
 
   .node-navigator {
@@ -895,18 +971,13 @@
     font-size: 10px;
   }
 
-  .app-toolbar__build-actions {
-    padding-right: 12px;
-    margin-right: -12px;
+  .app-mobile-menu__button {
+    height: 32px;
+    padding: 0 12px;
   }
 
-  .app-audit-button,
-  .app-workflow-button,
-  .app-import-button,
-  .app-preview-button {
-    min-width: 104px;
-    height: 35px;
-    padding: 0 12px;
+  .app-mobile-menu__panel {
+    width: min(230px, calc(100vw - 24px));
   }
 
   .editor-layout {

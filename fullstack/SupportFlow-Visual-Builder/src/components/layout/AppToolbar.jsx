@@ -6,6 +6,8 @@
  * actual behavior rather than decorative prototype-only actions.
  */
 
+import { useState } from 'react'
+
 const MODE_CLASS = {
   Build: 'build',
   'X-Ray': 'xray',
@@ -26,6 +28,9 @@ export default function AppToolbar({
   onAuditLog,
   onCurrentUserChange,
 }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const closeMobileMenu = () => setIsMobileMenuOpen(false)
+
   return (
     <header className="app-toolbar">
       <div className="app-brand">
@@ -100,6 +105,81 @@ export default function AppToolbar({
             )}
           </button>
         ))}
+      </div>
+
+      <div className="app-toolbar__spacer" />
+
+      <div className="app-mobile-menu">
+        <button
+          className="app-mobile-menu__button"
+          type="button"
+          aria-label={isMobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
+          aria-expanded={isMobileMenuOpen}
+          aria-controls="app-mobile-menu-panel"
+          onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
+        >
+          Menu
+        </button>
+
+        <div
+          id="app-mobile-menu-panel"
+          className={[
+            'app-mobile-menu__panel',
+            isMobileMenuOpen ? 'app-mobile-menu__panel--open' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          {mode === 'Build' && !isPreviewMode && (
+            <>
+              <button
+                className="app-mobile-menu__item app-mobile-menu__item--workflow"
+                type="button"
+                aria-label="Open workflows from mobile menu"
+                onClick={() => {
+                  onWorkflowLibrary()
+                  closeMobileMenu()
+                }}
+              >
+                Workflows
+              </button>
+              <button
+                className="app-mobile-menu__item app-mobile-menu__item--import"
+                type="button"
+                aria-label="Import flow from mobile menu"
+                onClick={() => {
+                  onSpreadsheetImport()
+                  closeMobileMenu()
+                }}
+              >
+                Import flow
+              </button>
+              <button
+                className="app-mobile-menu__item app-mobile-menu__item--preview"
+                type="button"
+                aria-label="Play preview from mobile menu"
+                onClick={() => {
+                  onPreviewStart()
+                  closeMobileMenu()
+                }}
+              >
+                Preview
+              </button>
+            </>
+          )}
+          <button
+            className="app-mobile-menu__item app-mobile-menu__item--audit"
+            type="button"
+            aria-label={`Open audit log from mobile menu, ${auditEntryCount} entries`}
+            onClick={() => {
+              onAuditLog()
+              closeMobileMenu()
+            }}
+          >
+            Audit
+            <span aria-hidden="true">{auditEntryCount}</span>
+          </button>
+        </div>
       </div>
 
       <div className="app-toolbar__spacer" />

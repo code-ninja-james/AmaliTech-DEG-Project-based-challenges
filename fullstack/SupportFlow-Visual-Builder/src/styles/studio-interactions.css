@@ -2964,6 +2964,10 @@
     padding: 12px 14px;
   }
 
+  .studio-inspector__canvas-back {
+    display: none;
+  }
+
   .studio-inspector__tabs {
     padding: 10px 8px 0;
     border-bottom: 0;
@@ -3006,7 +3010,7 @@
     display: grid;
     height: auto;
     min-height: 48px;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: center;
     gap: 8px;
     padding: 8px 10px;
@@ -3015,28 +3019,12 @@
   }
 
   .studio-preview__back {
-    display: inline-flex;
-    width: auto;
-    height: 32px;
-    align-items: center;
-    justify-content: center;
-    padding: 0 10px;
-    border-radius: 4px;
-    color: transparent;
-    font-size: 0;
-  }
-
-  .studio-preview__back::before {
-    content: '\2190 Canvas';
-    color: rgba(255, 255, 255, 0.62);
-    font-family: var(--sf-font-mono);
-    font-size: 10px;
-    line-height: 1;
+    display: none;
   }
 
   .studio-preview__title {
     min-width: 0;
-    justify-content: flex-start;
+    justify-content: center;
     color: rgba(255, 255, 255, 0.82);
     font-family: Inter, system-ui, sans-serif;
     font-size: 0;

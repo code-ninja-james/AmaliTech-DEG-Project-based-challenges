@@ -69,7 +69,12 @@ export default function AuditLogPanel({
             <span>Security Audit</span>
             <h2>Track who changed the flow</h2>
           </div>
-          <button type="button" aria-label="Close audit log" onClick={onClose}>
+          <button
+            type="button"
+            className="audit-log__close"
+            aria-label="Close audit log"
+            onClick={onClose}
+          >
             x
           </button>
         </header>

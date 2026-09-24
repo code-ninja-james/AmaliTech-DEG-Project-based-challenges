@@ -473,6 +473,16 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
+.flow-canvas-controls button svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
 .flow-canvas-controls span {
   padding: 0 5px;
   color: rgba(255, 255, 255, 0.2);
@@ -2952,13 +2962,49 @@
     backdrop-filter: blur(10px);
   }
 
-  .flow-canvas-controls button,
+  .flow-canvas-controls {
+    gap: 2px;
+    padding: 3px;
+    background: rgba(6, 6, 10, 0.92);
+    box-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .flow-canvas-controls button {
+    width: 30px;
+    height: 30px;
+    border-color: transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.52);
+  }
+
+  .flow-canvas-controls button:hover,
+  .flow-canvas-controls button:focus-visible {
+    border-color: transparent;
+    background: rgba(255, 255, 255, 0.075);
+    color: rgba(255, 255, 255, 0.76);
+  }
+
+  .flow-canvas-controls button svg {
+    width: 14px;
+    height: 14px;
+  }
+
   .spatial-view__controls button {
     width: 28px;
     height: 28px;
   }
 
-  .flow-canvas-controls span,
+  .flow-canvas-controls span {
+    min-width: 40px;
+    padding: 0 2px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.48);
+    font-size: 10px;
+  }
+
   .spatial-view__controls span {
     min-width: 44px;
     text-align: center;

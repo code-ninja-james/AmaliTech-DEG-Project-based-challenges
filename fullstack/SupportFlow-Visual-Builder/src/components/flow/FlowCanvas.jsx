@@ -23,6 +23,31 @@ const NODE_MOVE_GRID = 24
 const DEFAULT_NODE_WIDTH = 196
 const DEFAULT_NODE_HEIGHT = 96
 
+function ZoomOutIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M4.5 8h7" />
+    </svg>
+  )
+}
+
+function ZoomInIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M4.5 8h7M8 4.5v7" />
+    </svg>
+  )
+}
+
+function FitViewIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M5.5 3.5h-2v2M10.5 3.5h2v2M12.5 10.5v2h-2M5.5 12.5h-2v-2" />
+      <path d="M6 6h4v4H6z" />
+    </svg>
+  )
+}
+
 function clampZoom(value) {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
 }
@@ -630,7 +655,7 @@ export default function FlowCanvas({
           aria-label="Zoom out"
           onClick={() => setZoom((current) => clampZoom(current - ZOOM_STEP))}
         >
-          −
+          <ZoomOutIcon />
         </button>
         <button
           type="button"
@@ -638,11 +663,11 @@ export default function FlowCanvas({
           aria-label="Zoom in"
           onClick={() => setZoom((current) => clampZoom(current + ZOOM_STEP))}
         >
-          +
+          <ZoomInIcon />
         </button>
         <span>{Math.round(zoom * 100)}%</span>
         <button type="button" title="Fit view" aria-label="Fit view" onClick={handleFitView}>
-          ⊡
+          <FitViewIcon />
         </button>
       </div>
     </section>

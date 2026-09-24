@@ -3024,7 +3024,7 @@
 
   .studio-preview__title {
     min-width: 0;
-    justify-content: center;
+    justify-content: flex-start;
     color: rgba(255, 255, 255, 0.82);
     font-family: Inter, system-ui, sans-serif;
     font-size: 0;

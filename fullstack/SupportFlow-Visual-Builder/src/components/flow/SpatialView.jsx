@@ -7,7 +7,7 @@
  * zoom behavior instead of decorative prototype-only buttons.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 const TYPE_COLOR = {
   start: '#10b981',
@@ -228,7 +228,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
   const viewHeight = viewportHeight / zoom
   const viewX = (viewportWidth - viewWidth) / 2
   const viewY = (viewportHeight - viewHeight) / 2
-  const mobileSurfaceScale = 1 + Math.max(0, zoom - 1) * 0.8
+  const mobileSurfaceScale = 1 + Math.max(0, zoom - 1) * 0.6
   const mobileSurfaceSize = `${Math.round(mobileSurfaceScale * 100)}%`
   const atmosphericPoints = Array.from({ length: 32 }, (_, index) => ({
     cx:
@@ -242,24 +242,51 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
     (a, b) => spatialLayout[b.id][2] - spatialLayout[a.id][2],
   )
 
-  useEffect(() => {
+  const updateZoom = (getNextZoom) => {
     const stage = stageRef.current
+    const centerRatioX = stage
+      ? (stage.scrollLeft + stage.clientWidth / 2) / Math.max(1, stage.scrollWidth)
+      : 0.5
+    const centerRatioY = stage
+      ? (stage.scrollTop + stage.clientHeight / 2) / Math.max(1, stage.scrollHeight)
+      : 0.5
 
-    if (!stage) {
-      return
-    }
+    setZoom((currentZoom) => {
+      const nextZoom = getNextZoom(currentZoom)
 
-    const maxLeft = Math.max(0, stage.scrollWidth - stage.clientWidth)
-    const maxTop = Math.max(0, stage.scrollHeight - stage.clientHeight)
+      if (stage) {
+        const restorePanCenter = () => {
+          const maxLeft = Math.max(0, stage.scrollWidth - stage.clientWidth)
+          const maxTop = Math.max(0, stage.scrollHeight - stage.clientHeight)
+          const nextLeft = centerRatioX * stage.scrollWidth - stage.clientWidth / 2
+          const nextTop = centerRatioY * stage.scrollHeight - stage.clientHeight / 2
 
-    if (maxLeft > 0 || maxTop > 0) {
-      stage.scrollTo({
-        left: maxLeft / 2,
-        top: maxTop / 2,
-        behavior: 'auto',
-      })
-    }
-  }, [mobileSurfaceSize])
+          const left = Math.min(maxLeft, Math.max(0, nextLeft))
+          const top = Math.min(maxTop, Math.max(0, nextTop))
+
+          if (typeof stage.scrollTo === 'function') {
+            stage.scrollTo({
+              left,
+              top,
+              behavior: 'auto',
+            })
+            return
+          }
+
+          stage.scrollLeft = left
+          stage.scrollTop = top
+        }
+
+        if (typeof window.requestAnimationFrame === 'function') {
+          window.requestAnimationFrame(restorePanCenter)
+        } else {
+          window.setTimeout(restorePanCenter, 0)
+        }
+      }
+
+      return nextZoom
+    })
+  }
 
   return (
     <section
@@ -556,19 +583,19 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
         <button
           type="button"
           aria-label="Zoom out spatial view"
-          onClick={() => setZoom((current) => clampZoom(current - ZOOM_STEP))}
+          onClick={() => updateZoom((current) => clampZoom(current - ZOOM_STEP))}
         >
           <ZoomOutIcon />
         </button>
         <button
           type="button"
           aria-label="Zoom in spatial view"
-          onClick={() => setZoom((current) => clampZoom(current + ZOOM_STEP))}
+          onClick={() => updateZoom((current) => clampZoom(current + ZOOM_STEP))}
         >
           <ZoomInIcon />
         </button>
         <span>{Math.round(zoom * 100)}%</span>
-        <button type="button" aria-label="Reset spatial view" onClick={() => setZoom(1)}>
+        <button type="button" aria-label="Reset spatial view" onClick={() => updateZoom(() => 1)}>
           <ResetViewIcon />
         </button>
       </div>

@@ -73,7 +73,7 @@ describe('SpatialView', () => {
 
     const [viewX, viewY, viewWidth, viewHeight] = svg.getAttribute('viewBox').split(' ').map(Number)
 
-    expect(spatialView).toHaveStyle({ '--spatial-mobile-size': '108%' })
+    expect(spatialView).toHaveStyle({ '--spatial-mobile-size': '106%' })
     expect(svg).not.toHaveAttribute('viewBox', initialViewBox)
     expect(Number(backgroundPlane.getAttribute('x'))).toBeCloseTo(viewX)
     expect(Number(backgroundPlane.getAttribute('y'))).toBeCloseTo(viewY)

@@ -303,8 +303,7 @@
   background: #10b981;
 }
 
-.app-mobile-primary-actions,
-.app-mobile-actions {
+.app-mobile-primary-actions {
   display: none;
 }
 
@@ -839,150 +838,6 @@
     background: rgba(16, 185, 129, 0.16);
   }
 
-  .app-mobile-actions {
-    position: fixed;
-    right: 12px;
-    bottom: calc(var(--app-mobile-actions-bottom, 12px) + env(safe-area-inset-bottom, 0px));
-    left: 12px;
-    z-index: 90;
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-start;
-    pointer-events: none;
-  }
-
-  .app-mobile-actions__trigger {
-    display: inline-flex;
-    height: 34px;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    min-width: 76px;
-    padding: 0 11px 0 9px;
-    border: 1px solid rgba(255, 255, 255, 0.11);
-    border-radius: 4px;
-    background: rgba(12, 13, 20, 0.86);
-    box-shadow:
-      0 10px 24px rgba(0, 0, 0, 0.3),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.018);
-    color: rgba(255, 255, 255, 0.78);
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 600;
-    pointer-events: auto;
-    touch-action: none;
-    user-select: none;
-  }
-
-  .app-mobile-actions--dragging .app-mobile-actions__trigger {
-    border-color: rgba(79, 143, 247, 0.36);
-    background: rgba(79, 143, 247, 0.13);
-    box-shadow:
-      0 16px 34px rgba(0, 0, 0, 0.4),
-      inset 0 0 0 1px rgba(154, 193, 255, 0.08);
-    color: rgba(198, 219, 255, 0.9);
-    cursor: grabbing;
-  }
-
-  .app-mobile-actions__trigger-icon {
-    display: inline-flex;
-    width: 15px;
-    height: 15px;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.055);
-    color: rgba(154, 193, 255, 0.76);
-  }
-
-  .app-mobile-actions__trigger-icon svg {
-    width: 12px;
-    height: 12px;
-    fill: currentColor;
-  }
-
-  .app-mobile-actions__trigger[aria-expanded='true'] {
-    border-color: rgba(79, 143, 247, 0.28);
-    background: rgba(79, 143, 247, 0.11);
-    color: rgba(198, 219, 255, 0.86);
-  }
-
-  .app-mobile-actions__panel {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 0;
-    display: grid;
-    width: min(340px, 100%);
-    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
-    gap: 8px;
-    padding: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.085);
-    border-radius: 8px;
-    background: rgba(9, 10, 16, 0.98);
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(8px);
-    transition:
-      opacity 140ms ease,
-      transform 140ms ease,
-      visibility 140ms ease;
-    visibility: hidden;
-  }
-
-  .app-mobile-actions__panel--open {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-    visibility: visible;
-  }
-
-  .app-mobile-actions__item {
-    display: flex;
-    width: 100%;
-    height: 34px;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 0 10px;
-    border: 1px solid rgba(255, 255, 255, 0.075);
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.035);
-    color: rgba(255, 255, 255, 0.78);
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 600;
-    text-align: left;
-    white-space: nowrap;
-  }
-
-  .app-mobile-actions__item:active,
-  .app-mobile-actions__item:hover {
-    background: rgba(255, 255, 255, 0.06);
-  }
-
-  .app-mobile-actions__item--workflow {
-    border-color: rgba(245, 158, 11, 0.16);
-    color: rgba(251, 191, 36, 0.9);
-  }
-
-  .app-mobile-actions__item--import {
-    border-color: rgba(79, 143, 247, 0.16);
-    color: rgba(154, 193, 255, 0.94);
-  }
-
-  .app-mobile-actions__item--audit {
-    border-color: rgba(239, 68, 68, 0.15);
-    color: rgba(255, 168, 168, 0.92);
-  }
-
-  .app-mobile-actions__item span {
-    font-family: var(--sf-font-mono);
-    font-size: 10px;
-    opacity: 0.72;
-  }
-
   .app-toolbar__security-actions {
     display: none;
   }
@@ -1063,22 +918,6 @@
   .app-mobile-primary-actions__preview {
     height: 32px;
     padding: 0 12px;
-  }
-
-  .app-mobile-actions {
-    right: 10px;
-    bottom: calc(var(--app-mobile-actions-bottom, 10px) + env(safe-area-inset-bottom, 0px));
-    left: 10px;
-  }
-
-  .app-mobile-actions__trigger {
-    height: 34px;
-    padding: 0 12px;
-  }
-
-  .app-mobile-actions__item {
-    height: 32px;
-    padding: 0 9px;
   }
 
   .editor-layout {

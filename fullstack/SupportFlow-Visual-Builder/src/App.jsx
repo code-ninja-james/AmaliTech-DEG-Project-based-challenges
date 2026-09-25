@@ -1159,6 +1159,10 @@ export default function App() {
             onRouteRemove={handleRouteRemove}
             onNodeRemove={handleNodeRemove}
             onBackToCanvas={handleInspectorBackToCanvas}
+            auditEntryCount={auditEntries.length}
+            onSpreadsheetImport={() => setIsSpreadsheetImporterOpen(true)}
+            onWorkflowLibrary={() => setIsWorkflowLibraryOpen(true)}
+            onAuditLog={handleAuditLogOpen}
           />
         )}
 

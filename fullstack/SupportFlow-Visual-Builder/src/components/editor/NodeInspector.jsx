@@ -6,7 +6,7 @@
  * and ensures canvas, preview and diagnostics all observe the same data.
  */
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import analyzeFlow from '../../domain/analyzeFlow.js'
 import { getDefaultRouteTargetId } from '../../domain/flowEditing.js'
@@ -21,6 +21,17 @@ const NODE_SIZE = {
   start: { width: 196, height: 88 },
   question: { width: 196, height: 88 },
   end: { width: 180, height: 64 },
+}
+
+function MoreIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <circle cx="4" cy="4" r="1.35" />
+      <circle cx="12" cy="4" r="1.35" />
+      <circle cx="4" cy="12" r="1.35" />
+      <circle cx="12" cy="12" r="1.35" />
+    </svg>
+  )
 }
 
 function SectionLabel({ children }) {
@@ -404,6 +415,102 @@ function HealthTab({ node, flow, analysis }) {
   )
 }
 
+function MobileInspectorActions({
+  auditEntryCount = 0,
+  onSpreadsheetImport = () => {},
+  onWorkflowLibrary = () => {},
+  onAuditLog = () => {},
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined
+    }
+
+    const handlePointerDown = (event) => {
+      if (!menuRef.current?.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
+
+  const runAction = (action) => {
+    setIsOpen(false)
+    action()
+  }
+
+  return (
+    <div className="studio-inspector__mobile-actions" ref={menuRef}>
+      <button
+        type="button"
+        className="studio-inspector__mobile-actions-trigger"
+        aria-label={isOpen ? 'Close more actions' : 'Open more actions'}
+        aria-expanded={isOpen}
+        aria-controls="studio-inspector-mobile-actions-panel"
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span className="studio-inspector__mobile-actions-icon" aria-hidden="true">
+          <MoreIcon />
+        </span>
+        <span>More</span>
+      </button>
+
+      <div
+        id="studio-inspector-mobile-actions-panel"
+        className={[
+          'studio-inspector__mobile-actions-panel',
+          isOpen ? 'studio-inspector__mobile-actions-panel--open' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        role="menu"
+      >
+        <button
+          type="button"
+          className="studio-inspector__mobile-action studio-inspector__mobile-action--workflow"
+          role="menuitem"
+          onClick={() => runAction(onWorkflowLibrary)}
+        >
+          Workflows
+        </button>
+        <button
+          type="button"
+          className="studio-inspector__mobile-action studio-inspector__mobile-action--import"
+          role="menuitem"
+          onClick={() => runAction(onSpreadsheetImport)}
+        >
+          Import Flow
+        </button>
+        <button
+          type="button"
+          className="studio-inspector__mobile-action studio-inspector__mobile-action--audit"
+          role="menuitem"
+          onClick={() => runAction(onAuditLog)}
+        >
+          <span>Audit</span>
+          <strong aria-hidden="true">{auditEntryCount}</strong>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function NodeInspector({
   node,
   flow,
@@ -420,6 +527,10 @@ export default function NodeInspector({
   onRouteRemove = () => {},
   onNodeRemove = () => {},
   onBackToCanvas = () => {},
+  auditEntryCount = 0,
+  onSpreadsheetImport = () => {},
+  onWorkflowLibrary = () => {},
+  onAuditLog = () => {},
 }) {
   const [tab, setTab] = useState('Properties')
   const analysis = useMemo(() => analyzeFlow(flow?.nodes ?? []), [flow])
@@ -456,6 +567,12 @@ export default function NodeInspector({
         >
           ← Canvas
         </button>
+        <MobileInspectorActions
+          auditEntryCount={auditEntryCount}
+          onSpreadsheetImport={onSpreadsheetImport}
+          onWorkflowLibrary={onWorkflowLibrary}
+          onAuditLog={onAuditLog}
+        />
       </header>
       {selectedConnection && (
         <section className="studio-inspector__selected-route">

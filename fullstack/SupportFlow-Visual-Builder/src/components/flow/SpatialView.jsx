@@ -223,9 +223,15 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
     }
   })
 
-  const atmosphericPoints = Array.from({ length: 32 }, (_, index) => ({
-    cx: 40 + ((index * 191 + index * index * 13) % (viewportWidth - 80)),
-    cy: 30 + ((index * 113 + index * 37) % (viewportHeight - 60)),
+  const worldBounds = {
+    x: -viewportWidth,
+    y: -viewportHeight,
+    width: viewportWidth * 3,
+    height: viewportHeight * 3,
+  }
+  const atmosphericPoints = Array.from({ length: 56 }, (_, index) => ({
+    cx: worldBounds.x + 40 + ((index * 191 + index * index * 13) % (worldBounds.width - 80)),
+    cy: worldBounds.y + 30 + ((index * 113 + index * 37) % (worldBounds.height - 60)),
     radius: 0.5 + (index % 5) * 0.18,
     opacity: 0.028 + (index % 8) * 0.015,
   }))
@@ -301,22 +307,29 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
           })}
         </defs>
 
-        <rect x={viewX} y={viewY} width={viewWidth} height={viewHeight} fill="url(#spatial-bg)" />
         <rect
-          x={viewX}
-          y={viewY}
-          width={viewWidth}
-          height={viewHeight}
+          className="spatial-view__background-plane"
+          x={worldBounds.x}
+          y={worldBounds.y}
+          width={worldBounds.width}
+          height={worldBounds.height}
+          fill="url(#spatial-bg)"
+        />
+        <rect
+          x={worldBounds.x}
+          y={worldBounds.y}
+          width={worldBounds.width}
+          height={worldBounds.height}
           fill="url(#spatial-vignette)"
         />
 
         {[0.28, 0.42, 0.58, 0.72].map((ratio) => (
           <line
             key={ratio}
-            x1="0"
-            y1={viewportHeight * ratio}
-            x2={viewportWidth}
-            y2={viewportHeight * ratio}
+            x1={worldBounds.x}
+            y1={worldBounds.y + worldBounds.height * ratio}
+            x2={worldBounds.x + worldBounds.width}
+            y2={worldBounds.y + worldBounds.height * ratio}
             stroke="rgba(110,130,230,0.03)"
             strokeWidth="0.8"
           />

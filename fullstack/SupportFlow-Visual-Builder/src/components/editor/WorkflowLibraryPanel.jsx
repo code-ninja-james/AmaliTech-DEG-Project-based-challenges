@@ -94,8 +94,25 @@ export default function WorkflowLibraryPanel({
             <span>Workflow Library</span>
             <h2>Saved Workflow Library</h2>
           </div>
-          <button type="button" aria-label="Close workflow library" onClick={onClose}>
-            x
+          <button
+            type="button"
+            className="workflow-library__close"
+            aria-label="Close workflow library"
+            onClick={onClose}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
           </button>
         </header>
 

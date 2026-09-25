@@ -861,38 +861,68 @@
 
   .app-mobile-menu__panel {
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + 9px);
     right: 0;
-    z-index: 60;
-    display: none;
-    width: min(240px, calc(100vw - 28px));
-    padding: 8px;
+    z-index: 80;
+    display: grid;
+    width: max-content;
+    min-width: 148px;
+    max-width: calc(100vw - 24px);
+    padding: 4px;
     border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 8px;
-    background: rgba(12, 13, 20, 0.98);
-    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+    border-radius: 6px;
+    background: rgba(9, 10, 16, 0.98);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+    box-sizing: border-box;
+    gap: 2px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px) scale(0.98);
+    transform-origin: top right;
+    transition:
+      opacity 140ms ease,
+      transform 140ms ease,
+      visibility 140ms ease;
+    visibility: hidden;
+  }
+
+  .app-mobile-menu__panel::before {
+    position: absolute;
+    top: -5px;
+    right: 18px;
+    width: 9px;
+    height: 9px;
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+    border-left: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(9, 10, 16, 0.98);
+    content: '';
+    transform: rotate(45deg);
   }
 
   .app-mobile-menu__panel--open {
-    display: grid;
-    gap: 6px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+    visibility: visible;
   }
 
   .app-mobile-menu__item {
     display: flex;
-    min-height: 42px;
+    width: 100%;
+    min-height: 40px;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    padding: 0 12px;
+    gap: 18px;
+    padding: 0 11px;
     border: 1px solid transparent;
     border-radius: 4px;
     background: transparent;
     color: rgba(255, 255, 255, 0.78);
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     text-align: left;
+    white-space: nowrap;
   }
 
   .app-mobile-menu__item:active,
@@ -1006,7 +1036,7 @@
   }
 
   .app-mobile-menu__panel {
-    width: min(230px, calc(100vw - 24px));
+    max-width: calc(100vw - 20px);
   }
 
   .editor-layout {

@@ -6,7 +6,7 @@
  * actual behavior rather than decorative prototype-only actions.
  */
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const MODE_CLASS = {
   Build: 'build',
@@ -29,7 +29,34 @@ export default function AppToolbar({
   onCurrentUserChange,
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const closeMobileMenu = () => setIsMobileMenuOpen(false)
+  const mobileMenuRef = useRef(null)
+  const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), [])
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return undefined
+    }
+
+    const handlePointerDown = (event) => {
+      if (!mobileMenuRef.current?.contains(event.target)) {
+        closeMobileMenu()
+      }
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closeMobileMenu()
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [closeMobileMenu, isMobileMenuOpen])
 
   return (
     <header className="app-toolbar">
@@ -95,7 +122,10 @@ export default function AppToolbar({
               .join(' ')}
             type="button"
             aria-label={item === 'X-Ray' ? `Flow Health, ${healthIssueCount} issues` : item}
-            onClick={() => onModeChange(item)}
+            onClick={() => {
+              closeMobileMenu()
+              onModeChange(item)
+            }}
           >
             {item}
             {item === 'X-Ray' && (
@@ -109,13 +139,16 @@ export default function AppToolbar({
 
       <div className="app-toolbar__spacer" />
 
-      <div className="app-mobile-menu">
+      <div className="app-mobile-menu" ref={mobileMenuRef}>
         {mode === 'Build' && !isPreviewMode && (
           <button
             className="app-mobile-menu__preview"
             type="button"
             aria-label="Play preview from mobile toolbar"
-            onClick={onPreviewStart}
+            onClick={() => {
+              closeMobileMenu()
+              onPreviewStart()
+            }}
           >
             ▶ Preview
           </button>
@@ -163,7 +196,7 @@ export default function AppToolbar({
                   closeMobileMenu()
                 }}
               >
-                Import flow
+                Import Flow
               </button>
             </>
           )}
@@ -222,7 +255,7 @@ export default function AppToolbar({
             aria-label="Import flow"
             onClick={onSpreadsheetImport}
           >
-            Import flow
+            Import Flow
           </button>
           <button
             className="app-preview-button"

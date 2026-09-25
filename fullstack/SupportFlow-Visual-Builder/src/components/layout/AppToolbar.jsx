@@ -59,11 +59,7 @@ export default function AppToolbar({
   }, [closeMobileActions, isMobileActionsOpen])
 
   return (
-    <header
-      className={['app-toolbar', !isPreviewMode ? 'app-toolbar--has-mobile-actions' : '']
-        .filter(Boolean)
-        .join(' ')}
-    >
+    <header className="app-toolbar">
       <div className="app-brand">
         <span className="app-brand__mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false">
@@ -164,12 +160,12 @@ export default function AppToolbar({
           <button
             className="app-mobile-actions__trigger"
             type="button"
-            aria-label={isMobileActionsOpen ? 'Close mobile actions' : 'Open mobile actions'}
+            aria-label={isMobileActionsOpen ? 'Close more actions' : 'Open more actions'}
             aria-expanded={isMobileActionsOpen}
             aria-controls="app-mobile-actions-panel"
             onClick={() => setIsMobileActionsOpen((isOpen) => !isOpen)}
           >
-            Actions
+            More
           </button>
 
           <div

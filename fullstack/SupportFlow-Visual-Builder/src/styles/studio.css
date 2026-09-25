@@ -768,13 +768,6 @@
     background: linear-gradient(180deg, #101018 0%, #09090f 100%);
   }
 
-  .app-toolbar--has-mobile-actions {
-    grid-template-areas:
-      'brand primary'
-      'modes modes'
-      'actions actions';
-  }
-
   .app-brand {
     grid-area: brand;
     min-width: 0;
@@ -847,29 +840,32 @@
   }
 
   .app-mobile-actions {
-    display: grid;
-    grid-area: actions;
-    grid-template-areas:
-      '. trigger'
-      'panel panel';
-    grid-template-columns: minmax(0, 1fr) auto;
-    row-gap: 0;
+    position: fixed;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    left: 12px;
+    z-index: 90;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    pointer-events: none;
   }
 
   .app-mobile-actions__trigger {
     display: inline-flex;
-    grid-area: trigger;
-    height: 30px;
+    height: 36px;
     align-items: center;
     justify-content: center;
-    padding: 0 12px;
+    padding: 0 13px;
     border: 1px solid rgba(255, 255, 255, 0.085);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.035);
-    color: rgba(255, 255, 255, 0.54);
+    background: rgba(12, 13, 20, 0.92);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.36);
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
+    pointer-events: auto;
   }
 
   .app-mobile-actions__trigger[aria-expanded='true'] {
@@ -879,27 +875,32 @@
   }
 
   .app-mobile-actions__panel {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
     display: grid;
-    grid-area: panel;
-    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
-    gap: 7px;
-    max-height: 0;
+    width: min(340px, 100%);
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.085);
+    border-radius: 8px;
+    background: rgba(9, 10, 16, 0.98);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
     opacity: 0;
-    overflow: hidden;
     pointer-events: none;
+    transform: translateY(8px);
     transition:
-      max-height 160ms ease,
       opacity 140ms ease,
-      padding-top 160ms ease,
+      transform 140ms ease,
       visibility 140ms ease;
     visibility: hidden;
   }
 
   .app-mobile-actions__panel--open {
-    max-height: 92px;
     opacity: 1;
-    padding-top: 7px;
     pointer-events: auto;
+    transform: translateY(0);
     visibility: visible;
   }
 
@@ -1030,9 +1031,15 @@
     padding: 0 12px;
   }
 
+  .app-mobile-actions {
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    left: 10px;
+  }
+
   .app-mobile-actions__trigger {
-    height: 28px;
-    padding: 0 11px;
+    height: 34px;
+    padding: 0 12px;
   }
 
   .app-mobile-actions__item {

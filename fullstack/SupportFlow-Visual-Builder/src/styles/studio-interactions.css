@@ -2789,6 +2789,7 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
+  background: radial-gradient(circle at 38% 50%, #070a1e 0%, #020204 75%), #020204;
 }
 
 .spatial-view__svg {
@@ -2964,6 +2965,11 @@
     height: var(--spatial-mobile-size, 100%);
     min-width: 100%;
     min-height: 100%;
+    overflow: visible;
+  }
+
+  .spatial-view__background-layer {
+    display: none;
   }
 
   .flow-xray-banner {

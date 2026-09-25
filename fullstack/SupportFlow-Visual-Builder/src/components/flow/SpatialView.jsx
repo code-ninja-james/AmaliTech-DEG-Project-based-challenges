@@ -7,7 +7,7 @@
  * zoom behavior instead of decorative prototype-only buttons.
  */
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const TYPE_COLOR = {
   start: '#10b981',
@@ -178,6 +178,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
   const centerY = 320
   const stageRef = useRef(null)
   const [zoom, setZoom] = useState(1)
+  const [isMobileSpatial, setIsMobileSpatial] = useState(false)
   const nodeMap = new Map(flow.nodes.map((node) => [node.id, node]))
   const spatialLayout = useMemo(() => createSpatialLayout(flow.nodes), [flow.nodes])
   const spatialNodes = flow.nodes.filter((node) => spatialLayout[node.id])
@@ -224,12 +225,11 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
     }
   })
 
-  const viewWidth = viewportWidth / zoom
-  const viewHeight = viewportHeight / zoom
-  const viewX = (viewportWidth - viewWidth) / 2
-  const viewY = (viewportHeight - viewHeight) / 2
-  const mobileSurfaceScale = 1 + Math.max(0, zoom - 1) * 0.6
-  const mobileSurfaceSize = `${Math.round(mobileSurfaceScale * 100)}%`
+  const viewWidth = isMobileSpatial ? viewportWidth : viewportWidth / zoom
+  const viewHeight = isMobileSpatial ? viewportHeight : viewportHeight / zoom
+  const viewX = isMobileSpatial ? 0 : (viewportWidth - viewWidth) / 2
+  const viewY = isMobileSpatial ? 0 : (viewportHeight - viewHeight) / 2
+  const mobileSurfaceSize = isMobileSpatial ? `${Math.round(zoom * 100)}%` : '100%'
   const atmosphericPoints = Array.from({ length: 32 }, (_, index) => ({
     cx:
       viewX + 40 / zoom + ((index * 191 + index * index * 13) % Math.max(1, viewWidth - 80 / zoom)),
@@ -241,6 +241,27 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
   const sortedNodes = [...spatialNodes].sort(
     (a, b) => spatialLayout[b.id][2] - spatialLayout[a.id][2],
   )
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') {
+      return undefined
+    }
+
+    const mobileQuery = window.matchMedia('(max-width: 720px)')
+    const syncMobileState = () => setIsMobileSpatial(mobileQuery.matches)
+
+    syncMobileState()
+
+    if (typeof mobileQuery.addEventListener === 'function') {
+      mobileQuery.addEventListener('change', syncMobileState)
+
+      return () => mobileQuery.removeEventListener('change', syncMobileState)
+    }
+
+    mobileQuery.addListener?.(syncMobileState)
+
+    return () => mobileQuery.removeListener?.(syncMobileState)
+  }, [])
 
   const updateZoom = (getNextZoom) => {
     const stage = stageRef.current
@@ -355,44 +376,46 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
             })}
           </defs>
 
-          <rect
-            className="spatial-view__background-plane"
-            x={viewX}
-            y={viewY}
-            width={viewWidth}
-            height={viewHeight}
-            fill="url(#spatial-bg)"
-          />
-          <rect
-            x={viewX}
-            y={viewY}
-            width={viewWidth}
-            height={viewHeight}
-            fill="url(#spatial-vignette)"
-          />
-
-          {[0.28, 0.42, 0.58, 0.72].map((ratio) => (
-            <line
-              key={ratio}
-              x1={viewX}
-              y1={viewY + viewHeight * ratio}
-              x2={viewX + viewWidth}
-              y2={viewY + viewHeight * ratio}
-              stroke="rgba(110,130,230,0.03)"
-              strokeWidth={0.8 / zoom}
+          <g className="spatial-view__background-layer">
+            <rect
+              className="spatial-view__background-plane"
+              x={viewX}
+              y={viewY}
+              width={viewWidth}
+              height={viewHeight}
+              fill="url(#spatial-bg)"
             />
-          ))}
-
-          {atmosphericPoints.map((point, index) => (
-            <circle
-              key={index}
-              cx={point.cx}
-              cy={point.cy}
-              r={point.radius}
-              fill="rgba(255,255,255,0.9)"
-              opacity={point.opacity}
+            <rect
+              x={viewX}
+              y={viewY}
+              width={viewWidth}
+              height={viewHeight}
+              fill="url(#spatial-vignette)"
             />
-          ))}
+
+            {[0.28, 0.42, 0.58, 0.72].map((ratio) => (
+              <line
+                key={ratio}
+                x1={viewX}
+                y1={viewY + viewHeight * ratio}
+                x2={viewX + viewWidth}
+                y2={viewY + viewHeight * ratio}
+                stroke="rgba(110,130,230,0.03)"
+                strokeWidth={0.8 / zoom}
+              />
+            ))}
+
+            {atmosphericPoints.map((point, index) => (
+              <circle
+                key={index}
+                cx={point.cx}
+                cy={point.cy}
+                r={point.radius}
+                fill="rgba(255,255,255,0.9)"
+                opacity={point.opacity}
+              />
+            ))}
+          </g>
 
           {edges.map((edge) => {
             const sourceNode = nodeMap.get(edge.from)

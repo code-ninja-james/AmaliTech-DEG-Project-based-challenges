@@ -2373,6 +2373,14 @@
     flex-basis: 100%;
     white-space: normal;
   }
+
+  .flow-node--movable {
+    touch-action: pan-x pan-y;
+  }
+
+  .flow-node--moving {
+    touch-action: none;
+  }
 }
 
 /* X-Ray rail -------------------------------------------------------------- */

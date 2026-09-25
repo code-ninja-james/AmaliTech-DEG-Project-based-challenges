@@ -20,6 +20,9 @@ const MIN_ZOOM = 0.5
 const MAX_ZOOM = 1.4
 const ZOOM_STEP = 0.1
 const NODE_MOVE_GRID = 24
+const NODE_MOVE_LONG_PRESS_MS = 430
+const NODE_MOVE_LONG_PRESS_CANCEL_DISTANCE = 10
+const MOBILE_POINTER_QUERY = '(max-width: 720px)'
 const DEFAULT_NODE_WIDTH = 196
 const DEFAULT_NODE_HEIGHT = 96
 
@@ -58,6 +61,18 @@ function clamp(value, min, max) {
 
 function snapToGrid(value) {
   return Math.round(value / NODE_MOVE_GRID) * NODE_MOVE_GRID
+}
+
+function shouldDeferNodeMove(event) {
+  if (event.pointerType === 'touch') {
+    return true
+  }
+
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia(MOBILE_POINTER_QUERY).matches
+  )
 }
 
 function getDraggedNodePosition(dragState, point, nodeRect, canvasSize) {
@@ -99,6 +114,7 @@ export default function FlowCanvas({
   const [zoom, setZoom] = useState(1)
   const [draftRoute, setDraftRoute] = useState(null)
   const [nodeDrag, setNodeDrag] = useState(null)
+  const pendingNodeMoveRef = useRef(null)
   const viewResetContextRef = useRef({ nodes: flow.nodes, selectedNodeId })
   const handledViewResetKeyRef = useRef(null)
   const appliedMobileInitialFitRef = useRef(false)
@@ -240,6 +256,38 @@ export default function FlowCanvas({
     [getCanvasPoint, mode, onConnectionSelect],
   )
 
+  const clearPendingNodeMove = useCallback(() => {
+    const pendingMove = pendingNodeMoveRef.current
+
+    if (!pendingMove) {
+      return
+    }
+
+    window.clearTimeout(pendingMove.timeoutId)
+    window.removeEventListener('pointermove', pendingMove.handlePointerMove)
+    window.removeEventListener('pointerup', pendingMove.handlePointerEnd)
+    window.removeEventListener('pointercancel', pendingMove.handlePointerEnd)
+    pendingNodeMoveRef.current = null
+  }, [])
+
+  useEffect(() => clearPendingNodeMove, [clearPendingNodeMove])
+
+  const beginNodeMove = useCallback(
+    (nodeId, node, point, requiresLongPress = false) => {
+      onNodeSelect(nodeId)
+      setDraftRoute(null)
+      setNodeDrag({
+        nodeId,
+        startPoint: point,
+        startPosition: node.position,
+        lastPosition: node.position,
+        hasMoved: false,
+        requiresLongPress,
+      })
+    },
+    [onNodeSelect],
+  )
+
   const handleNodeMoveStart = useCallback(
     (nodeId, event) => {
       if (mode !== 'Build') {
@@ -253,17 +301,63 @@ export default function FlowCanvas({
         return
       }
 
-      onNodeSelect(nodeId)
-      setDraftRoute(null)
-      setNodeDrag({
-        nodeId,
-        startPoint: point,
-        startPosition: node.position,
-        lastPosition: node.position,
-        hasMoved: false,
-      })
+      if (!shouldDeferNodeMove(event)) {
+        beginNodeMove(nodeId, node, point)
+        return
+      }
+
+      clearPendingNodeMove()
+
+      const pointerId = event.pointerId
+      const startClientX = event.clientX
+      const startClientY = event.clientY
+
+      const handlePointerMove = (moveEvent) => {
+        if (moveEvent.pointerId !== pointerId) {
+          return
+        }
+
+        const distance = Math.hypot(
+          moveEvent.clientX - startClientX,
+          moveEvent.clientY - startClientY,
+        )
+
+        if (distance > NODE_MOVE_LONG_PRESS_CANCEL_DISTANCE) {
+          clearPendingNodeMove()
+        }
+      }
+
+      const handlePointerEnd = (endEvent) => {
+        if (endEvent.pointerId !== pointerId) {
+          return
+        }
+
+        clearPendingNodeMove()
+      }
+
+      const timeoutId = window.setTimeout(() => {
+        const pendingMove = pendingNodeMoveRef.current
+
+        if (!pendingMove || pendingMove.pointerId !== pointerId) {
+          return
+        }
+
+        clearPendingNodeMove()
+        beginNodeMove(nodeId, node, point, true)
+      }, NODE_MOVE_LONG_PRESS_MS)
+
+      pendingNodeMoveRef.current = {
+        pointerId,
+        timeoutId,
+        handlePointerMove,
+        handlePointerEnd,
+      }
+
+      window.addEventListener('pointermove', handlePointerMove)
+      window.addEventListener('pointerup', handlePointerEnd)
+      window.addEventListener('pointercancel', handlePointerEnd)
     },
-    [flow.nodes, getCanvasPoint, mode, onNodeSelect],
+    [beginNodeMove, clearPendingNodeMove, flow.nodes, getCanvasPoint, mode],
   )
 
   useEffect(() => {
@@ -341,6 +435,10 @@ export default function FlowCanvas({
     }
 
     const handlePointerMove = (event) => {
+      if (nodeDrag.requiresLongPress) {
+        event.preventDefault()
+      }
+
       const point = getCanvasPoint(event)
       const nextPosition = getDraggedNodePosition(
         nodeDrag,
@@ -372,6 +470,10 @@ export default function FlowCanvas({
     }
 
     const handlePointerUp = (event) => {
+      if (nodeDrag.requiresLongPress) {
+        event.preventDefault()
+      }
+
       const point = getCanvasPoint(event)
       const nextPosition = getDraggedNodePosition(
         nodeDrag,
@@ -409,11 +511,13 @@ export default function FlowCanvas({
 
     window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
     window.addEventListener('keydown', handleKeyDown)
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [canvasSize, getCanvasPoint, nodeDrag, nodeRects, onNodeMove, onNodeMoveCommit])

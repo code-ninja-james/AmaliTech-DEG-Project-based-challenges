@@ -14,6 +14,23 @@ const MODE_CLASS = {
   Spatial: 'spatial',
 }
 
+const MOBILE_ACTION_LONG_PRESS_MS = 430
+const MOBILE_ACTION_DRAG_CANCEL_DISTANCE = 8
+const MOBILE_ACTION_DEFAULT_BOTTOM = 12
+const MOBILE_ACTION_MIN_BOTTOM = 10
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function getMobileActionMaxBottom() {
+  if (typeof window === 'undefined') {
+    return 360
+  }
+
+  return Math.max(120, window.innerHeight - 220)
+}
+
 export default function AppToolbar({
   workflowName = 'Main Flow',
   mode,
@@ -29,8 +46,26 @@ export default function AppToolbar({
   onCurrentUserChange,
 }) {
   const [isMobileActionsOpen, setIsMobileActionsOpen] = useState(false)
+  const [isMobileActionsDragging, setIsMobileActionsDragging] = useState(false)
+  const [mobileActionsBottom, setMobileActionsBottom] = useState(null)
   const mobileActionsRef = useRef(null)
+  const mobileActionsPressRef = useRef(null)
+  const suppressMobileActionsClickRef = useRef(false)
   const closeMobileActions = useCallback(() => setIsMobileActionsOpen(false), [])
+
+  const clearMobileActionPress = useCallback(() => {
+    const press = mobileActionsPressRef.current
+
+    if (!press) {
+      return
+    }
+
+    window.clearTimeout(press.timeoutId)
+    window.removeEventListener('pointermove', press.handlePointerMove)
+    window.removeEventListener('pointerup', press.handlePointerEnd)
+    window.removeEventListener('pointercancel', press.handlePointerEnd)
+    mobileActionsPressRef.current = null
+  }, [])
 
   useEffect(() => {
     if (!isMobileActionsOpen) {
@@ -57,6 +92,105 @@ export default function AppToolbar({
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [closeMobileActions, isMobileActionsOpen])
+
+  useEffect(() => clearMobileActionPress, [clearMobileActionPress])
+
+  const handleMobileActionsClick = () => {
+    if (suppressMobileActionsClickRef.current) {
+      suppressMobileActionsClickRef.current = false
+      return
+    }
+
+    setIsMobileActionsOpen((isOpen) => !isOpen)
+  }
+
+  const handleMobileActionsPointerDown = (event) => {
+    if (event.button !== 0) {
+      return
+    }
+
+    clearMobileActionPress()
+
+    const pointerId = event.pointerId
+    const startClientY = event.clientY
+    const startClientX = event.clientX
+    const startBottom = mobileActionsBottom ?? MOBILE_ACTION_DEFAULT_BOTTOM
+
+    const handlePointerMove = (moveEvent) => {
+      if (moveEvent.pointerId !== pointerId) {
+        return
+      }
+
+      const press = mobileActionsPressRef.current
+
+      if (!press) {
+        return
+      }
+
+      const distance = Math.hypot(
+        moveEvent.clientX - startClientX,
+        moveEvent.clientY - startClientY,
+      )
+
+      if (!press.isDragging && distance > MOBILE_ACTION_DRAG_CANCEL_DISTANCE) {
+        clearMobileActionPress()
+        return
+      }
+
+      if (!press.isDragging) {
+        return
+      }
+
+      moveEvent.preventDefault()
+      setMobileActionsBottom(
+        clamp(
+          startBottom + startClientY - moveEvent.clientY,
+          MOBILE_ACTION_MIN_BOTTOM,
+          getMobileActionMaxBottom(),
+        ),
+      )
+    }
+
+    const handlePointerEnd = (endEvent) => {
+      if (endEvent.pointerId !== pointerId) {
+        return
+      }
+
+      const wasDragging = mobileActionsPressRef.current?.isDragging
+
+      clearMobileActionPress()
+      setIsMobileActionsDragging(false)
+
+      if (wasDragging) {
+        suppressMobileActionsClickRef.current = true
+      }
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const press = mobileActionsPressRef.current
+
+      if (!press || press.pointerId !== pointerId) {
+        return
+      }
+
+      press.isDragging = true
+      suppressMobileActionsClickRef.current = true
+      setIsMobileActionsDragging(true)
+      closeMobileActions()
+    }, MOBILE_ACTION_LONG_PRESS_MS)
+
+    mobileActionsPressRef.current = {
+      pointerId,
+      timeoutId,
+      handlePointerMove,
+      handlePointerEnd,
+      isDragging: false,
+    }
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: false })
+    window.addEventListener('pointerup', handlePointerEnd)
+    window.addEventListener('pointercancel', handlePointerEnd)
+  }
 
   return (
     <header className="app-toolbar">
@@ -156,14 +290,28 @@ export default function AppToolbar({
       </div>
 
       {!isPreviewMode && (
-        <div className="app-mobile-actions" ref={mobileActionsRef}>
+        <div
+          className={[
+            'app-mobile-actions',
+            isMobileActionsDragging ? 'app-mobile-actions--dragging' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          ref={mobileActionsRef}
+          style={
+            mobileActionsBottom === null
+              ? undefined
+              : { '--app-mobile-actions-bottom': `${mobileActionsBottom}px` }
+          }
+        >
           <button
             className="app-mobile-actions__trigger"
             type="button"
             aria-label={isMobileActionsOpen ? 'Close more actions' : 'Open more actions'}
             aria-expanded={isMobileActionsOpen}
             aria-controls="app-mobile-actions-panel"
-            onClick={() => setIsMobileActionsOpen((isOpen) => !isOpen)}
+            onClick={handleMobileActionsClick}
+            onPointerDown={handleMobileActionsPointerDown}
           >
             <span className="app-mobile-actions__trigger-icon" aria-hidden="true">
               <svg viewBox="0 0 16 16" focusable="false">

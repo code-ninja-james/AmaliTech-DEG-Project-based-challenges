@@ -2816,6 +2816,16 @@
   color: rgba(255, 255, 255, 0.36);
 }
 
+.spatial-view__controls button svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
 .spatial-view__controls span {
   padding: 0 5px;
   color: rgba(255, 255, 255, 0.2);
@@ -2972,6 +2982,16 @@
     backdrop-filter: none;
   }
 
+  .spatial-view__controls {
+    gap: 6px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
   .flow-canvas-controls button {
     width: 32px;
     height: 32px;
@@ -2997,8 +3017,27 @@
   }
 
   .spatial-view__controls button {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
+    border-color: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    background: rgba(9, 9, 15, 0.86);
+    box-shadow:
+      0 8px 18px rgba(0, 0, 0, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.045);
+    color: rgba(255, 255, 255, 0.56);
+  }
+
+  .spatial-view__controls button:hover,
+  .spatial-view__controls button:focus-visible {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.075);
+    color: rgba(255, 255, 255, 0.76);
+  }
+
+  .spatial-view__controls button svg {
+    width: 14px;
+    height: 14px;
   }
 
   .flow-canvas-controls span {
@@ -3010,8 +3049,11 @@
   }
 
   .spatial-view__controls span {
-    min-width: 44px;
+    min-width: 36px;
+    padding: 0;
     text-align: center;
+    color: rgba(255, 255, 255, 0.42);
+    font-size: 10px;
   }
 
   .node-inspector,

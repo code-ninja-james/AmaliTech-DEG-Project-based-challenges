@@ -46,6 +46,31 @@ const DYNAMIC_LAYOUT_WIDTH = 900
 const DYNAMIC_LAYOUT_VERTICAL_SPREAD = 420
 const DYNAMIC_LAYOUT_MAX_Z = 380
 
+function ZoomOutIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M4.5 8h7" />
+    </svg>
+  )
+}
+
+function ZoomInIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M4.5 8h7M8 4.5v7" />
+    </svg>
+  )
+}
+
+function ResetViewIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M5.5 3.5h-2v2M10.5 3.5h2v2M12.5 10.5v2h-2M5.5 12.5h-2v-2" />
+      <path d="M6 6h4v4H6z" />
+    </svg>
+  )
+}
+
 function clampZoom(value) {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
 }
@@ -496,18 +521,18 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
           aria-label="Zoom out spatial view"
           onClick={() => setZoom((current) => clampZoom(current - ZOOM_STEP))}
         >
-          −
+          <ZoomOutIcon />
         </button>
         <button
           type="button"
           aria-label="Zoom in spatial view"
           onClick={() => setZoom((current) => clampZoom(current + ZOOM_STEP))}
         >
-          +
+          <ZoomInIcon />
         </button>
         <span>{Math.round(zoom * 100)}%</span>
         <button type="button" aria-label="Reset spatial view" onClick={() => setZoom(1)}>
-          ⊡
+          <ResetViewIcon />
         </button>
       </div>
     </section>

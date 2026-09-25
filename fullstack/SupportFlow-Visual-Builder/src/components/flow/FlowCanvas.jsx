@@ -20,8 +20,6 @@ const MIN_ZOOM = 0.5
 const MAX_ZOOM = 1.4
 const ZOOM_STEP = 0.1
 const NODE_MOVE_GRID = 24
-const NODE_MOVE_LONG_PRESS_MS = 5
-const NODE_MOVE_LONG_PRESS_CANCEL_DISTANCE = 12
 const MOBILE_POINTER_QUERY = '(max-width: 720px)'
 const DEFAULT_NODE_WIDTH = 196
 const DEFAULT_NODE_HEIGHT = 96
@@ -63,7 +61,7 @@ function snapToGrid(value) {
   return Math.round(value / NODE_MOVE_GRID) * NODE_MOVE_GRID
 }
 
-function shouldDeferNodeMove(event) {
+function shouldPreventScrollDuringNodeMove(event) {
   if (event.pointerType === 'touch') {
     return true
   }
@@ -114,7 +112,6 @@ export default function FlowCanvas({
   const [zoom, setZoom] = useState(1)
   const [draftRoute, setDraftRoute] = useState(null)
   const [nodeDrag, setNodeDrag] = useState(null)
-  const pendingNodeMoveRef = useRef(null)
   const viewResetContextRef = useRef({ nodes: flow.nodes, selectedNodeId })
   const handledViewResetKeyRef = useRef(null)
   const appliedMobileInitialFitRef = useRef(false)
@@ -256,24 +253,8 @@ export default function FlowCanvas({
     [getCanvasPoint, mode, onConnectionSelect],
   )
 
-  const clearPendingNodeMove = useCallback(() => {
-    const pendingMove = pendingNodeMoveRef.current
-
-    if (!pendingMove) {
-      return
-    }
-
-    window.clearTimeout(pendingMove.timeoutId)
-    window.removeEventListener('pointermove', pendingMove.handlePointerMove)
-    window.removeEventListener('pointerup', pendingMove.handlePointerEnd)
-    window.removeEventListener('pointercancel', pendingMove.handlePointerEnd)
-    pendingNodeMoveRef.current = null
-  }, [])
-
-  useEffect(() => clearPendingNodeMove, [clearPendingNodeMove])
-
   const beginNodeMove = useCallback(
-    (nodeId, node, point, requiresLongPress = false) => {
+    (nodeId, node, point, shouldPreventScroll = false) => {
       onNodeSelect(nodeId)
       setDraftRoute(null)
       setNodeDrag({
@@ -282,7 +263,7 @@ export default function FlowCanvas({
         startPosition: node.position,
         lastPosition: node.position,
         hasMoved: false,
-        requiresLongPress,
+        shouldPreventScroll,
       })
     },
     [onNodeSelect],
@@ -301,63 +282,9 @@ export default function FlowCanvas({
         return
       }
 
-      if (!shouldDeferNodeMove(event)) {
-        beginNodeMove(nodeId, node, point)
-        return
-      }
-
-      clearPendingNodeMove()
-
-      const pointerId = event.pointerId
-      const startClientX = event.clientX
-      const startClientY = event.clientY
-
-      const handlePointerMove = (moveEvent) => {
-        if (moveEvent.pointerId !== pointerId) {
-          return
-        }
-
-        const distance = Math.hypot(
-          moveEvent.clientX - startClientX,
-          moveEvent.clientY - startClientY,
-        )
-
-        if (distance > NODE_MOVE_LONG_PRESS_CANCEL_DISTANCE) {
-          clearPendingNodeMove()
-        }
-      }
-
-      const handlePointerEnd = (endEvent) => {
-        if (endEvent.pointerId !== pointerId) {
-          return
-        }
-
-        clearPendingNodeMove()
-      }
-
-      const timeoutId = window.setTimeout(() => {
-        const pendingMove = pendingNodeMoveRef.current
-
-        if (!pendingMove || pendingMove.pointerId !== pointerId) {
-          return
-        }
-
-        clearPendingNodeMove()
-        beginNodeMove(nodeId, node, point, true)
-      }, NODE_MOVE_LONG_PRESS_MS)
-
-      pendingNodeMoveRef.current = {
-        pointerId,
-        timeoutId,
-        handlePointerMove,
-        handlePointerEnd,
-      }
-
-      window.addEventListener('pointermove', handlePointerMove)
-      window.addEventListener('pointerup', handlePointerEnd)
-      window.addEventListener('pointercancel', handlePointerEnd)
+      beginNodeMove(nodeId, node, point, shouldPreventScrollDuringNodeMove(event))
     },
-    [beginNodeMove, clearPendingNodeMove, flow.nodes, getCanvasPoint, mode],
+    [beginNodeMove, flow.nodes, getCanvasPoint, mode],
   )
 
   useEffect(() => {
@@ -435,7 +362,7 @@ export default function FlowCanvas({
     }
 
     const handlePointerMove = (event) => {
-      if (nodeDrag.requiresLongPress) {
+      if (nodeDrag.shouldPreventScroll) {
         event.preventDefault()
       }
 
@@ -470,7 +397,7 @@ export default function FlowCanvas({
     }
 
     const handlePointerUp = (event) => {
-      if (nodeDrag.requiresLongPress) {
+      if (nodeDrag.shouldPreventScroll) {
         event.preventDefault()
       }
 

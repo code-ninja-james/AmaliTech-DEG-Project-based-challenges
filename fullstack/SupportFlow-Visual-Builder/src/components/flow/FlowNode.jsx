@@ -18,24 +18,10 @@ const NODE_GLYPHS = {
   end: '■',
 }
 
-const MOBILE_POINTER_QUERY = '(max-width: 720px)'
-
 function getDisplayNodeId(nodeId) {
   const id = String(nodeId)
 
   return /^\d+$/.test(id) ? `node_${id.padStart(3, '0')}` : id
-}
-
-function shouldDelayMoveStart(event) {
-  if (event.pointerType === 'touch') {
-    return true
-  }
-
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia(MOBILE_POINTER_QUERY).matches
-  )
 }
 
 export default function FlowNode({
@@ -115,10 +101,7 @@ export default function FlowNode({
           return
         }
 
-        if (!shouldDelayMoveStart(event)) {
-          event.preventDefault()
-        }
-
+        event.preventDefault()
         event.stopPropagation()
         onMoveStart(node.id, event)
       }}

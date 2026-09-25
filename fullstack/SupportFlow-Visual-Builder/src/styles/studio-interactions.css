@@ -2378,10 +2378,7 @@
     white-space: normal;
   }
 
-  .flow-node--movable {
-    touch-action: pan-x pan-y;
-  }
-
+  .flow-node--movable,
   .flow-node--moving {
     touch-action: none;
   }

@@ -3512,6 +3512,28 @@
   cursor: pointer;
   font: inherit;
 }
+.preview-node-actions .preview-node-actions__close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #a9a9bb;
+  -webkit-tap-highlight-color: transparent;
+}
+.preview-node-actions__close:hover,
+.preview-node-actions__close:active {
+  color: #fff;
+  background: #ffffff08;
+}
+.preview-node-actions__close:focus-visible {
+  outline: 2px solid #4f8ff7;
+  outline-offset: 2px;
+}
 .preview-node-actions__quote {
   margin: 0 0 18px;
   border-left: 2px solid #4f8ff7;

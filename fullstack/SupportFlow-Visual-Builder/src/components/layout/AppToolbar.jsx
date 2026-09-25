@@ -165,7 +165,20 @@ export default function AppToolbar({
             aria-controls="app-mobile-actions-panel"
             onClick={() => setIsMobileActionsOpen((isOpen) => !isOpen)}
           >
-            More
+            <span className="app-mobile-actions__trigger-icon" aria-hidden="true">
+              <svg viewBox="0 0 16 16" focusable="false">
+                <circle cx="4" cy="4" r="1.4" />
+                <circle cx="12" cy="4" r="1.4" />
+                <circle cx="4" cy="12" r="1.4" />
+                <circle cx="12" cy="12" r="1.4" />
+              </svg>
+            </span>
+            <span>More</span>
+            <span className="app-mobile-actions__trigger-cue" aria-hidden="true">
+              <svg viewBox="0 0 16 16" focusable="false">
+                <path d="M4.5 9.5 8 6l3.5 3.5" />
+              </svg>
+            </span>
           </button>
 
           <div

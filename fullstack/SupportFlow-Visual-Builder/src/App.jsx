@@ -181,7 +181,7 @@ export default function App() {
     () => initialWorkspace?.selectedNodeId ?? '2',
   )
   const [selectedConnectionId, setSelectedConnectionId] = useState(null)
-  const [mode, setMode] = useState('Build')
+  const [mode, setMode] = useState(() => initialWorkspace?.mode ?? 'Build')
   const [isPreviewing, setIsPreviewing] = useState(false)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [demoScenario, setDemoScenario] = useState('current')
@@ -217,8 +217,9 @@ export default function App() {
       workflowName,
       activeWorkflowId,
       selectedNodeId,
+      mode,
     })
-  }, [activeWorkflowId, flow, selectedNodeId, workflowName])
+  }, [activeWorkflowId, flow, mode, selectedNodeId, workflowName])
 
   useEffect(() => {
     if (!activeWorkflowId) {

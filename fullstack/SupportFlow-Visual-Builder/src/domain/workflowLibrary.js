@@ -3,6 +3,7 @@ import validateFlow from './validateFlow.js'
 export const WORKFLOW_LIBRARY_STORAGE_KEY = 'supportflow.workflow-library.v1'
 export const WORKSPACE_SESSION_STORAGE_KEY = 'supportflow.workspace-session.v1'
 export const DEFAULT_WORKFLOW_NAME = 'Main Flow'
+const EDITOR_MODES = new Set(['Build', 'X-Ray', 'Spatial'])
 
 function getStorage() {
   return typeof window === 'undefined' ? null : window.localStorage
@@ -354,6 +355,7 @@ export function normalizeWorkspaceSession(record) {
     workflowName: normalizeWorkflowName(record.workflowName),
     activeWorkflowId: record.activeWorkflowId ? String(record.activeWorkflowId) : null,
     selectedNodeId,
+    mode: EDITOR_MODES.has(record.mode) ? record.mode : 'Build',
   }
 }
 

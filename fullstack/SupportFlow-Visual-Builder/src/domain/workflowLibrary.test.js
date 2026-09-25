@@ -190,6 +190,7 @@ describe('workflowLibrary', () => {
           workflowName: 'Excel Workflow',
           activeWorkflowId: 'workflow-1',
           selectedNodeId: '2',
+          mode: 'Spatial',
         },
         storage,
       ),
@@ -200,6 +201,7 @@ describe('workflowLibrary', () => {
       workflowName: 'Excel Workflow',
       activeWorkflowId: 'workflow-1',
       selectedNodeId: '2',
+      mode: 'Spatial',
       flow,
     })
   })

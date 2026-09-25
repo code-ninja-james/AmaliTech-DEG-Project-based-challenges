@@ -12,6 +12,29 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createStoredXlsx } from './test/createStoredXlsx.js'
 import App from './App.jsx'
 
+const storedFlow = {
+  meta: {
+    canvas_size: { w: 1200, h: 800 },
+    theme: 'dark',
+  },
+  nodes: [
+    {
+      id: '1',
+      options: [{ label: 'Next', nextId: '2' }],
+      position: { x: 500, y: 72 },
+      text: 'Start',
+      type: 'start',
+    },
+    {
+      id: '2',
+      options: [],
+      position: { x: 500, y: 260 },
+      text: 'Done',
+      type: 'end',
+    },
+  ],
+}
+
 describe('SupportFlow application', () => {
   afterEach(() => {
     window.localStorage.clear()
@@ -1067,6 +1090,26 @@ describe('SupportFlow application', () => {
 
     expect(screen.getByLabelText('Spatial topology')).toBeInTheDocument()
     expect(screen.getByLabelText('Node inspector')).toBeInTheDocument()
+  })
+
+  it('restores the last editor mode after a page refresh', () => {
+    window.localStorage.setItem(
+      'supportflow.workspace-session.v1',
+      JSON.stringify({
+        activeWorkflowId: null,
+        flow: storedFlow,
+        mode: 'Spatial',
+        selectedNodeId: '1',
+        workflowName: 'Mobile Spatial Flow',
+      }),
+    )
+
+    render(<App />)
+
+    expect(screen.getByLabelText('Spatial topology')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Spatial' })).toHaveClass(
+      'app-mode-switch__button--active',
+    )
   })
 
   it('returns from the inspector area to the build canvas', async () => {

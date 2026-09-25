@@ -40,7 +40,7 @@ const SPATIAL_LABELS = {
 }
 
 const MIN_ZOOM = 0.7
-const MAX_ZOOM = 1.4
+const MAX_ZOOM = 2
 const ZOOM_STEP = 0.1
 const DYNAMIC_LAYOUT_WIDTH = 900
 const DYNAMIC_LAYOUT_VERTICAL_SPREAD = 420

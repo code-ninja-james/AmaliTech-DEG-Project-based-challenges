@@ -100,4 +100,52 @@ describe('SpatialView', () => {
     expect(backgroundPlane).toHaveAttribute('width', '1100')
     expect(backgroundPlane).toHaveAttribute('height', '640')
   })
+
+  it('allows mobile spatial zoom to reach 200 percent', async () => {
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      addEventListener: vi.fn(),
+      addListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+      matches: query === '(max-width: 720px)',
+      media: query,
+      onchange: null,
+      removeEventListener: vi.fn(),
+      removeListener: vi.fn(),
+    }))
+
+    const flow = {
+      meta: { canvas_size: { w: 1200, h: 800 } },
+      nodes: [
+        {
+          id: 1,
+          type: 'start',
+          text: 'Start',
+          position: { x: 0, y: 0 },
+          options: [{ label: 'Next', nextId: 2 }],
+        },
+        {
+          id: 2,
+          type: 'end',
+          text: 'Done',
+          position: { x: 0, y: 0 },
+          options: [],
+        },
+      ],
+    }
+
+    render(<SpatialView flow={flow} selectedNodeId={1} onNodeSelect={() => {}} />)
+
+    const zoomInButton = screen.getByRole('button', { name: 'Zoom in spatial view' })
+
+    for (let index = 0; index < 12; index += 1) {
+      fireEvent.click(zoomInButton)
+    }
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Spatial topology')).toHaveStyle({
+        '--spatial-mobile-size': '200%',
+      }),
+    )
+    expect(screen.getByText('200%')).toBeInTheDocument()
+  })
 })

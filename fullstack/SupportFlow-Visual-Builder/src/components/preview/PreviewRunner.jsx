@@ -25,9 +25,65 @@ function createInitialConversation(startNode) {
   ]
 }
 
-export default function PreviewRunner({ flow, onBack = null, onNodeSelect = () => {} }) {
+export default function PreviewRunner({
+  flow,
+  onBack = null,
+  onNodeSelect = () => {},
+  onNodeEdit = null,
+}) {
   const startNode = getStartNode(flow.nodes)
   const scrollRef = useRef(null)
+  const pressRef = useRef(null)
+  const dialogRef = useRef(null)
+  const [actionNodeId, setActionNodeId] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [draftText, setDraftText] = useState('')
+  const actionNode = flow.nodes.find((node) => node.id === actionNodeId)
+  const actionType = actionNode?.type === 'end' ? 'terminal' : actionNode?.type
+
+  const cancelPress = () => {
+    window.clearTimeout(pressRef.current?.timer)
+    pressRef.current = null
+  }
+
+  useEffect(() => () => window.clearTimeout(pressRef.current?.timer), [])
+
+  useEffect(() => {
+    if (actionNodeId) dialogRef.current?.showModal()
+  }, [actionNodeId])
+
+  const openActions = (nodeId) => {
+    cancelPress()
+    setIsEditing(false)
+    setActionNodeId(nodeId)
+  }
+
+  const startPress = (event, nodeId) => {
+    if (!onNodeEdit || event.button > 0 || event.isPrimary === false) return
+    cancelPress()
+    pressRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      timer: window.setTimeout(() => openActions(nodeId), 400),
+    }
+  }
+
+  const movePress = (event) => {
+    const press = pressRef.current
+    if (
+      press &&
+      (event.pointerId !== press.pointerId ||
+        Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10)
+    )
+      cancelPress()
+  }
+
+  const closeActions = () => {
+    dialogRef.current?.close()
+    setActionNodeId(null)
+    setIsEditing(false)
+  }
   const [currentNodeId, setCurrentNodeId] = useState(startNode?.id ?? null)
   const [conversation, setConversation] = useState(() => createInitialConversation(startNode))
 
@@ -121,7 +177,13 @@ export default function PreviewRunner({ flow, onBack = null, onNodeSelect = () =
         </div>
       </header>
 
-      <div ref={scrollRef} className="studio-preview__conversation" aria-live="polite">
+      {onNodeEdit && <p className="studio-preview__edit-hint">Hold a message to edit its node</p>}
+      <div
+        ref={scrollRef}
+        className="studio-preview__conversation"
+        aria-live="polite"
+        onScroll={cancelPress}
+      >
         <div className="studio-preview__thread">
           {conversation.map((message, index) => (
             <div
@@ -139,7 +201,35 @@ export default function PreviewRunner({ flow, onBack = null, onNodeSelect = () =
               {message.role === 'assistant' ? (
                 <div className="studio-preview__assistant">
                   <span className="studio-preview__avatar">◈</span>
-                  <p>{message.text}</p>
+                  <p
+                    className={onNodeEdit ? 'studio-preview__editable-message' : undefined}
+                    role={onNodeEdit ? 'button' : undefined}
+                    tabIndex={onNodeEdit ? 0 : undefined}
+                    aria-label={
+                      onNodeEdit
+                        ? `${flow.nodes.find((node) => node.id === message.nodeId)?.text ?? message.text}. Open edit options`
+                        : undefined
+                    }
+                    aria-haspopup={onNodeEdit ? 'dialog' : undefined}
+                    onPointerDown={(event) => startPress(event, message.nodeId)}
+                    onPointerMove={movePress}
+                    onPointerUp={cancelPress}
+                    onPointerCancel={cancelPress}
+                    onPointerLeave={cancelPress}
+                    onContextMenu={(event) => {
+                      if (!onNodeEdit) return
+                      event.preventDefault()
+                      openActions(message.nodeId)
+                    }}
+                    onKeyDown={(event) => {
+                      if (onNodeEdit && (event.key === 'Enter' || event.key === ' ')) {
+                        event.preventDefault()
+                        openActions(message.nodeId)
+                      }
+                    }}
+                  >
+                    {flow.nodes.find((node) => node.id === message.nodeId)?.text ?? message.text}
+                  </p>
                 </div>
               ) : (
                 <p className="studio-preview__user-message">{message.text}</p>
@@ -170,6 +260,84 @@ export default function PreviewRunner({ flow, onBack = null, onNodeSelect = () =
           )}
         </div>
       </div>
+      {actionNode && (
+        <dialog
+          ref={dialogRef}
+          className="preview-node-actions"
+          aria-labelledby="preview-action-title"
+          onCancel={closeActions}
+          onClose={() => setActionNodeId(null)}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeActions()
+          }}
+        >
+          <div className="preview-node-actions__surface">
+            <span className="preview-node-actions__grip" aria-hidden="true" />
+            <header>
+              <div>
+                <span className="preview-node-actions__eyebrow">
+                  {actionType} · #{actionNode.id}
+                </span>
+                <h2 id="preview-action-title">
+                  {isEditing ? `Edit ${actionType}` : 'Message options'}
+                </h2>
+              </div>
+              <button type="button" aria-label="Close message options" onClick={closeActions}>
+                ×
+              </button>
+            </header>
+            {isEditing ? (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  if (!draftText.trim()) return
+                  onNodeEdit(actionNode.id, actionNode.text, draftText.trim())
+                  closeActions()
+                }}
+              >
+                <label htmlFor="preview-node-text">Message</label>
+                <textarea
+                  id="preview-node-text"
+                  autoFocus
+                  rows="5"
+                  value={draftText}
+                  onChange={(event) => setDraftText(event.target.value)}
+                />
+                <p className="preview-node-actions__note">
+                  Updates this node throughout the workflow. Your preview stays in place.
+                </p>
+                <footer>
+                  <button type="button" onClick={closeActions}>
+                    Cancel
+                  </button>
+                  <button
+                    className="preview-node-actions__save"
+                    type="submit"
+                    disabled={!draftText.trim()}
+                  >
+                    Save changes
+                  </button>
+                </footer>
+              </form>
+            ) : (
+              <>
+                <p className="preview-node-actions__quote">{actionNode.text}</p>
+                <button
+                  className="preview-node-actions__edit"
+                  type="button"
+                  onClick={() => {
+                    setDraftText(actionNode.text)
+                    setIsEditing(true)
+                  }}
+                >
+                  <span aria-hidden="true">✎</span> Edit {actionType}
+                  <span aria-hidden="true">›</span>
+                </button>
+              </>
+            )}
+          </div>
+        </dialog>
+      )}
     </section>
   )
 }

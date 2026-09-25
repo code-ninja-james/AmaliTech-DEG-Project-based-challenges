@@ -1138,7 +1138,15 @@ export default function App() {
         )}
 
         {mode === 'Build' && isPreviewing && (
-          <PreviewRunner flow={flow} onBack={handlePreviewExit} onNodeSelect={handleNodeSelect} />
+          <PreviewRunner
+            flow={flow}
+            onBack={handlePreviewExit}
+            onNodeSelect={handleNodeSelect}
+            onNodeEdit={(nodeId, previousText, nextText) => {
+              handleNodeTextChange(nodeId, nextText)
+              handleNodeTextCommit(nodeId, previousText, nextText)
+            }}
+          />
         )}
 
         {(mode === 'Build' || mode === 'Spatial') && (

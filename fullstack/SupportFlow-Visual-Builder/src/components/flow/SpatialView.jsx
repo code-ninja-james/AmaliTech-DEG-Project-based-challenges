@@ -7,7 +7,7 @@
  * zoom behavior instead of decorative prototype-only buttons.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const TYPE_COLOR = {
   start: '#10b981',
@@ -176,6 +176,7 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
   const focal = 1600
   const centerX = 100
   const centerY = 320
+  const stageRef = useRef(null)
   const [zoom, setZoom] = useState(1)
   const nodeMap = new Map(flow.nodes.map((node) => [node.id, node]))
   const spatialLayout = useMemo(() => createSpatialLayout(flow.nodes), [flow.nodes])
@@ -223,16 +224,17 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
     }
   })
 
-  const worldBounds = {
-    x: -viewportWidth,
-    y: -viewportHeight,
-    width: viewportWidth * 3,
-    height: viewportHeight * 3,
-  }
-  const atmosphericPoints = Array.from({ length: 56 }, (_, index) => ({
-    cx: worldBounds.x + 40 + ((index * 191 + index * index * 13) % (worldBounds.width - 80)),
-    cy: worldBounds.y + 30 + ((index * 113 + index * 37) % (worldBounds.height - 60)),
-    radius: 0.5 + (index % 5) * 0.18,
+  const viewWidth = viewportWidth / zoom
+  const viewHeight = viewportHeight / zoom
+  const viewX = (viewportWidth - viewWidth) / 2
+  const viewY = (viewportHeight - viewHeight) / 2
+  const mobileSurfaceScale = 1 + Math.max(0, zoom - 1) * 0.8
+  const mobileSurfaceSize = `${Math.round(mobileSurfaceScale * 100)}%`
+  const atmosphericPoints = Array.from({ length: 32 }, (_, index) => ({
+    cx:
+      viewX + 40 / zoom + ((index * 191 + index * index * 13) % Math.max(1, viewWidth - 80 / zoom)),
+    cy: viewY + 30 / zoom + ((index * 113 + index * 37) % Math.max(1, viewHeight - 60 / zoom)),
+    radius: (0.5 + (index % 5) * 0.18) / zoom,
     opacity: 0.028 + (index % 8) * 0.015,
   }))
 
@@ -240,293 +242,315 @@ export default function SpatialView({ flow, selectedNodeId, onNodeSelect }) {
     (a, b) => spatialLayout[b.id][2] - spatialLayout[a.id][2],
   )
 
-  const viewWidth = viewportWidth / zoom
-  const viewHeight = viewportHeight / zoom
-  const viewX = (viewportWidth - viewWidth) / 2
-  const viewY = (viewportHeight - viewHeight) / 2
+  useEffect(() => {
+    const stage = stageRef.current
+
+    if (!stage) {
+      return
+    }
+
+    const maxLeft = Math.max(0, stage.scrollWidth - stage.clientWidth)
+    const maxTop = Math.max(0, stage.scrollHeight - stage.clientHeight)
+
+    if (maxLeft > 0 || maxTop > 0) {
+      stage.scrollTo({
+        left: maxLeft / 2,
+        top: maxTop / 2,
+        behavior: 'auto',
+      })
+    }
+  }, [mobileSurfaceSize])
 
   return (
-    <section className="spatial-view" aria-label="Spatial topology">
+    <section
+      className="spatial-view"
+      aria-label="Spatial topology"
+      style={{ '--spatial-mobile-size': mobileSurfaceSize }}
+    >
       <div className="spatial-view__badge">
         <span className="studio-blink" />
         SPATIAL · 3D Topology
       </div>
 
-      <svg
-        viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`}
-        preserveAspectRatio="xMidYMid meet"
-        className="spatial-view__svg"
-      >
-        <defs>
-          <radialGradient id="spatial-bg" cx="38%" cy="50%" r="75%">
-            <stop offset="0%" stopColor="#070a1e" />
-            <stop offset="100%" stopColor="#020204" />
-          </radialGradient>
-          <radialGradient id="spatial-vignette" cx="50%" cy="50%" r="55%">
-            <stop offset="42%" stopColor="transparent" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.60)" />
-          </radialGradient>
-          <filter id="spatial-blur-4" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="4" />
-          </filter>
-          <filter id="spatial-blur-9" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="9" />
-          </filter>
-          <filter id="spatial-blur-16" x="-120%" y="-120%" width="340%" height="340%">
-            <feGaussianBlur stdDeviation="16" />
-          </filter>
+      <div className="spatial-view__stage" ref={stageRef}>
+        <svg
+          viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="spatial-view__svg"
+        >
+          <defs>
+            <radialGradient id="spatial-bg" cx="38%" cy="50%" r="75%">
+              <stop offset="0%" stopColor="#070a1e" />
+              <stop offset="100%" stopColor="#020204" />
+            </radialGradient>
+            <radialGradient id="spatial-vignette" cx="50%" cy="50%" r="55%">
+              <stop offset="42%" stopColor="transparent" />
+              <stop offset="100%" stopColor="rgba(0,0,0,0.60)" />
+            </radialGradient>
+            <filter id="spatial-blur-4" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="4" />
+            </filter>
+            <filter id="spatial-blur-9" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="9" />
+            </filter>
+            <filter id="spatial-blur-16" x="-120%" y="-120%" width="340%" height="340%">
+              <feGaussianBlur stdDeviation="16" />
+            </filter>
+
+            {edges.map((edge) => {
+              const sourceNode = nodeMap.get(edge.from)
+              const targetNode = nodeMap.get(edge.to)
+              const source = projected[edge.from]
+              const target = projected[edge.to]
+
+              return (
+                <linearGradient
+                  key={`gradient-${edge.id}`}
+                  id={`spatial-gradient-${edge.id}`}
+                  x1={source.x}
+                  y1={source.y}
+                  x2={target.x}
+                  y2={target.y}
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop
+                    offset="0%"
+                    stopColor={TYPE_COLOR[sourceNode.type] ?? TYPE_COLOR.question}
+                    stopOpacity="0.88"
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={TYPE_COLOR[targetNode.type] ?? TYPE_COLOR.question}
+                    stopOpacity="0.52"
+                  />
+                </linearGradient>
+              )
+            })}
+          </defs>
+
+          <rect
+            className="spatial-view__background-plane"
+            x={viewX}
+            y={viewY}
+            width={viewWidth}
+            height={viewHeight}
+            fill="url(#spatial-bg)"
+          />
+          <rect
+            x={viewX}
+            y={viewY}
+            width={viewWidth}
+            height={viewHeight}
+            fill="url(#spatial-vignette)"
+          />
+
+          {[0.28, 0.42, 0.58, 0.72].map((ratio) => (
+            <line
+              key={ratio}
+              x1={viewX}
+              y1={viewY + viewHeight * ratio}
+              x2={viewX + viewWidth}
+              y2={viewY + viewHeight * ratio}
+              stroke="rgba(110,130,230,0.03)"
+              strokeWidth={0.8 / zoom}
+            />
+          ))}
+
+          {atmosphericPoints.map((point, index) => (
+            <circle
+              key={index}
+              cx={point.cx}
+              cy={point.cy}
+              r={point.radius}
+              fill="rgba(255,255,255,0.9)"
+              opacity={point.opacity}
+            />
+          ))}
 
           {edges.map((edge) => {
             const sourceNode = nodeMap.get(edge.from)
-            const targetNode = nodeMap.get(edge.to)
-            const source = projected[edge.from]
-            const target = projected[edge.to]
+            const isRelated = connected.has(edge.from) && connected.has(edge.to)
+            const isParticle = edge.from === selectedNodeId
+            const path = edgePath(edge.from, edge.to)
+            const color = TYPE_COLOR[sourceNode.type] ?? TYPE_COLOR.question
 
             return (
-              <linearGradient
-                key={`gradient-${edge.id}`}
-                id={`spatial-gradient-${edge.id}`}
-                x1={source.x}
-                y1={source.y}
-                x2={target.x}
-                y2={target.y}
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop
-                  offset="0%"
-                  stopColor={TYPE_COLOR[sourceNode.type] ?? TYPE_COLOR.question}
-                  stopOpacity="0.88"
+              <g key={edge.id}>
+                {isRelated && (
+                  <>
+                    <path
+                      d={path}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth="30"
+                      opacity="0.07"
+                      filter="url(#spatial-blur-9)"
+                    />
+                    <path
+                      d={path}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth="12"
+                      opacity="0.15"
+                      filter="url(#spatial-blur-4)"
+                    />
+                  </>
+                )}
+
+                <path
+                  d={path}
+                  fill="none"
+                  stroke={
+                    isRelated ? `url(#spatial-gradient-${edge.id})` : 'rgba(255,255,255,0.11)'
+                  }
+                  strokeWidth={isRelated ? 2 : 0.9}
+                  opacity={isRelated ? 0.92 : 0.68}
                 />
-                <stop
-                  offset="100%"
-                  stopColor={TYPE_COLOR[targetNode.type] ?? TYPE_COLOR.question}
-                  stopOpacity="0.52"
-                />
-              </linearGradient>
+
+                {isParticle && (
+                  <g>
+                    <circle r="9" fill={color}>
+                      <animate
+                        attributeName="opacity"
+                        values="0;0.18;0.18;0"
+                        keyTimes="0;0.07;0.87;1"
+                        dur="2.8s"
+                        repeatCount="indefinite"
+                      />
+                      <animateMotion dur="2.8s" repeatCount="indefinite" path={path} />
+                    </circle>
+                    <circle r="3.2" fill={color}>
+                      <animate
+                        attributeName="opacity"
+                        values="0;0.92;0.92;0"
+                        keyTimes="0;0.07;0.87;1"
+                        dur="2.8s"
+                        repeatCount="indefinite"
+                      />
+                      <animateMotion dur="2.8s" repeatCount="indefinite" path={path} />
+                    </circle>
+                  </g>
+                )}
+              </g>
             )
           })}
-        </defs>
 
-        <rect
-          className="spatial-view__background-plane"
-          x={worldBounds.x}
-          y={worldBounds.y}
-          width={worldBounds.width}
-          height={worldBounds.height}
-          fill="url(#spatial-bg)"
-        />
-        <rect
-          x={worldBounds.x}
-          y={worldBounds.y}
-          width={worldBounds.width}
-          height={worldBounds.height}
-          fill="url(#spatial-vignette)"
-        />
+          {sortedNodes.map((node) => {
+            const point = projected[node.id]
+            const color = TYPE_COLOR[node.type] ?? TYPE_COLOR.question
+            const selected = node.id === selectedNodeId
+            const dimmed = selectedNodeId && !connected.has(node.id)
+            const core = 20 * point.scale * (node.type === 'start' ? 1.22 : 1)
+            const glow = core * 2.1
+            const ring = core * 3.5
 
-        {[0.28, 0.42, 0.58, 0.72].map((ratio) => (
-          <line
-            key={ratio}
-            x1={worldBounds.x}
-            y1={worldBounds.y + worldBounds.height * ratio}
-            x2={worldBounds.x + worldBounds.width}
-            y2={worldBounds.y + worldBounds.height * ratio}
-            stroke="rgba(110,130,230,0.03)"
-            strokeWidth="0.8"
-          />
-        ))}
-
-        {atmosphericPoints.map((point, index) => (
-          <circle
-            key={index}
-            cx={point.cx}
-            cy={point.cy}
-            r={point.radius}
-            fill="rgba(255,255,255,0.9)"
-            opacity={point.opacity}
-          />
-        ))}
-
-        {edges.map((edge) => {
-          const sourceNode = nodeMap.get(edge.from)
-          const isRelated = connected.has(edge.from) && connected.has(edge.to)
-          const isParticle = edge.from === selectedNodeId
-          const path = edgePath(edge.from, edge.to)
-          const color = TYPE_COLOR[sourceNode.type] ?? TYPE_COLOR.question
-
-          return (
-            <g key={edge.id}>
-              {isRelated && (
-                <>
-                  <path
-                    d={path}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth="30"
-                    opacity="0.07"
-                    filter="url(#spatial-blur-9)"
-                  />
-                  <path
-                    d={path}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth="12"
-                    opacity="0.15"
-                    filter="url(#spatial-blur-4)"
-                  />
-                </>
-              )}
-
-              <path
-                d={path}
-                fill="none"
-                stroke={isRelated ? `url(#spatial-gradient-${edge.id})` : 'rgba(255,255,255,0.11)'}
-                strokeWidth={isRelated ? 2 : 0.9}
-                opacity={isRelated ? 0.92 : 0.68}
-              />
-
-              {isParticle && (
-                <g>
-                  <circle r="9" fill={color}>
-                    <animate
-                      attributeName="opacity"
-                      values="0;0.18;0.18;0"
-                      keyTimes="0;0.07;0.87;1"
-                      dur="2.8s"
-                      repeatCount="indefinite"
-                    />
-                    <animateMotion dur="2.8s" repeatCount="indefinite" path={path} />
-                  </circle>
-                  <circle r="3.2" fill={color}>
-                    <animate
-                      attributeName="opacity"
-                      values="0;0.92;0.92;0"
-                      keyTimes="0;0.07;0.87;1"
-                      dur="2.8s"
-                      repeatCount="indefinite"
-                    />
-                    <animateMotion dur="2.8s" repeatCount="indefinite" path={path} />
-                  </circle>
-                </g>
-              )}
-            </g>
-          )
-        })}
-
-        {sortedNodes.map((node) => {
-          const point = projected[node.id]
-          const color = TYPE_COLOR[node.type] ?? TYPE_COLOR.question
-          const selected = node.id === selectedNodeId
-          const dimmed = selectedNodeId && !connected.has(node.id)
-          const core = 20 * point.scale * (node.type === 'start' ? 1.22 : 1)
-          const glow = core * 2.1
-          const ring = core * 3.5
-
-          return (
-            <g
-              key={node.id}
-              className="spatial-view__node"
-              opacity={dimmed ? 0.12 : 1}
-              onClick={() => onNodeSelect(node.id)}
-            >
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r={ring * 1.8}
-                fill={color}
-                opacity={selected ? 0.07 : 0.025}
-                filter="url(#spatial-blur-16)"
-              />
-              {selected && (
+            return (
+              <g
+                key={node.id}
+                className="spatial-view__node"
+                opacity={dimmed ? 0.12 : 1}
+                onClick={() => onNodeSelect(node.id)}
+              >
                 <circle
                   cx={point.x}
                   cy={point.y}
-                  r={ring * 1.55}
+                  r={ring * 1.8}
+                  fill={color}
+                  opacity={selected ? 0.07 : 0.025}
+                  filter="url(#spatial-blur-16)"
+                />
+                {selected && (
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r={ring * 1.55}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth="0.8"
+                    opacity="0.22"
+                  />
+                )}
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={ring}
                   fill="none"
                   stroke={color}
-                  strokeWidth="0.8"
-                  opacity="0.22"
+                  strokeWidth={selected ? 1.4 : 0.9}
+                  opacity={selected ? 0.75 : 0.3}
                 />
-              )}
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r={ring}
-                fill="none"
-                stroke={color}
-                strokeWidth={selected ? 1.4 : 0.9}
-                opacity={selected ? 0.75 : 0.3}
-              />
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r={glow}
-                fill={color}
-                opacity={selected ? 0.34 : 0.15}
-                filter="url(#spatial-blur-9)"
-              />
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r={core}
-                fill={color}
-                opacity={selected ? 1 : 0.84}
-              />
-              <circle
-                cx={point.x - core * 0.28}
-                cy={point.y - core * 0.29}
-                r={core * 0.36}
-                fill="rgba(255,255,255,0.4)"
-              />
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={glow}
+                  fill={color}
+                  opacity={selected ? 0.34 : 0.15}
+                  filter="url(#spatial-blur-9)"
+                />
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={core}
+                  fill={color}
+                  opacity={selected ? 1 : 0.84}
+                />
+                <circle
+                  cx={point.x - core * 0.28}
+                  cy={point.y - core * 0.29}
+                  r={core * 0.36}
+                  fill="rgba(255,255,255,0.4)"
+                />
 
-              <text
-                x={point.x}
-                y={point.y}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={core * 0.65}
-                fontFamily="JetBrains Mono, monospace"
-                fontWeight="700"
-                fill="rgba(255,255,255,0.96)"
-              >
-                {TYPE_GLYPH[node.type]}
-              </text>
-              <text
-                x={point.x}
-                y={point.y - ring - 10}
-                textAnchor="middle"
-                fontSize={Math.max(7, 8.5 * point.scale)}
-                fontFamily="JetBrains Mono, monospace"
-                fill={color}
-                opacity="0.68"
-                letterSpacing="1"
-              >
-                {node.type === 'end' ? 'TERMINAL' : node.type.toUpperCase()}
-              </text>
-              <text
-                x={point.x}
-                y={point.y + ring + 15}
-                textAnchor="middle"
-                fontSize={Math.max(9.5, 11.5 * point.scale)}
-                fontFamily="JetBrains Mono, monospace"
-                fontWeight="500"
-                fill="rgba(255,255,255,0.82)"
-              >
-                {getSpatialLabel(node)}
-              </text>
-              <text
-                x={point.x}
-                y={point.y + ring + 28}
-                textAnchor="middle"
-                fontSize={Math.max(6, 7.5 * point.scale)}
-                fontFamily="JetBrains Mono, monospace"
-                fill="rgba(255,255,255,0.3)"
-              >
-                node_{String(node.id).padStart(3, '0')}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
+                <text
+                  x={point.x}
+                  y={point.y}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize={core * 0.65}
+                  fontFamily="JetBrains Mono, monospace"
+                  fontWeight="700"
+                  fill="rgba(255,255,255,0.96)"
+                >
+                  {TYPE_GLYPH[node.type]}
+                </text>
+                <text
+                  x={point.x}
+                  y={point.y - ring - 10}
+                  textAnchor="middle"
+                  fontSize={Math.max(7, 8.5 * point.scale)}
+                  fontFamily="JetBrains Mono, monospace"
+                  fill={color}
+                  opacity="0.68"
+                  letterSpacing="1"
+                >
+                  {node.type === 'end' ? 'TERMINAL' : node.type.toUpperCase()}
+                </text>
+                <text
+                  x={point.x}
+                  y={point.y + ring + 15}
+                  textAnchor="middle"
+                  fontSize={Math.max(9.5, 11.5 * point.scale)}
+                  fontFamily="JetBrains Mono, monospace"
+                  fontWeight="500"
+                  fill="rgba(255,255,255,0.82)"
+                >
+                  {getSpatialLabel(node)}
+                </text>
+                <text
+                  x={point.x}
+                  y={point.y + ring + 28}
+                  textAnchor="middle"
+                  fontSize={Math.max(6, 7.5 * point.scale)}
+                  fontFamily="JetBrains Mono, monospace"
+                  fill="rgba(255,255,255,0.3)"
+                >
+                  node_{String(node.id).padStart(3, '0')}
+                </text>
+              </g>
+            )
+          })}
+        </svg>
+      </div>
 
       <div className="spatial-view__controls">
         <button

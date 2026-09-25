@@ -40,7 +40,7 @@ describe('SpatialView', () => {
     expect(screen.getByText('Close ticket')).toBeInTheDocument()
   })
 
-  it('keeps the spatial background in the zoomed world coordinate system', () => {
+  it('zooms spatial content while keeping a mobile scroll surface for panning', () => {
     const flow = {
       meta: { canvas_size: { w: 1200, h: 800 } },
       nodes: [
@@ -64,16 +64,20 @@ describe('SpatialView', () => {
     const { container } = render(
       <SpatialView flow={flow} selectedNodeId={1} onNodeSelect={() => {}} />,
     )
+    const spatialView = screen.getByLabelText('Spatial topology')
     const svg = container.querySelector('.spatial-view__svg')
     const backgroundPlane = container.querySelector('.spatial-view__background-plane')
     const initialViewBox = svg.getAttribute('viewBox')
 
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in spatial view' }))
 
+    const [viewX, viewY, viewWidth, viewHeight] = svg.getAttribute('viewBox').split(' ').map(Number)
+
+    expect(spatialView).toHaveStyle({ '--spatial-mobile-size': '108%' })
     expect(svg).not.toHaveAttribute('viewBox', initialViewBox)
-    expect(backgroundPlane).toHaveAttribute('x', '-1100')
-    expect(backgroundPlane).toHaveAttribute('y', '-640')
-    expect(backgroundPlane).toHaveAttribute('width', '3300')
-    expect(backgroundPlane).toHaveAttribute('height', '1920')
+    expect(Number(backgroundPlane.getAttribute('x'))).toBeCloseTo(viewX)
+    expect(Number(backgroundPlane.getAttribute('y'))).toBeCloseTo(viewY)
+    expect(Number(backgroundPlane.getAttribute('width'))).toBeCloseTo(viewWidth)
+    expect(Number(backgroundPlane.getAttribute('height'))).toBeCloseTo(viewHeight)
   })
 })

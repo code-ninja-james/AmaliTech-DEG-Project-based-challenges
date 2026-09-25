@@ -197,6 +197,7 @@
 
 .connector-layer--labels {
   z-index: 5;
+  touch-action: none;
 }
 
 .connector-path {
@@ -241,6 +242,9 @@
 
 .connector-label--draggable {
   cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .connector-label--draggable:active {

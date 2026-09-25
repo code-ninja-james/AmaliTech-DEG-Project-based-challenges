@@ -225,7 +225,14 @@ export default function FlowCanvas({
       const point = getCanvasPoint(event) ?? { x: 0, y: 0 }
 
       onNodeSelect(sourceId)
-      setDraftRoute({ type: 'create', sourceId, point, startPoint: point, targetId: null })
+      setDraftRoute({
+        type: 'create',
+        sourceId,
+        point,
+        startPoint: point,
+        targetId: null,
+        pointerId: event.pointerId,
+      })
     },
     [getCanvasPoint, mode, onNodeSelect],
   )
@@ -241,6 +248,7 @@ export default function FlowCanvas({
       onConnectionSelect(connection)
       setDraftRoute({
         type: 'rewire',
+        pointerId: event.pointerId,
         sourceId: connection.sourceId,
         optionIndex: connection.optionIndex,
         sourceOptionCount: connection.sourceOptionCount,
@@ -292,12 +300,16 @@ export default function FlowCanvas({
       return undefined
     }
 
+    const isActivePointer = (event) => event.pointerId === draftRoute.pointerId
+
     const handlePointerMove = (event) => {
+      if (!isActivePointer(event)) return
+      event.preventDefault()
       const point = getCanvasPoint(event)
       const allowSource = draftRoute.type === 'rewire'
       const targetId =
-        getEventTargetNodeId(event, draftRoute.sourceId, allowSource) ??
-        getPointTargetNodeId(point, draftRoute.sourceId, allowSource)
+        getPointTargetNodeId(point, draftRoute.sourceId, allowSource) ??
+        getEventTargetNodeId(event, draftRoute.sourceId, allowSource)
       const dragDistance =
         point && draftRoute.startPoint
           ? Math.hypot(point.x - draftRoute.startPoint.x, point.y - draftRoute.startPoint.y)
@@ -316,12 +328,18 @@ export default function FlowCanvas({
     }
 
     const handlePointerUp = (event) => {
+      if (!isActivePointer(event)) return
+      event.preventDefault()
       const point = getCanvasPoint(event)
       const allowSource = draftRoute.type === 'rewire'
       const directTargetId = getEventTargetNodeId(event, draftRoute.sourceId, allowSource)
       const targetId =
-        directTargetId ?? getPointTargetNodeId(point, draftRoute.sourceId, allowSource)
-      const canCommitDrop = draftRoute.hasMoved || Boolean(directTargetId)
+        getPointTargetNodeId(point, draftRoute.sourceId, allowSource) ?? directTargetId
+      // A quick touch can reach pointerup before the last move has rendered.
+      const releaseDistance = point
+        ? Math.hypot(point.x - draftRoute.startPoint.x, point.y - draftRoute.startPoint.y)
+        : 0
+      const canCommitDrop = draftRoute.hasMoved || releaseDistance > 4 || Boolean(directTargetId)
 
       if (targetId && draftRoute.type === 'rewire' && canCommitDrop) {
         onRouteReconnect(draftRoute.sourceId, draftRoute.optionIndex, targetId)
@@ -332,19 +350,25 @@ export default function FlowCanvas({
       setDraftRoute(null)
     }
 
+    const handlePointerCancel = (event) => {
+      if (isActivePointer(event)) setDraftRoute(null)
+    }
+
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setDraftRoute(null)
       }
     }
 
-    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointermove', handlePointerMove, { passive: false })
     window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerCancel)
     window.addEventListener('keydown', handleKeyDown)
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerCancel)
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [

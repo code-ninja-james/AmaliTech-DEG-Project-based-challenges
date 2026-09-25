@@ -400,6 +400,7 @@ describe('SupportFlow application', () => {
     const routeLabel = screen.getByRole('button', { name: 'Personal, route to node 6' })
 
     fireEvent.pointerDown(routeLabel, {
+      isPrimary: true,
       clientX: 820,
       clientY: 420,
     })

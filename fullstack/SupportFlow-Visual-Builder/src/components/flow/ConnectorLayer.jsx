@@ -517,12 +517,13 @@ export default function ConnectorLayer({
                 aria-label={`${connection.label}, route to node ${connection.targetId}`}
                 data-testid={`connector-label-${connection.id}`}
                 onPointerDown={(event) => {
-                  if (!canRewire) {
+                  if (!canRewire || event.button > 0 || event.isPrimary === false) {
                     return
                   }
 
                   event.preventDefault()
                   event.stopPropagation()
+                  event.currentTarget.setPointerCapture?.(event.pointerId)
                   onRouteRewireStart(connection, event)
                 }}
                 onClick={(event) => {

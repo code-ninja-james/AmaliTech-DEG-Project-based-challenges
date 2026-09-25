@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -126,6 +126,60 @@ describe('FlowCanvas', () => {
     })
 
     expect(screen.getByText('70%')).toBeInTheDocument()
+  })
+
+  it('rewires a captured touch using release coordinates, even without a move event', () => {
+    const onRouteReconnect = vi.fn()
+    const rectSpy = vi
+      .spyOn(Element.prototype, 'getBoundingClientRect')
+      .mockImplementation(function () {
+        const node = flowData.nodes.find(
+          (entry) => entry.id === this.getAttribute('data-flow-node-id'),
+        )
+        const x = node?.position.x ?? 0
+        const y = node?.position.y ?? 0
+        return { x, y, left: x, top: y, right: x + 196, bottom: y + 96, width: 196, height: 96 }
+      })
+    const pointer = (element, type, x, y, pointerId = 7) => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+      })
+      Object.defineProperties(event, {
+        pointerId: { value: pointerId },
+        pointerType: { value: 'touch' },
+      })
+      fireEvent(element, event)
+    }
+
+    try {
+      render(<FlowCanvas flow={flowData} onRouteReconnect={onRouteReconnect} />)
+      const label = screen.getByRole('button', { name: 'Personal, route to node 6' })
+      pointer(label, 'pointerdown', 820, 420)
+      // Touch capture keeps event.target on the label, not the card underneath.
+      pointer(label, 'pointerup', 150, 540, 8)
+      expect(onRouteReconnect).not.toHaveBeenCalled()
+      expect(screen.getByTestId('draft-connection')).toBeInTheDocument()
+      pointer(label, 'pointerup', 150, 540)
+      expect(onRouteReconnect).toHaveBeenCalledWith('3', 0, '4')
+      expect(screen.queryByTestId('draft-connection')).not.toBeInTheDocument()
+    } finally {
+      rectSpy.mockRestore()
+    }
+  })
+
+  it('cancels a touch route drag without changing the route', () => {
+    const onRouteReconnect = vi.fn()
+    render(<FlowCanvas flow={flowData} onRouteReconnect={onRouteReconnect} />)
+    const label = screen.getByRole('button', { name: 'Personal, route to node 6' })
+    fireEvent.pointerDown(label, { isPrimary: true })
+    expect(screen.getByTestId('draft-connection')).toBeInTheDocument()
+    fireEvent.pointerCancel(label)
+    expect(screen.queryByTestId('draft-connection')).not.toBeInTheDocument()
+    fireEvent.pointerUp(screen.getByTestId('flow-node-4'))
+    expect(onRouteReconnect).not.toHaveBeenCalled()
   })
 
   it('fits the canvas on first load on phone-sized screens', async () => {

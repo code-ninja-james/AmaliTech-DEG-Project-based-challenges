@@ -174,11 +174,6 @@ export default function AppToolbar({
               </svg>
             </span>
             <span>More</span>
-            <span className="app-mobile-actions__trigger-cue" aria-hidden="true">
-              <svg viewBox="0 0 16 16" focusable="false">
-                <path d="M4.5 9.5 8 6l3.5 3.5" />
-              </svg>
-            </span>
           </button>
 
           <div
